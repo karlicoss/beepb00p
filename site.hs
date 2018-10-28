@@ -3,6 +3,7 @@
 import           Data.Monoid (mappend)
 import           Hakyll
 
+import Text.Pandoc (readOrg)
 
 --------------------------------------------------------------------------------
 main :: IO ()
@@ -21,41 +22,43 @@ main = hakyll $ do
             >>= loadAndApplyTemplate "templates/default.html" defaultContext
             >>= relativizeUrls
 
-    match "posts/*" $ do
+-- https://github.com/turboMaCk/turboMaCk.github.io/blob/develop/site.hs#L61 ??
+    match "posts/**.org" $ do
         route $ setExtension "html"
+        let noteCtx = defaultContext
         compile $ pandocCompiler
-            >>= loadAndApplyTemplate "templates/post.html"    postCtx
-            >>= loadAndApplyTemplate "templates/default.html" postCtx
+            >>= loadAndApplyTemplate "templates/post.html"    noteCtx
+            >>= loadAndApplyTemplate "templates/default.html" noteCtx
             >>= relativizeUrls
 
-    create ["archive.html"] $ do
-        route idRoute
-        compile $ do
-            posts <- recentFirst =<< loadAll "posts/*"
-            let archiveCtx =
-                    listField "posts" postCtx (return posts) `mappend`
-                    constField "title" "Archives"            `mappend`
-                    defaultContext
+    -- create ["archive.html"] $ do
+    --     route idRoute
+    --     compile $ do
+    --         posts <- recentFirst =<< loadAll "posts/*"
+    --         let archiveCtx =
+    --                 listField "posts" postCtx (return posts) `mappend`
+    --                 constField "title" "Archives"            `mappend`
+    --                 defaultContext
 
-            makeItem ""
-                >>= loadAndApplyTemplate "templates/archive.html" archiveCtx
-                >>= loadAndApplyTemplate "templates/default.html" archiveCtx
-                >>= relativizeUrls
+    --         makeItem ""
+    --             >>= loadAndApplyTemplate "templates/archive.html" archiveCtx
+    --             >>= loadAndApplyTemplate "templates/default.html" archiveCtx
+    --             >>= relativizeUrls
 
 
-    match "index.html" $ do
-        route idRoute
-        compile $ do
-            posts <- recentFirst =<< loadAll "posts/*"
-            let indexCtx =
-                    listField "posts" postCtx (return posts) `mappend`
-                    constField "title" "Home"                `mappend`
-                    defaultContext
+    -- match "index.html" $ do
+    --     route idRoute
+    --     compile $ do
+    --         posts <- recentFirst =<< loadAll "posts/*"
+    --         let indexCtx =
+    --                 listField "posts" postCtx (return posts) `mappend`
+    --                 constField "title" "Home"                `mappend`
+    --                 defaultContext
 
-            getResourceBody
-                >>= applyAsTemplate indexCtx
-                >>= loadAndApplyTemplate "templates/default.html" indexCtx
-                >>= relativizeUrls
+    --         getResourceBody
+    --             >>= applyAsTemplate indexCtx
+    --             >>= loadAndApplyTemplate "templates/default.html" indexCtx
+    --             >>= relativizeUrls
 
     match "templates/*" $ compile templateBodyCompiler
 
