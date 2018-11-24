@@ -3,7 +3,7 @@
 import           Data.Monoid (mappend)
 import           Hakyll
 
-import Text.Pandoc (readOrg, Pandoc(..), docTitle)
+import Text.Pandoc (readOrg, Pandoc(..), docTitle, docDate, Meta, Inline)
 import Text.Pandoc.Shared (stringify)
 import Text.Pandoc.Options (def, writerVariables, writerTableOfContents)
 import           Control.Applicative ((<|>))
@@ -11,18 +11,17 @@ import           Control.Applicative ((<|>))
 import Hakyll.Web.Pandoc
 import Debug.Trace
 
--- orgFileTags :: Context Pandoc
-orgFileTags = field "filetags" (\p -> return "TODO FILETAGS")
+pandocMeta :: (Meta -> [Inline]) -> (Item Pandoc -> Compiler String)
+pandocMeta extractor Item {itemBody=Pandoc meta _} = return $ stringify $ extractor meta -- TODO proper html??
 
-orgAuthor = constField "author" "Dima"
-orgTitle = field "title" (\p -> return "TITLE")
-orgDate = field "date" extractDate where
-  extractDate :: Item Pandoc -> Compiler String
-  extractDate Item {itemBody=Pandoc meta _} = return $ stringify $ docTitle meta -- TODO render to html properly?
+-- TODO extract that stuff somewhere and share??
+orgFileTags = field "filetags" (\p -> return "TODO FILETAGS")
+orgAuthor = constField "author" "Dima" -- TODO docAuthors??
+orgTitle = field "title" $ pandocMeta docTitle
+orgDate = field "date" $ pandocMeta docDate
 
 pandocContext :: Context Pandoc
-pandocContext = mempty <> orgFileTags <> orgAuthor <> orgTitle <> orgDate
-
+pandocContext = orgFileTags <> orgAuthor <> orgTitle <> orgDate
 
 -- TODO ugh. surely it can't be that ugly right?
 data PandocX = PandocX Pandoc String
