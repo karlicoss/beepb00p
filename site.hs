@@ -3,13 +3,41 @@
 import           Data.Monoid (mappend)
 import           Hakyll
 
-import Text.Pandoc (readOrg, Pandoc(..))
+import Text.Pandoc (readOrg, Pandoc(..), docTitle)
+import Text.Pandoc.Shared (stringify)
 import Text.Pandoc.Options (def, writerVariables, writerTableOfContents)
+import           Control.Applicative ((<|>))
 
 import Hakyll.Web.Pandoc
 import Debug.Trace
 
-myContext = defaultContext <> field "ftags" (\p -> return "TODO FILETAGS") <> constField "author" "DDD"
+-- orgFileTags :: Context Pandoc
+orgFileTags = field "filetags" (\p -> return "TODO FILETAGS")
+
+orgAuthor = constField "author" "Dima"
+orgTitle = field "title" (\p -> return "TITLE")
+orgDate = field "date" extractDate where
+  extractDate :: Item Pandoc -> Compiler String
+  extractDate Item {itemBody=Pandoc meta _} = return $ stringify $ docTitle meta -- TODO render to html properly?? not sure 
+
+
+
+pandocContext :: Context Pandoc
+pandocContext = mempty <> orgFileTags <> orgAuthor <> orgTitle <> orgDate
+
+data PandocX = PandocX Pandoc String
+
+
+-- TODO readPandoc goes in first; after that writePandoc in second
+
+combineItems :: (a -> b -> c) -> Item a -> Item b -> Item c
+combineItems f Item{itemBody=ba, itemIdentifier=ii} Item{itemBody=bb} = Item {itemBody=f ba bb, itemIdentifier=ii}
+
+combineContexts :: Context Pandoc -> Context String -> Context PandocX
+combineContexts (Context f) (Context g) = Context $ \k a Item{itemBody=PandocX pdoc rendered} -> f k a Item {itemBody=pdoc, itemIdentifier=""} <|> g k a Item {itemBody=rendered, itemIdentifier=""} -- TODO break down item ;
+
+myContext :: Context PandocX
+myContext = combineContexts pandocContext defaultContext
 
 --------------------------------------------------------------------------------
 main :: IO ()
@@ -43,7 +71,14 @@ main = hakyll $ do
                                  --            writerVariables = [("author", "Dima")],
                                  --            writerTableOfContents = True
              -- >>= loadAndApplyTemplate "templates/post.html"    myContext
-        compile $ pandocCompiler >>= loadAndApplyTemplate "templates/post.html" myContext
+        compile $ do
+          pandoc <- getResourceBody >>= readPandoc -- Item Pandoc
+            -- >>= loadAndApplyTemplate "templates/post.html" pandocContext
+  -- TODO ok, so if we apply myContext agains pandoc, we'll get 
+          let rendered = writePandoc pandoc -- Item String -- TODO ugh. I guess we wanna keep track of original Pandoc then??
+          loadAndApplyTemplate "templates/post.html" myContext $ combineItems PandocX pandoc rendered
+          -- return res
+          -- return $ writePandoc pandoc
         -- compile $ do
         --   body <- getResourceBody
         --   -- traceShowM body
