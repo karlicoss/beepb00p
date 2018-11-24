@@ -18,17 +18,14 @@ orgAuthor = constField "author" "Dima"
 orgTitle = field "title" (\p -> return "TITLE")
 orgDate = field "date" extractDate where
   extractDate :: Item Pandoc -> Compiler String
-  extractDate Item {itemBody=Pandoc meta _} = return $ stringify $ docTitle meta -- TODO render to html properly?? not sure 
-
-
+  extractDate Item {itemBody=Pandoc meta _} = return $ stringify $ docTitle meta -- TODO render to html properly?
 
 pandocContext :: Context Pandoc
 pandocContext = mempty <> orgFileTags <> orgAuthor <> orgTitle <> orgDate
 
+
+-- TODO ugh. surely it can't be that ugly right?
 data PandocX = PandocX Pandoc String
-
-
--- TODO readPandoc goes in first; after that writePandoc in second
 
 combineItems :: (a -> b -> c) -> Item a -> Item b -> Item c
 combineItems f Item{itemBody=ba, itemIdentifier=ii} Item{itemBody=bb} = Item {itemBody=f ba bb, itemIdentifier=ii}
@@ -56,46 +53,16 @@ main = hakyll $ do
             >>= loadAndApplyTemplate "templates/default.html" defaultContext
             >>= relativizeUrls
 
--- TODO pandoc lisbon.org -s -o lisbon.html ok that works; also use pandoc -D html for help..
--- pandoc lisbon.org -s -o lisbon.html --metadata author='Dima'
-  
 -- TODO in org mode files, date should be present
 -- if it's not, complain, but the whole thing shouldn't fail!
 
 -- https://github.com/turboMaCk/turboMaCk.github.io/blob/develop/site.hs#L61 ??
     match "posts/**.org" $ do
         route $ setExtension "html"
-        -- TODO yay!
-        -- TODO right.. what about title and date???
-        -- compile $ pandocCompiler -- WithTransform def (def {
-                                 --            writerVariables = [("author", "Dima")],
-                                 --            writerTableOfContents = True
-             -- >>= loadAndApplyTemplate "templates/post.html"    myContext
         compile $ do
-          pandoc <- getResourceBody >>= readPandoc -- Item Pandoc
-            -- >>= loadAndApplyTemplate "templates/post.html" pandocContext
-  -- TODO ok, so if we apply myContext agains pandoc, we'll get 
-          let rendered = writePandoc pandoc -- Item String -- TODO ugh. I guess we wanna keep track of original Pandoc then??
+          pandoc <- getResourceBody >>= readPandoc
+          let rendered = writePandoc pandoc
           loadAndApplyTemplate "templates/post.html" myContext $ combineItems PandocX pandoc rendered
-          -- return res
-          -- return $ writePandoc pandoc
-        -- compile $ do
-        --   body <- getResourceBody
-        --   -- traceShowM body
-        --   pd <- readPandoc body
-        --   traceShowM pd
-        --   let wp = writePandoc pd 
-        --   -- right ok, so it's got meta in Pandoc thing.
-        --   -- how come it's lost after writePandoc??
-        --   traceShowM wp
-          -- return wp
-          -- res <- pandocCompiler
-          -- traceShow res $ return res
-  -- TODO ok, I suppose we need to get Compiler Pandoc first, extract meta from it; and only after that we get 
-  -- TODO how to add date??
-  -- is it parsing html to extact author??
-            -- >>= loadAndApplyTemplate "templates/default.html" noteCtx
-            -- >>= relativizeUrls
 
     -- create ["archive.html"] $ do
     --     route idRoute
