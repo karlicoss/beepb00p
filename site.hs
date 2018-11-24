@@ -56,12 +56,14 @@ main = hakyll $ do
 -- if it's not, complain, but the whole thing shouldn't fail!
 
 -- https://github.com/turboMaCk/turboMaCk.github.io/blob/develop/site.hs#L61 ??
+-- TODO reference to how to read my posts?? e.g. what todo states mean etc
     match "posts/**.org" $ do
         route $ setExtension "html"
-        compile $ do
+        compile $ (do
           pandoc <- getResourceBody >>= readPandoc
           let rendered = writePandoc pandoc
           loadAndApplyTemplate "templates/post.html" myContext $ combineItems PandocX pandoc rendered
+          ) >>= relativizeUrls
 
     -- create ["archive.html"] $ do
     --     route idRoute
