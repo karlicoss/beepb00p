@@ -37,6 +37,17 @@ myContext = combineContexts pandocContext defaultContext
 
 defaultDate = constField "date" "2019-09-01"
 
+-- thanks to https://github.com/gibiansky/blog/blob/668a5bf7ae6815a20dd6d57c900318e34c959c13/Compilers.hs
+compileWithFilter :: String -> [String] -> Item String -> Compiler (Item String)
+compileWithFilter cmd args = withItemBody (unixFilter cmd args)
+
+ipynbPost :: Item String -> Compiler (Item String)
+ipynbPost = compileWithFilter command arguments
+  where command = "jupyter"
+        arguments = ["nbconvert", "--stdin", "--stdout"]
+--
+
+
 --------------------------------------------------------------------------------
 main :: IO ()
 main = hakyll $ do
@@ -58,8 +69,27 @@ main = hakyll $ do
 -- if it's not, complain, but the whole thing shouldn't fail!
 
 
-    match "posts/**.md" $ do
+    -- TODO not sure if I really want it to extract stuff automatically
+    -- TODO how to refer to my stuff in other directories? Maybe some sort of private sync?
+    -- TODO content should def. be a separate repository
+    -- TODO make a script to check that links are reachable
+    -- TODO disqus??
+    -- TODO posts/etc is lame, use top level
+    -- TODO rss
+    -- TODO tags would be nice...
+    match "posts/**.ipynb" $ do
         route $ setExtension "html"
+        compile $ do
+          getResourceString >>= ipynbPost
+          -- TODO pandocCompiler
+          --   >>= loadAndApplyTemplate "templates/post.html"    postCtx
+
+    -- 
+    let simpleRoute = gsubRoute "content/" (const "") `composeRoutes` setExtension ""
+
+    -- TODO think how to infer date?
+    match "content/**.md" $ do
+        route simpleRoute
         compile $ pandocCompiler
             >>= loadAndApplyTemplate "templates/post.html"    postCtx
             >>= loadAndApplyTemplate "templates/default.html" postCtx
@@ -93,10 +123,11 @@ main = hakyll $ do
     match "index.html" $ do
         route idRoute
         compile $ do
-            posts <- loadAll "posts/**.md" -- recentFirst =<< loadAll "posts/**.md"
+            -- TODO extract in a variable or something
+            posts <- loadAll "content/**.md" -- recentFirst =<< loadAll "posts/**.md" -- TODO recentFirst -- TODO actually, list all..
             let indexCtx =
-                    listField "posts" postCtx (return posts) `mappend`
-                    constField "title" "Home"                `mappend`
+                    listField "posts" postCtx (return posts) <>
+                    constField "title" "Home"                <>
                     defaultContext
 
             getResourceBody
@@ -115,3 +146,6 @@ postCtx =
 
 
 -- TODO ipynb conversion -- markdown was a bit meh.. html kinda ok
+
+
+-- https://github.com/karlicoss/karlicoss.github.io ???

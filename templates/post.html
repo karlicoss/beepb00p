@@ -1,20 +1,11 @@
-
-<head>
-    <link rel="stylesheet" href="/css/org.css" />
-</head>
-
-<body>
-<h1>$title$</h1>
-$body$
-
-Posted on $date$
-$if(author)$
-by $author$
-$endif$
-$if(filetags)$
-TAGS: $filetags$
-$endif$
-
-<!-- article? sections??  -->
-
-</body>
+<article>
+    <section class="header">
+    Posted on $date$
+    $if(author)$
+    by $author$
+    $endif$
+    </section>
+    <section>
+    $body$
+    </section>
+</article>
