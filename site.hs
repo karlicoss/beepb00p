@@ -35,6 +35,8 @@ combineContexts (Context f) (Context g) = Context $ \k a Item{itemBody=PandocX p
 myContext :: Context PandocX
 myContext = combineContexts pandocContext defaultContext
 
+defaultDate = constField "date" "2019-09-01"
+
 --------------------------------------------------------------------------------
 main :: IO ()
 main = hakyll $ do
@@ -46,24 +48,32 @@ main = hakyll $ do
         route   idRoute
         compile compressCssCompiler
 
-    match (fromList ["about.rst", "contact.markdown"]) $ do
-        route   $ setExtension "html"
-        compile $ pandocCompiler
-            >>= loadAndApplyTemplate "templates/default.html" defaultContext
-            >>= relativizeUrls
+    -- match (fromList ["about.rst", "contact.markdown"]) $ do
+    --     route   $ setExtension "html"
+    --     compile $ pandocCompiler
+    --         >>= loadAndApplyTemplate "templates/default.html" defaultContext
+    --         >>= relativizeUrls
 
 -- TODO in org mode files, date should be present
 -- if it's not, complain, but the whole thing shouldn't fail!
 
+
+    match "posts/**.md" $ do
+        route $ setExtension "html"
+        compile $ pandocCompiler
+            >>= loadAndApplyTemplate "templates/post.html"    postCtx
+            >>= loadAndApplyTemplate "templates/default.html" postCtx
+            >>= relativizeUrls
+
 -- https://github.com/turboMaCk/turboMaCk.github.io/blob/develop/site.hs#L61 ??
 -- TODO reference to how to read my posts?? e.g. what todo states mean etc
-    match "posts/**.org" $ do
-        route $ setExtension "html"
-        compile $ (do
-          pandoc <- getResourceBody >>= readPandoc
-          let rendered = writePandoc pandoc
-          loadAndApplyTemplate "templates/post.html" myContext $ combineItems PandocX pandoc rendered
-          ) >>= relativizeUrls
+    -- match "posts/**.org" $ do
+    --     route $ setExtension "html"
+    --     compile $ (do
+    --       pandoc <- getResourceBody >>= readPandoc
+    --       let rendered = writePandoc pandoc
+    --       loadAndApplyTemplate "templates/post.html" myContext $ combineItems PandocX pandoc rendered
+    --       ) >>= relativizeUrls
 
     -- create ["archive.html"] $ do
     --     route idRoute
@@ -80,19 +90,19 @@ main = hakyll $ do
     --             >>= relativizeUrls
 
 
-    -- match "index.html" $ do
-    --     route idRoute
-    --     compile $ do
-    --         posts <- recentFirst =<< loadAll "posts/**.org" -- TODO
-    --         let indexCtx =
-    --                 listField "posts" postCtx (return posts) `mappend`
-    --                 constField "title" "Home"                `mappend`
-    --                 defaultContext
+    match "index.html" $ do
+        route idRoute
+        compile $ do
+            posts <- loadAll "posts/**.md" -- recentFirst =<< loadAll "posts/**.md"
+            let indexCtx =
+                    listField "posts" postCtx (return posts) `mappend`
+                    constField "title" "Home"                `mappend`
+                    defaultContext
 
-    --         getResourceBody
-    --             >>= applyAsTemplate indexCtx
-    --             >>= loadAndApplyTemplate "templates/default.html" indexCtx
-    --             >>= relativizeUrls
+            getResourceBody
+                >>= applyAsTemplate indexCtx
+                >>= loadAndApplyTemplate "templates/default.html" indexCtx
+                >>= relativizeUrls
 
     match "templates/*" $ compile templateBodyCompiler
 
@@ -100,5 +110,8 @@ main = hakyll $ do
 --------------------------------------------------------------------------------
 postCtx :: Context String
 postCtx =
-    dateField "date" "%B %e, %Y" `mappend`
+    defaultDate <> -- TODO will it override metadata???
     defaultContext
+
+
+-- TODO ipynb conversion -- markdown was a bit meh.. html kinda ok
