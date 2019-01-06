@@ -1,7 +1,9 @@
 <ul>
     $for(posts)$
+    <!-- TODO maybe not li, something else? Or just have css -->
         <li>
-            <a href="$url$">$title$</a> - $date$
+            $date$ » <a href="$url$">$title$</a>
+            <!-- TODO make sure dates are aligned, also in some standard format. also picked from the post -->
         </li>
     $endfor$
 </ul>

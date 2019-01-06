@@ -67,7 +67,7 @@ main = hakyll $ do
           -- `composeRoutes` setExtension "" -- TODO fucking hell it's annoying. couldn't force github pages or preview server to support that
 
     match (fromList ["meta/site.md", "meta/me.md"]) $ do
-        route   simpleRoute
+        route   $ gsubRoute "meta/" (const "") `composeRoutes` setExtension "html"
         compile $ pandocCompiler
             >>= loadAndApplyTemplate "templates/default.html" defaultContext
             >>= relativizeUrls
