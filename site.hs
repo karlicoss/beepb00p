@@ -59,11 +59,26 @@ main = hakyll $ do
         route   idRoute
         compile compressCssCompiler
 
-    -- match (fromList ["about.rst", "contact.markdown"]) $ do
-    --     route   $ setExtension "html"
-    --     compile $ pandocCompiler
-    --         >>= loadAndApplyTemplate "templates/default.html" defaultContext
-    --         >>= relativizeUrls
+
+    -- TODO shit this is problematic for all simple web servers, they think it's octet-stream :(
+    let simpleRoute =
+          gsubRoute "content/" (const "")
+          `composeRoutes` setExtension "html" -- TODO fucking hell it's annoying. couldn't force github pages or preview server to support that
+          -- `composeRoutes` setExtension "" -- TODO fucking hell it's annoying. couldn't force github pages or preview server to support that
+
+    match (fromList ["meta/site.md", "meta/me.md"]) $ do
+        route   simpleRoute
+        compile $ pandocCompiler
+            >>= loadAndApplyTemplate "templates/default.html" defaultContext
+            >>= relativizeUrls
+
+    -- TODO think how to infer date?
+    match "content/**.md" $ do
+        route   simpleRoute
+        compile $ pandocCompiler
+            >>= loadAndApplyTemplate "templates/post.html"    postCtx
+            >>= loadAndApplyTemplate "templates/default.html" postCtx
+            >>= relativizeUrls
 
 -- TODO in org mode files, date should be present
 -- if it's not, complain, but the whole thing shouldn't fail!
@@ -84,16 +99,9 @@ main = hakyll $ do
           -- TODO pandocCompiler
           --   >>= loadAndApplyTemplate "templates/post.html"    postCtx
 
-    -- 
-    let simpleRoute = gsubRoute "content/" (const "") `composeRoutes` setExtension ""
+    -- TODO appendIndex??https://github.com/aherrmann/jekyll_style_urls_with_hakyll_examples/blob/master/site.hs
+  
 
-    -- TODO think how to infer date?
-    match "content/**.md" $ do
-        route simpleRoute
-        compile $ pandocCompiler
-            >>= loadAndApplyTemplate "templates/post.html"    postCtx
-            >>= loadAndApplyTemplate "templates/default.html" postCtx
-            >>= relativizeUrls
 
 -- https://github.com/turboMaCk/turboMaCk.github.io/blob/develop/site.hs#L61 ??
 -- TODO reference to how to read my posts?? e.g. what todo states mean etc
@@ -120,15 +128,15 @@ main = hakyll $ do
     --             >>= relativizeUrls
 
 
-    match "index.html" $ do
-        route idRoute
+    match "meta/index.html" $ do
+        route   $ gsubRoute "meta/" (const "")
         compile $ do
             -- TODO extract in a variable or something
             posts <- loadAll "content/**.md" -- recentFirst =<< loadAll "posts/**.md" -- TODO recentFirst -- TODO actually, list all..
             let indexCtx =
-                    listField "posts" postCtx (return posts) <>
-                    constField "title" "Home"                <>
-                    defaultContext
+                    listField "posts" postCtx (return posts)
+                    <> constField "title" "Home"
+                    <> defaultContext
 
             getResourceBody
                 >>= applyAsTemplate indexCtx
