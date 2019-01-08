@@ -22,6 +22,27 @@
             $body$
         </main>
 
+        <div id="disqus_thread"></div>
+        <script>
+
+            // TODO uh, think carefully about these..
+            // TODO only show on post pages
+            // generally make it look simpler
+
+            var disqus_config = function () {
+            this.page.url = 'https://blog.karlicoss.xyz/test';
+            this.page.identifier = 'test-id';
+            };
+
+            (function() { // DON'T EDIT BELOW THIS LINE
+            var d = document, s = d.createElement('script');
+            s.src = 'https://karlicoss.disqus.com/embed.js';
+            s.setAttribute('data-timestamp', +new Date());
+            (d.head || d.body).appendChild(s);
+            })();
+        </script>
+        <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
         <footer>
             Powered by <a href="http://jaspervdj.be/hakyll">Hakyll</a>
         </footer>
