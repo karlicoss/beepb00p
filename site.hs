@@ -205,14 +205,8 @@ main = hakyll $ do
     match "templates/*" $ compile templateBodyCompiler
 
 
---------------------------------------------------------------------------------
+-- ok, left takes precedence..
 postCtx :: Context String
-postCtx =
-    defaultDate <> -- TODO will it override metadata???
-    defaultContext
-
-
--- TODO ipynb conversion -- markdown was a bit meh.. html kinda ok
-
+postCtx = defaultContext <> defaultDate
 
 -- https://github.com/karlicoss/karlicoss.github.io ???
