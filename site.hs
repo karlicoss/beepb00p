@@ -48,6 +48,9 @@ compileWithFilter cmd args = withItemBody (unixFilter cmd args)
 -- wouldn't hurt to run again and check?
 -- python3 ./ipynb_output_filter.py <lagr.ipynb >lagr2.ipynb 
 
+stripPrivateTodos :: Item String -> Compiler (Item String)
+stripPrivateTodos = compileWithFilter "grep" ["-v", "TODO P "]
+
 ipynbFilterOutput :: Item String -> Compiler (Item String)
 ipynbFilterOutput = compileWithFilter cmd args
   where cmd = "python3"
@@ -85,7 +88,7 @@ renameItem f i =  i { itemIdentifier = new_id } where
 
 -- TODO cleanup first??
 -- TODO html --basic??
-ipynbCompile = ipynbFilterOutput >=> ipynbRun
+ipynbCompile = stripPrivateTodos >=> ipynbFilterOutput >=> ipynbRun
   -- ipy <- ipynbRun i  -- x <&> (renameItem (\f -> replaceExtension f ".md")) -- ipynbFilterOutput >> ipynbRun
   -- let ipy_md = renameItem (\f -> replaceExtension f ".md") ipy -- change the extension to trick pandoc...
   -- pandoc <- readPandoc ipy_md
