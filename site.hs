@@ -52,12 +52,15 @@ ipynbFilterOutput = compileWithFilter cmd args
   where cmd = "python3"
         args = [ "/L/Dropbox/repos/ipynb_output_filter/ipynb_output_filter.py" ]
 
+-- TODO ugh, images do not really work in markdown..
+-- TODO patch notebook and add %matplotlib inline automalically?
 ipynbRun :: Item String -> Compiler (Item String)
 ipynbRun = compileWithFilter command arguments
   where command = "jupyter"
         arguments = ["nbconvert"
                     , "--execute"
-                    , "--to", "markdown"
+                    -- , "--to", "markdown"
+                    , "--to", "html", "--template", "basic"
                     , "--stdin"
                     , "--stdout"
                     ]
@@ -79,15 +82,21 @@ renameItem f i =  i { itemIdentifier = new_id } where
 --   new_path = f old_path
 --   new_id = old_id { identifierPath = new_path }
 
+-- TODO cleanup first??
+-- TODO html --basic??
 ipynbCompile i = do
   ipy <- ipynbRun i  -- x <&> (renameItem (\f -> replaceExtension f ".md")) -- ipynbFilterOutput >> ipynbRun
-  let ipy_md = renameItem (\f -> replaceExtension f ".md") ipy -- change the extension to trick pandoc...
-  pandoc <- readPandoc ipy_md
-  let html = writePandoc pandoc
-  let res = renameItem (\f -> replaceExtension f ".ipynb") html 
-  return res
+  -- let ipy_md = renameItem (\f -> replaceExtension f ".md") ipy -- change the extension to trick pandoc...
+  -- pandoc <- readPandoc ipy_md
+  -- let html = writePandoc pandoc
+  -- let res = renameItem (\f -> replaceExtension f ".ipynb") html 
+  return ipy
 
---------------------------------------------------------------------------------
+-- TODO css for ipython notebooks? highligh python?
+-- TODO release ipython stuff in a separate file so it's easy to share
+-- TODO mathjax (if necessary)
+
+
 main :: IO ()
 main = hakyll $ do
     match "images/*" $ do
