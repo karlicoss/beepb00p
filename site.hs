@@ -136,11 +136,7 @@ main = hakyll $ do
 -- if it's not, complain, but the whole thing shouldn't fail!
 
 
-    -- TODO not sure if I really want it to extract stuff automatically
-    -- TODO how to refer to my stuff in other directories? Maybe some sort of private sync?
-    -- TODO content should def. be a separate repository
     -- TODO make a script to check that links are reachable
-    -- TODO disqus??
     -- TODO posts/etc is lame, use top level
     -- TODO rss
     -- TODO tags would be nice...
