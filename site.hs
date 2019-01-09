@@ -3,6 +3,7 @@
 import           Data.Monoid (mappend)
 import           Hakyll
 
+import Control.Monad ((>=>))
 import System.FilePath (replaceExtension)
 
 import Text.Pandoc (readOrg, Pandoc(..), docTitle, docDate, Meta, Inline)
@@ -84,13 +85,13 @@ renameItem f i =  i { itemIdentifier = new_id } where
 
 -- TODO cleanup first??
 -- TODO html --basic??
-ipynbCompile i = do
-  ipy <- ipynbRun i  -- x <&> (renameItem (\f -> replaceExtension f ".md")) -- ipynbFilterOutput >> ipynbRun
+ipynbCompile = ipynbFilterOutput >=> ipynbRun
+  -- ipy <- ipynbRun i  -- x <&> (renameItem (\f -> replaceExtension f ".md")) -- ipynbFilterOutput >> ipynbRun
   -- let ipy_md = renameItem (\f -> replaceExtension f ".md") ipy -- change the extension to trick pandoc...
   -- pandoc <- readPandoc ipy_md
   -- let html = writePandoc pandoc
   -- let res = renameItem (\f -> replaceExtension f ".ipynb") html 
-  return ipy
+  -- return ipy
 
 -- TODO css for ipython notebooks? highligh python?
 -- TODO release ipython stuff in a separate file so it's easy to share
