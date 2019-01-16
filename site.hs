@@ -56,14 +56,18 @@ ipynbFilterOutput = compileWithFilter cmd args
   where cmd = "python3"
         args = [ "/L/Dropbox/repos/ipynb_output_filter/ipynb_output_filter.py" ]
 
--- TODO ugh, images do not really work in markdown..
+-- TODO extract metadata?
+  -- "blog", "title", "date"
+
+-- ugh, images do not really work in markdown..
+-- , "--to", "markdown"
 -- TODO patch notebook and add %matplotlib inline automalically?
 ipynbRun :: Item String -> Compiler (Item String)
 ipynbRun = compileWithFilter command arguments
   where command = "jupyter"
         arguments = ["nbconvert"
                     , "--execute"
-                    -- , "--to", "markdown"
+                    , "--TagRemovePreprocessor.remove_cell_tags={\"noexport\"}"
                     , "--to", "html", "--template", "basic"
                     , "--stdin"
                     , "--stdout"
