@@ -27,3 +27,6 @@ cabal.project.local~
 
 
 # End of https://www.gitignore.io/api/haskell
+
+_cache/
+_site/
