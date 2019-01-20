@@ -4,6 +4,7 @@ import           Data.Monoid (mappend)
 import           Hakyll
 
 import Control.Monad ((>=>))
+import Data.Maybe (fromJust, fromMaybe)
 import System.FilePath (replaceExtension)
 
 import Text.Pandoc (readOrg, Pandoc(..), docTitle, docDate, Meta, Inline)
@@ -13,6 +14,39 @@ import           Control.Applicative ((<|>))
 
 import Hakyll.Web.Pandoc
 import Debug.Trace
+
+
+-- TODO think about naming?
+name2disqusid = [ ("me.md", "blog-me")
+                ] :: [(String, String)]
+
+-- upid
+-- should be path independent
+-- should be extension independent
+-- ok, so a static map for now
+-- TODO if possible, define it in post itself
+-- TODO make sure they are unchanged? dump them?
+-- TODO warn if some are gone too?
+path2upid = [ ("meta/me.md"               , "me")
+            , ("meta/index.html"          , "index")
+            , ("content/test.md"          , "test")
+            , ("content/test2.md"         , "test2")
+            , ("content/lagrangians.ipynb", "they_see_me_flowing")
+            ] :: [(String, String)]
+
+getUpid :: String -> String
+getUpid x = fromMaybe (error $ "no UPID for " ++ x) $ lookup x path2upid
+
+
+getDisqusid :: String -> String
+getDisqusid x = "disqus_" ++ (getUpid x)
+
+
+-- TODO shit ok, gotta think really well how to map onto disqus ids and site name
+disqusidCtx :: Context String
+disqusidCtx = field "disqusid" $ \item -> return $ getDisqusid (toFilePath $ itemIdentifier item)
+
+
 
 pandocMeta :: (Meta -> [Inline]) -> (Item Pandoc -> Compiler String)
 pandocMeta extractor Item {itemBody=Pandoc meta _} = return $ stringify $ extractor meta -- TODO proper html??
@@ -35,8 +69,8 @@ combineItems f Item{itemBody=ba, itemIdentifier=ii} Item{itemBody=bb} = Item {it
 combineContexts :: Context Pandoc -> Context String -> Context PandocX
 combineContexts (Context f) (Context g) = Context $ \k a Item{itemBody=PandocX pdoc rendered} -> f k a Item {itemBody=pdoc, itemIdentifier=""} <|> g k a Item {itemBody=rendered, itemIdentifier=""} -- TODO break down item ;
 
-myContext :: Context PandocX
-myContext = combineContexts pandocContext defaultContext
+-- myContext :: Context PandocX
+-- myContext = combineContexts pandocContext defaultContext
 
 defaultDate = constField "date" "2019-01-01"
 
@@ -122,10 +156,10 @@ main = hakyll $ do
           `composeRoutes` setExtension "html" -- TODO fucking hell it's annoying. couldn't force github pages or preview server to support that
           -- `composeRoutes` setExtension "" -- TODO fucking hell it's annoying. couldn't force github pages or preview server to support that
 
-    match (fromList ["meta/site.md", "meta/me.md"]) $ do
+    match (fromList ["meta/me.md"]) $ do
         route   $ gsubRoute "meta/" (const "") `composeRoutes` setExtension "html"
         compile $ pandocCompiler
-            >>= loadAndApplyTemplate "templates/default.html" defaultContext
+            >>= loadAndApplyTemplate "templates/default.html" myCtx
             >>= relativizeUrls
 
     -- TODO think how to infer date?
@@ -195,7 +229,7 @@ main = hakyll $ do
             let indexCtx =
                     listField "posts" postCtx (return posts)
                     <> constField "title" "Home"
-                    <> defaultContext
+                    <> myCtx
 
             getResourceBody
                 >>= applyAsTemplate indexCtx
@@ -206,7 +240,9 @@ main = hakyll $ do
 
 
 -- ok, left takes precedence..
-postCtx :: Context String
-postCtx = defaultContext <> defaultDate
+myCtx :: Context String
+myCtx = disqusidCtx <> defaultContext <> defaultDate
+
+postCtx = myCtx
 
 -- https://github.com/karlicoss/karlicoss.github.io ???
