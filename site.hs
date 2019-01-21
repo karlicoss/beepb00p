@@ -3,8 +3,9 @@
 import           Data.Monoid (mappend)
 import           Hakyll
 
+import Control.Applicative (empty)
 import Control.Monad ((>=>))
-import Data.Maybe (fromJust, fromMaybe)
+import Data.Maybe (fromJust, fromMaybe, catMaybes)
 import System.FilePath (replaceExtension)
 
 import Text.Pandoc (readOrg, Pandoc(..), docTitle, docDate, Meta, Inline)
@@ -20,6 +21,43 @@ import Debug.Trace
 name2disqusid = [ ("me.md", "blog-me")
                 ] :: [(String, String)]
 
+data Overrides = Overrides { upid :: Maybe String, date :: Maybe String, title :: Maybe String, summary :: Maybe String }
+
+
+defaultOverrides = Overrides { upid = Nothing, date = Nothing, title = Nothing, summary = Nothing }
+
+
+-- TODO move these to external file?
+overrides = [ ("meta/me.md"               , dovr { upid    = Just "me" } )
+            , ("meta/index.html"          , dovr { upid    = Just "index" } )
+            , ("content/test.md"          , dovr { upid    = Just "test" } )
+            , ("content/lagrangians.ipynb", dovr { upid    = Just "they_see_me_flowing"
+                                                 , date    = Just "2019-01-01" -- FIXME
+                                                 , title   = Just "They see me flowin' they hatin'"
+                                                 , summary = Just "Visualising some unconventional Lagrangians and their Hamiltonian flows."
+                                                 })
+            ] :: [(String, Overrides)] where
+  dovr = defaultOverrides
+
+getOverrides :: String -> Overrides
+getOverrides x = fromMaybe (error $ "no overrides for " ++ x) $ lookup x overrides -- TODO maybe in that case empty? dangerous though... for disqus id
+
+overridesCtx :: Context a
+overridesCtx = Context makeItem where
+  -- ok, so it's name, parameters, item
+  makeItem fname a item = case ovd of
+      Just x  -> return $ StringField x
+      Nothing -> empty
+    where
+    getter fname
+      | fname == "disqusid"  = fmap ("disqus_" ++ ) . upid
+      | fname == "date"      = date
+      | fname == "title"     = title
+      | fname == "summary"   = summary
+      | otherwise            = \_ -> Nothing -- TODO ??
+
+    ovd = getter fname $ getOverrides $ toFilePath $ itemIdentifier item
+
 -- upid
 -- should be path independent
 -- should be extension independent
@@ -27,24 +65,8 @@ name2disqusid = [ ("me.md", "blog-me")
 -- TODO if possible, define it in post itself
 -- TODO make sure they are unchanged? dump them?
 -- TODO warn if some are gone too?
-path2upid = [ ("meta/me.md"               , "me")
-            , ("meta/index.html"          , "index")
-            , ("content/test.md"          , "test")
-            , ("content/test2.md"         , "test2")
-            , ("content/lagrangians.ipynb", "they_see_me_flowing")
-            ] :: [(String, String)]
-
-getUpid :: String -> String
-getUpid x = fromMaybe (error $ "no UPID for " ++ x) $ lookup x path2upid
-
-
-getDisqusid :: String -> String
-getDisqusid x = "disqus_" ++ (getUpid x)
-
-
--- TODO shit ok, gotta think really well how to map onto disqus ids and site name
-disqusidCtx :: Context String
-disqusidCtx = field "disqusid" $ \item -> return $ getDisqusid (toFilePath $ itemIdentifier item)
+-- getUpid :: String -> String
+-- getUpid x = fromMaybe (error $ "no UPID for " ++ x) $ lookup x path2upid
 
 
 
@@ -72,8 +94,6 @@ combineContexts (Context f) (Context g) = Context $ \k a Item{itemBody=PandocX p
 -- myContext :: Context PandocX
 -- myContext = combineContexts pandocContext defaultContext
 
-defaultDate = constField "date" "2019-01-01"
-
 -- thanks to https://github.com/gibiansky/blog/blob/668a5bf7ae6815a20dd6d57c900318e34c959c13/Compilers.hs
 compileWithFilter :: String -> [String] -> Item String -> Compiler (Item String)
 compileWithFilter cmd args = withItemBody (unixFilter cmd args)
@@ -90,8 +110,6 @@ ipynbFilterOutput = compileWithFilter cmd args
   where cmd = "python3"
         args = [ "/L/Dropbox/repos/ipynb_output_filter/ipynb_output_filter.py" ]
 
--- TODO extract metadata?
-  -- "blog", "title", "date"
 
 -- ugh, images do not really work in markdown..
 -- , "--to", "markdown"
@@ -239,9 +257,9 @@ main = hakyll $ do
     match "templates/*" $ compile templateBodyCompiler
 
 
--- ok, left takes precedence..
+-- left takes precedence..
 myCtx :: Context String
-myCtx = disqusidCtx <> defaultContext <> defaultDate
+myCtx = overridesCtx <> defaultContext
 
 postCtx = myCtx
 
