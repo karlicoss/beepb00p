@@ -28,16 +28,19 @@ defaultOverrides = Overrides { upid = Nothing, date = Nothing, title = Nothing, 
 
 
 -- TODO move these to external file?
-overrides = [ ("meta/me.md"               , dovr { upid    = Just "me" } )
-            , ("meta/index.html"          , dovr { upid    = Just "index" } )
-            , ("content/test.md"          , dovr { upid    = Just "test" } )
-            , ("content/lagrangians.ipynb", dovr { upid    = Just "they_see_me_flowing"
-                                                 , date    = Just "2019-01-01" -- FIXME
-                                                 , title   = Just "They see me flowin' they hatin'"
-                                                 , summary = Just "Visualising some unconventional Lagrangians and their Hamiltonian flows."
+overrides = [ ("meta/me.md"               , dovr { upid    = j "me" } )
+            , ("meta/index.html"          , dovr { upid    = j "index" } )
+            , ("content/test.md"          , dovr { upid    = j "test" } )
+            , ("content/lagrangians.ipynb", dovr { upid    = j "they_see_me_flowing"
+                                                 , date    = j "2019-01-01" -- FIXME
+                                                 , title   = j "They see me flowin' they hatin'"
+                                                 , summary = j "Visualising some unconventional Lagrangians and their Hamiltonian flows."
                                                  })
+            , ("content/org-grasp.md"     , dovr { upid    = j "org_grasp"
+                                                 , summary = j "How to capture web pages and stay sane"})
             ] :: [(String, Overrides)] where
   dovr = defaultOverrides
+  j = Just
 
 getOverrides :: String -> Overrides
 getOverrides x = fromMaybe (error $ "no overrides for " ++ x) $ lookup x overrides -- TODO maybe in that case empty? dangerous though... for disqus id
@@ -181,7 +184,7 @@ main = hakyll $ do
             >>= relativizeUrls
 
     -- TODO think how to infer date?
-    match "content/**.md" $ do
+    match "content/*.md" $ do
         route   simpleRoute
         compile $ pandocCompiler
             >>= loadAndApplyTemplate "templates/post.html"    postCtx
@@ -196,7 +199,7 @@ main = hakyll $ do
     -- TODO posts/etc is lame, use top level
     -- TODO rss
     -- TODO tags would be nice...
-    match "content/**.ipynb" $ do
+    match "content/*.ipynb" $ do
         route $ setExtension "html"
         compile $ getResourceString
               >>= ipynbCompile
@@ -243,7 +246,7 @@ main = hakyll $ do
         route   $ gsubRoute "meta/" (const "")
         compile $ do
             -- TODO extract in a variable or something
-            posts <- loadAll ("content/**.md" .||. "content/**.ipynb") -- recentFirst =<< loadAll "posts/**.md" -- TODO recentFirst -- TODO actually, list all..
+            posts <- loadAll ("content/*.md" .||. "content/*.ipynb") -- recentFirst =<< loadAll "posts/**.md" -- TODO recentFirst -- TODO actually, list all..
             let indexCtx =
                     listField "posts" postCtx (return posts)
                     <> constField "title" "Home"
