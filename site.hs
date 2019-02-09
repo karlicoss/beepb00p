@@ -36,8 +36,8 @@ overrides = [ ("meta/me.md"               , dovr { upid    = j "me" } )
                                                  , title   = j "They see me flowin' they hatin'"
                                                  , summary = j "Visualising some unconventional Lagrangians and their Hamiltonian flows."
                                                  })
-            , ("content/org-grasp.md"     , dovr { upid    = j "org_grasp"
-                                                 , summary = j "How to capture web pages and stay sane"})
+            , ("content/grasp.md"     , dovr { upid    = j "org_grasp"
+                                                 , summary = j "How to capture information from your browser and stay sane"})
             ] :: [(String, Overrides)] where
   dovr = defaultOverrides
   j = Just
