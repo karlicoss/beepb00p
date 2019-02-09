@@ -1,2 +1,4 @@
 #!/bin/bash
+set -eu
+cd "$(dirname "$0")"
 stack build "$@" && stack exec site rebuild 
