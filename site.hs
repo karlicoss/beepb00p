@@ -16,7 +16,16 @@ import           Control.Applicative ((<|>))
 import Hakyll.Web.Pandoc
 import Debug.Trace
 
+myFeedConfiguration :: FeedConfiguration
+myFeedConfiguration = FeedConfiguration
+    { feedTitle       = "Mildly entertaining"
+    , feedAuthorName  = "karlicoss"
+    , feedAuthorEmail = "karlicoss@gmail.com"
+    , feedDescription = "feed" -- TODO ?
+    , feedRoot        = "https://karlicoss.github.io" -- TODO
+    }
 
+  
 -- TODO think about naming?
 name2disqusid = [ ("me.md", "blog-me")
                 ] :: [(String, String)]
@@ -53,11 +62,12 @@ overridesCtx = Context makeItem where
       Nothing -> empty
     where
     getter fname
-      | fname == "disqusid"  = fmap ("disqus_" ++ ) . upid
-      | fname == "date"      = date
-      | fname == "title"     = title
-      | fname == "summary"   = summary
-      | otherwise            = \_ -> Nothing -- TODO ??
+      | fname == "disqusid"    = fmap ("disqus_" ++ ) . upid
+      | fname == "date"        = date
+      | fname == "title"       = title
+      | fname == "summary"     = summary
+      | fname == "description" = summary
+      | otherwise              = \_ -> Nothing -- TODO ??
 
     ovd = getter fname $ getOverrides $ toFilePath $ itemIdentifier item
 
@@ -241,12 +251,13 @@ main = hakyll $ do
     --             >>= loadAndApplyTemplate "templates/default.html" archiveCtx
     --             >>= relativizeUrls
 
+    let loadPosts = loadAll ("content/*.md" .||. "content/*.ipynb")
+
 
     match "meta/index.html" $ do
         route   $ gsubRoute "meta/" (const "")
         compile $ do
-            -- TODO extract in a variable or something
-            posts <- loadAll ("content/*.md" .||. "content/*.ipynb") -- recentFirst =<< loadAll "posts/**.md" -- TODO recentFirst -- TODO actually, list all..
+            posts <- loadPosts  -- TODO recentFirst or something?
             let indexCtx =
                     listField "posts" postCtx (return posts)
                     <> constField "title" "Home"
@@ -256,6 +267,23 @@ main = hakyll $ do
                 >>= applyAsTemplate indexCtx
                 >>= loadAndApplyTemplate "templates/default.html" indexCtx
                 >>= relativizeUrls
+
+    -- TODO atom -- published, updated , I guess handle carefully so there aren't too many annoying updates
+    -- TODO include latest only?
+    -- TODO use proper description?
+    create ["atom.xml"] $ do
+        route idRoute
+        compile $ do
+            let feedCtx = postCtx
+            posts <- loadPosts
+            renderAtom myFeedConfiguration feedCtx posts
+
+    create ["rss.xml"] $ do
+        route idRoute
+        compile $ do
+            let feedCtx = postCtx
+            posts <- loadPosts
+            renderRss myFeedConfiguration feedCtx posts
 
     match "templates/*" $ compile templateBodyCompiler
 
