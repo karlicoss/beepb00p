@@ -16,13 +16,15 @@ import           Control.Applicative ((<|>))
 import Hakyll.Web.Pandoc
 import Debug.Trace
 
+baseUrl = "https://beepb00p.xyz"
+
 myFeedConfiguration :: FeedConfiguration
 myFeedConfiguration = FeedConfiguration
     { feedTitle       = "Mildly entertaining"
     , feedAuthorName  = "karlicoss"
     , feedAuthorEmail = "karlicoss@gmail.com"
     , feedDescription = "feed" -- TODO ?
-    , feedRoot        = "https://karlicoss.github.io" -- TODO
+    , feedRoot        = baseUrl -- TODO how to test feed?
     }
 
   
@@ -293,5 +295,3 @@ myCtx :: Context String
 myCtx = overridesCtx <> defaultContext
 
 postCtx = myCtx
-
--- https://github.com/karlicoss/karlicoss.github.io ???
