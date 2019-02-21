@@ -64,7 +64,7 @@ overridesCtx = Context makeItem where
       Nothing -> empty
     where
     getter fname
-      | fname == "disqusid"    = fmap ("disqus_" ++ ) . upid
+      | fname == "issoid"      = fmap ("isso_" ++ ) . upid
       | fname == "date"        = date
       | fname == "title"       = title
       | fname == "summary"     = summary
