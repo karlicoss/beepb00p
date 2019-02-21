@@ -1,41 +1,50 @@
+/* TODO testing css changes via screenshot?? */
 /* html { */
 /*   font-size: 62.5%; */
 /* } */
 
 /* TODO make sure it looks good on android/phones */
 
-body {
-  /* font-size: 1.6rem; */
-  color: #000;
-}
-
 /* not sure about this one.. */
 header {
-  border-bottom: 0.1rem solid #000;
+   border-bottom: 0.1rem solid;
 }
 
-/* TODO testing css changes via screenshot?? */
+a.fat {
+    font-weight: bold;
+    color: black;
+    text-transform: uppercase;
+}
+
+/* START nav bar stuff */
 nav {
+    /* TODO what's that for?? seems to work without it...*/
     overflow: auto;
-  /* text-align: left; */
+
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
 }
 
-
-/* TODO more space in nav */
 nav a {
   font-size: 1.8rem;
-  font-weight: bold;
-  color: black;
-  text-decoration: none;
-  text-transform: uppercase;
 }
 
+nav a.nav-left {
+    float: left;
+}
+
+nav a.nav-right {
+    float: right;
+}
+
+/* END nav bar stuff */
+
 footer {
-  margin-top: 3rem;
-  padding: 1.2rem 0;
+  margin-top: 1.5rem;
+  padding: 1rem 0;
   border-top: 0.1rem solid #000;
   font-size: 0.75rem;
-  color: #555;
 }
 
 /*

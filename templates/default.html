@@ -5,7 +5,9 @@
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
         <meta http-equiv="x-ua-compatible" content="ie=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+
         <title>$title$ | Mildly entertainingᵝ</title>
+
         <link rel="stylesheet" href="/css/default.css" />
         <link rel="stylesheet" href="/css/ipynb-syntax.css" />
 
@@ -15,22 +17,21 @@
     <body>
         <header>
             <nav>
-                <a href="/" style="float:left">Home</a>
+                <a class="nav-left fat"  href="/">Home</a>
                 <!-- TODO do site and archive later when they actually have something meaningful -->
                 <!-- <a href="/site.html">Site</a> -->
-                <a href="/me.html" style="float:right">Me</a>
+                <a class="nav-right fat" href="/me.html">Me</a>
                 <!-- <a href="/archive.html">Archive</a> -->
             </nav>
         </header>
 
-        <main role="main">
+        <main>
             $body$
         </main>
 
         <footer>
-            <a href="/atom.xml">atom</a>
-            <a href="/rss.xml">rss</a>
-            Powered by <a href="http://jaspervdj.be/hakyll">Hakyll</a>
+            <a class="fat" href="/atom.xml" title="Atom feed">atom</a>
+            <a class="fat" href="/rss.xml" title="RSS feed">rss</a>
         </footer>
     </body>
 </html>
