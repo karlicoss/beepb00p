@@ -47,12 +47,17 @@ footer {
   font-size: 0.75rem;
 }
 
-/*
-TODO shit it doesn't work
-section .title h1 {
-    font-size: 2.2rem;
+section.title h1 {
+  -webkit-margin-after:0em;
 }
-*/
+
+section.title .summary {
+  -webkit-margin-before:0em;
+  -webkit-margin-after:0em;
+
+  color: #a9a9a9;
+  font-size: 1.5em;
+}
 
 h1 {
   font-size: 1.7rem;
