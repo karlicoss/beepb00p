@@ -41,14 +41,16 @@ defaultOverrides = Overrides { upid = Nothing, date = Nothing, title = Nothing, 
 -- TODO move these to external file?
 overrides = [ ("meta/me.md"               , dovr { upid    = j "me" } )
             , ("meta/index.html"          , dovr { upid    = j "index" } )
-            , ("content/test.md"          , dovr { upid    = j "test" } )
             , ("content/lagrangians.ipynb", dovr { upid    = j "they_see_me_flowing"
                                                  , date    = j "2019-01-01" -- FIXME
                                                  , title   = j "They see me flowin' they hatin'"
                                                  , summary = j "Visualising some unconventional Lagrangians and their Hamiltonian flows."
                                                  })
             , ("content/grasp.md"     , dovr { upid    = j "org_grasp"
-                                                 , summary = j "How to capture information from your browser and stay sane"})
+                                             , summary = j "How to capture information from your browser and stay sane"})
+            -- TODO better name?
+            , ("content/sleep-tracking.md", dovr { upid    = j "sleep_tracking"
+                                                 , summary = j "How not to do it"})
             ] :: [(String, Overrides)] where
   dovr = defaultOverrides
   j = Just
