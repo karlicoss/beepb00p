@@ -259,7 +259,7 @@ main = hakyll $ do
     match "meta/index.html" $ do
         route   $ gsubRoute "meta/" (const "")
         compile $ do
-            posts <- loadPosts  -- TODO recentFirst or something?
+            posts <- recentFirst =<< loadPosts
             let indexCtx =
                     listField "posts" postCtx (return posts)
                     <> constField "title" "Home"
