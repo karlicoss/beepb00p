@@ -48,9 +48,10 @@ overrides = [ ("meta/me.md"               , dovr { upid    = j "me" } )
                                                  })
             , ("content/grasp.md"     , dovr { upid    = j "org_grasp"
                                              , summary = j "How to capture information from your browser and stay sane"})
-            -- TODO better name?
             , ("content/sleep-tracking.md", dovr { upid    = j "sleep_tracking"
                                                  , summary = j "How not to do it"})
+            , ("content/quantified-mind.md", dovr { upid    = j "quantified_mind"
+                                                  , summary = j "TODO FIXME" })
             ] :: [(String, Overrides)] where
   dovr = defaultOverrides
   j = Just
