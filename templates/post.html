@@ -1,10 +1,4 @@
 <article>
-    <section class="header">
-    Posted on $date$
-    $if(author)$
-    by $author$
-    $endif$
-    </section>
     <section class="title">
     <h1>$title$</h1>
     <div class="summary">$summary$</h2>
@@ -12,6 +6,10 @@
     <!-- are sections appropriate for that? -->
     <section>
     $body$
+    </section>
+    <!-- TODO surely that's not header? -->
+    <section class="header">
+        Posted on $date$
     </section>
     <section class="comments">
     $partial("templates/isso.html")$
