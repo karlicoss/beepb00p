@@ -51,7 +51,7 @@ overrides = [ ("meta/me.md"               , dovr { upid    = j "me" } )
             , ("content/sleep-tracking.md", dovr { upid    = j "sleep_tracking"
                                                  , summary = j "How not to do it"})
             , ("content/quantified-mind.md", dovr { upid    = j "quantified_mind"
-                                                  , summary = j "TODO FIXME" })
+                                                  , summary = j "Exploiting javascript to reverse engineer cognitive score" })
             ] :: [(String, Overrides)] where
   dovr = defaultOverrides
   j = Just
@@ -183,7 +183,7 @@ main = hakyll $ do
 
     match "css/*" $ do
         route   idRoute
-        compile compressCssCompiler
+        compile compressCssCompiler -- TODO eh? do not compress?
 
 
     -- TODO shit this is problematic for all simple web servers, they think it's octet-stream :(
