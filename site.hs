@@ -38,20 +38,23 @@ data Overrides = Overrides { upid :: Maybe String, date :: Maybe String, title :
 defaultOverrides = Overrides { upid = Nothing, date = Nothing, title = Nothing, summary = Nothing }
 
 
--- TODO move these to external file?
-overrides = [ ("meta/me.md"               , dovr { upid    = j "me" } )
-            , ("meta/index.html"          , dovr { upid    = j "index" } )
-            , ("content/lagrangians.ipynb", dovr { upid    = j "they_see_me_flowing"
-                                                 , date    = j "2019-01-01" -- FIXME
-                                                 , title   = j "They see me flowin' they hatin'"
-                                                 , summary = j "Visualising some unconventional Lagrangians and their Hamiltonian flows."
-                                                 })
-            , ("content/grasp.md"     , dovr { upid    = j "org_grasp"
-                                             , summary = j "How to capture information from your browser and stay sane"})
-            , ("content/sleep-tracking.md", dovr { upid    = j "sleep_tracking"
-                                                 , summary = j "How not to do it"})
-            , ("content/quantified-mind.md", dovr { upid    = j "quantified_mind"
-                                                  , summary = j "Exploiting javascript to reverse engineer cognitive score" })
+-- TODO right, get rid of these in favor of .metadata files?
+overrides = [ ("meta/me.md"                    , dovr { upid    = j "me" } )
+            , ("meta/index.html"               , dovr { upid    = j "index" } )
+            , ("content/lagrangians.ipynb"     , dovr { upid    = j "they_see_me_flowing"
+                                                      , date    = j "2019-01-01" -- FIXME
+                                                      , title   = j "They see me flowin' they hatin'"
+                                                      , summary = j "Visualising some unconventional Lagrangians and their Hamiltonian flows."
+                                                      })
+            , ("content/grasp.md"              , dovr { upid    = j "org_grasp"
+                                                      , summary = j "How to capture information from your browser and stay sane"})
+            , ("content/sleep-tracking.md"     , dovr { upid    = j "sleep_tracking"
+                                                      , summary = j "How not to do it"})
+            , ("content/quantified-mind.md"    , dovr { upid    = j "quantified_mind"
+                                                      , summary = j "Exploiting javascript to reverse engineer cognitive score" })
+            , ("content/ipynb-singleline.ipynb", dovr { upid    = j "ipynb_singleline"
+                                                      , title   = j "Forcing IPython to display multiple equations in single line"
+                                                      , summary = j "How I sacrificed few hours of my life for aethetics" })
             ] :: [(String, Overrides)] where
   dovr = defaultOverrides
   j = Just
@@ -255,11 +258,12 @@ main = hakyll $ do
     match "meta/index.html" $ do
         route   $ gsubRoute "meta/" (const "")
         compile $ do
+            -- TODO sorting: I guess we want datetime in case of multiple posts
             posts <- recentFirst =<< loadPosts
             let indexCtx =
                     listField "posts" postCtx (return posts)
                     <> constField "title" "Home"
-                    <> myCtx
+                    <> defaultContext
 
             getResourceBody
                 >>= applyAsTemplate indexCtx
@@ -286,8 +290,6 @@ main = hakyll $ do
     match "templates/*" $ compile templateBodyCompiler
 
 
--- left takes precedence..
-myCtx :: Context String
-myCtx = overridesCtx <> defaultContext
-
-postCtx = myCtx
+postCtx :: Context String
+-- left takes precedence
+postCtx = overridesCtx <> defaultContext
