@@ -9,6 +9,7 @@ You can find me on:
 * [Github](https://github.com/karlicoss)
 * [Pinboard](https://pinboard.in/u:karlicoss)
 * [Twitter](https://twitter.com/karlicoss)
+* [Reddit](https://reddit.com/user/karlicoss)
 * [Goodreads](https://www.goodreads.com/user/show/22191391-dima-gerasimov)
 * [Topcoder](https://www.topcoder.com/members/karlicos)
 * Email: [karlicoss@gmail.com](mailto:karlicoss@gmail.com)
