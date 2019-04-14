@@ -126,7 +126,7 @@ stripPrivateTodos = compileWithFilter "grep" ["-v", "TODO P "]
 ipynbFilterOutput :: Item String -> Compiler (Item String)
 ipynbFilterOutput = compileWithFilter cmd args
   where cmd = "python3"
-        args = [ "/L/Dropbox/repos/ipynb_output_filter/ipynb_output_filter.py" ]
+        args = [ "/L/Dropbox/repos/ipynb_output_filter/ipynb_output_filter.py" ] -- TODO use nbstripout??
 
 
 -- ugh, images do not really work in markdown..
@@ -137,8 +137,8 @@ ipynbRun = compileWithFilter command arguments
   where command = "jupyter"
         arguments = ["nbconvert"
                     , "--execute"
-                    , "--TagRemovePreprocessor.remove_cell_tags={\"noexport\"}"
-                    , "--to", "html", "--template", "basic"
+                    , "--TagRemovePreprocessor.remove_cell_tags={\"noexport\"}" -- TODO emacs tags?
+                    , "--to", "html", "--template", "misc/mybasic.tpl"
                     , "--stdin"
                     , "--stdout"
                     ]
@@ -195,7 +195,7 @@ main = hakyll $ do
     match (fromList ["meta/me.md"]) $ do
         route   $ gsubRoute "meta/" (const "") `composeRoutes` setExtension "html"
         compile $ pandocCompiler
-            >>= loadAndApplyTemplate "templates/default.html" myCtx
+            >>= loadAndApplyTemplate "templates/default.html" postCtx
             >>= relativizeUrls
 
     -- TODO think how to infer date?
@@ -212,24 +212,17 @@ main = hakyll $ do
 
     -- TODO make a script to check that links are reachable
     -- TODO posts/etc is lame, use top level
-    -- TODO rss
     -- TODO tags would be nice...
     match "content/*.ipynb" $ do
-        route $ setExtension "html"
+        route   simpleRoute
         compile $ getResourceString
               >>= ipynbCompile
               >>= loadAndApplyTemplate "templates/post.html"    postCtx
               >>= loadAndApplyTemplate "templates/default.html" postCtx
               >>= relativizeUrls
 
-          -- >>= readPandoc <&> writePandoc
-          -- >>= writePandoc
-          -- >>= loadAndApplyTemplate "templates/post.html"    postCtx
-          -- TODO pandocCompiler
-          --   >>= loadAndApplyTemplate "templates/post.html"    postCtx
-
     -- TODO appendIndex??https://github.com/aherrmann/jekyll_style_urls_with_hakyll_examples/blob/master/site.hs
-  
+
 
 
 -- https://github.com/turboMaCk/turboMaCk.github.io/blob/develop/site.hs#L61 ??

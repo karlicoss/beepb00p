@@ -1,0 +1,18 @@
+/* Some custom hackery I'm using on ipynb notebooks  */
+
+/*
+  If cell got a 'collapsed' tag in metadata, it will be rendered within the <details> tag.
+  If present, the 'collapsed-summary' metdata would be used for <summary>
+  See TODO basic.tpl for more details.
+
+*/
+
+details.cell-collapsed summary {
+    /* color: red; */
+    cursor: pointer;
+}
+
+details.cell-collapsed.cell {
+    border-left: 3px solid grey;
+    padding: .5rem .5rem 0;
+}
