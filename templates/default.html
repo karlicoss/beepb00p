@@ -10,9 +10,10 @@
 
         <link rel="stylesheet" href="/css/default.css" />
 
-        <!-- TODO turn back on on ipynb pages only? -->
+      $if(ipynb)$
         <link rel="stylesheet" href="/css/ipynb.css" />
         <link rel="stylesheet" href="/css/ipynb-syntax.css" />
+      $endif$
 
         <!-- TODO make it conditional on actually having math on page? -->
         $partial("templates/mathjax.html")$

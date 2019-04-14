@@ -212,16 +212,16 @@ main = hakyll $ do
 -- TODO in org mode files, date should be present
 -- if it's not, complain, but the whole thing shouldn't fail!
 
-
     -- TODO make a script to check that links are reachable
     -- TODO posts/etc is lame, use top level
     -- TODO tags would be nice...
     match "content/*.ipynb" $ do
+        let ctx = postCtx <> constField "ipynb" "yes"
         route   simpleRoute
         compile $ getResourceString
               >>= ipynbCompile
-              >>= loadAndApplyTemplate "templates/post.html"    postCtx
-              >>= loadAndApplyTemplate "templates/default.html" postCtx
+              >>= loadAndApplyTemplate "templates/post.html"    ctx
+              >>= loadAndApplyTemplate "templates/default.html" ctx
               >>= relativizeUrls
 
     -- TODO appendIndex??https://github.com/aherrmann/jekyll_style_urls_with_hakyll_examples/blob/master/site.hs
