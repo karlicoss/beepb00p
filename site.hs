@@ -55,6 +55,9 @@ overrides = [ ("meta/me.md"                    , dovr { upid    = j "me" } )
             , ("content/ipynb-singleline.ipynb", dovr { upid    = j "ipynb_singleline"
                                                       , title   = j "Forcing IPython to display multiple equations in single line"
                                                       , summary = j "How I sacrificed few hours of my life for aethetics" })
+            , ("content/recycling-is-hard.md"  , dovr { upid    = j "recycling_is_hard"
+                                                      , summary = j "So many questions, so little answers"
+                                                      })
             ] :: [(String, Overrides)] where
   dovr = defaultOverrides
   j = Just
