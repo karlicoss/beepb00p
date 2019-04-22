@@ -1,7 +1,7 @@
 /* TODO testing css changes via screenshot?? */
-/* html { */
-/*   font-size: 62.5%; */
-/* } */
+html {
+  font-size: 100%;
+}
 
 @media (min-width: 80rem) {
     body {
@@ -54,6 +54,46 @@ footer {
   font-size: 0.75rem;
   text-align: right;
 }
+
+
+/* BEGIN posts list configuring */
+.posts-list {
+  margin-top   : 1em;
+  margin-bottom: 1em;
+
+  table-layout: fixed; width: 100%;
+}
+
+tr.post {
+  padding-top   : 1em;
+  padding-bottom: 1em;
+}
+
+.posts-list tr.sep td {
+  border-top  : 0.5px dotted gray;
+}
+.posts-list tr:last-child td {
+  border-bottom: 0.5px dotted gray;
+}
+
+.posts-list .summary {
+  padding-left: 0.5em;
+  font-size: 0.95em;
+}
+
+.posts-list .sep {
+  padding-left: 2em;
+  padding-right: 2em;
+}
+
+.posts-list .date {
+  font-size: 0.8em;
+  float: right;
+  white-space: pre;
+}
+
+/* END posts list configuring */
+
 
 section.title {
   margin-bottom: 1rem;

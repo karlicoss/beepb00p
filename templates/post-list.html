@@ -1,12 +1,21 @@
-<ul>
+<table class="posts-list">
     $for(posts)$
-    <!-- TODO maybe not li, something else? Or just have css -->
-        <li>
-            $date$ » <a href="$url$">$title$</a>
-            $if(summary)$
-            <div style="color:gray">$summary$</div>
-            $endif$
-            <!-- TODO make sure dates are aligned, also in some standard format. also picked from the post -->
-        </li>
+    <tr class="sep">
+        <td colspan="2"></td>
+    </tr>
+
+    <tr class="post">
+        <td class="title"><a href="$url$">$title$</a></td>
+        <td class="date">$date$</td>
+    </tr>
+
+    $if(summary)$
+    <tr>
+        <td colspan="2" class="summary">
+            $summary$
+        </td>
+    </tr>
+    $endif$
+
     $endfor$
-</ul>
+</table>
