@@ -2,3 +2,11 @@
 .content .title {
     display: none;
 }
+
+.tag {
+    float: right;
+}
+
+.timestamp {
+    font-family: monospace;
+}
