@@ -92,7 +92,14 @@ tr.post {
   white-space: pre;
 }
 
+
 /* END posts list configuring */
+
+
+.tags {
+  font-size: 0.95em;
+  color: #a51;
+}
 
 
 section.title {
