@@ -102,21 +102,26 @@ tr.post {
 }
 
 
-section.title {
+section.post-title {
   margin-bottom: 1rem;
 }
 
-section.title h1 {
+section.post-title h1 {
   -webkit-margin-after:0em;
 }
 
-section.title .summary {
+section.post-title .summary {
   -webkit-margin-before:0em;
   -webkit-margin-after:0em;
 
   color: #a9a9a9;
   font-size: 1.5em;
 }
+
+/*
+  TODO move these styles to post.css?
+  they kind of make sense for meta stuff too though...
+*/
 
 h1 {
   font-size: 1.7rem;

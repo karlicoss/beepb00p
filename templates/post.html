@@ -1,20 +1,36 @@
+$if(style_ipynb)$
+<link rel="stylesheet" href="/css/ipynb.css" />
+<link rel="stylesheet" href="/css/ipynb-syntax.css" />
+$endif$
+$if(style_org)$
+<!-- <link rel="stylesheet" href="/css/org.css" /> -->
+<link rel="stylesheet" href="/css/org-default.css" />
+
+<link rel="stylesheet" href="/css/org-extra.css" />
+$endif$
+$if(style_md)$
+$endif$
+
 <article>
-    <section class="title">
+    <section class="post-title">
     <h1>$title$</h1>
-    <div class="summary">$summary$</h2>
+    $if(summary)$<div class="summary">$summary$</h2>$endif$
     </section>
     <!-- are sections appropriate for that? -->
+
     <section class="content">
     $body$
     </section>
-    <!-- TODO surely that's not header? -->
+
     <section class="footer">
         $if(tags)$
         <div class="tags"># $tags$</div>
         $endif$
         <div class="date">$date$</div>
     </section>
+
     <section class="comments">
     $partial("templates/isso.html")$
     </section>
+
 </article>

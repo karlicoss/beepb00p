@@ -63,7 +63,6 @@ overrides = [ ("meta/me.md"                    , dovr { upid    = j "me" } )
                                                       , summary = j "So many questions, so little answers"
                                                       })
             , ("content/test.org"              , dovr { upid    = j "test"
-                                                      , summary = j "test"
                                                       })
             ] :: [(String, Overrides)] where
   dovr = defaultOverrides
@@ -230,21 +229,31 @@ main = hakyll $ do
             >>= loadAndApplyTemplate "templates/default.html" postCtx
             >>= relativizeUrls
 
-    let postCompiler = loadAndApplyTemplate "templates/post.html"    postCtx
-            >=> loadAndApplyTemplate "templates/default.html" postCtx
+    let postCompiler ctx = loadAndApplyTemplate "templates/post.html" ctx
+            >=> loadAndApplyTemplate "templates/default.html" ctx
             >=> relativizeUrls
 
+    let style x = constField ("style_" ++ x) ""  -- kinda like a flag
+    let org   = style "org"
+    let ipynb = style "ipynb"
+    let md    = style "md"
+
     match "content/test.org" $ do
+        -- -- let ff  = constField "css" "hello"
+        -- let ff = field "css" $ \x -> itemBody x
+        -- let ctx = postCtx <> listField "extra_styles" ff (return ["HELLO", "WHOOPS"])
+        let ctx = postCtx <> org
         route   postRoute
         compile $ getResourceString
             >>= orgCompile
-            >>= postCompiler
+            >>= postCompiler ctx
 
     -- TODO think how to infer date?
     match "content/*.md" $ do
+        let ctx = postCtx <> md
         route   postRoute
         compile $ pandocCompiler
-            >>= postCompiler
+            >>= postCompiler ctx
 
 -- TODO in org mode files, date should be present
 -- if it's not, complain, but the whole thing shouldn't fail!
@@ -253,15 +262,11 @@ main = hakyll $ do
     -- TODO posts/etc is lame, use top level
     -- TODO tags would be nice...
     match "content/*.ipynb" $ do
-        let ctx = postCtx <> constField "ipynb" "yes"
+        let ctx = postCtx <> ipynb
         route   postRoute
         compile $ getResourceString
               >>= ipynbCompile
-              >>= postCompiler
-              -- TODO use postCompiler , but need to handle ctx properly
-              >>= loadAndApplyTemplate "templates/post.html"    ctx
-              >>= loadAndApplyTemplate "templates/default.html" ctx
-              >>= relativizeUrls
+              >>= postCompiler ctx
 
     -- TODO appendIndex??https://github.com/aherrmann/jekyll_style_urls_with_hakyll_examples/blob/master/site.hs
 

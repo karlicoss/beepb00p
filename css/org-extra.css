@@ -1,0 +1,4 @@
+/* hack to get around emacs always adding title to org mode export.. */
+.content .title {
+    display: none;
+}
