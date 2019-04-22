@@ -14,7 +14,7 @@ import Text.Pandoc.Options (def, writerVariables, writerTableOfContents)
 import           Control.Applicative ((<|>))
 
 import Hakyll.Web.Pandoc
-import Debug.Trace
+import Debug.Trace (trace)
 
 baseUrl = "https://beepb00p.xyz"
 
@@ -47,16 +47,23 @@ overrides = [ ("meta/me.md"                    , dovr { upid    = j "me" } )
                                                       , summary = j "Visualising some unconventional Lagrangians and their Hamiltonian flows."
                                                       })
             , ("content/grasp.md"              , dovr { upid    = j "org_grasp"
-                                                      , summary = j "How to capture information from your browser and stay sane"})
+                                                      , summary = j "How to capture information from your browser and stay sane"
+                                                      })
             , ("content/sleep-tracking.md"     , dovr { upid    = j "sleep_tracking"
-                                                      , summary = j "How not to do it"})
+                                                      , summary = j "How not to do it"
+                                                      })
             , ("content/quantified-mind.md"    , dovr { upid    = j "quantified_mind"
-                                                      , summary = j "Exploiting javascript to reverse engineer cognitive score" })
+                                                      , summary = j "Exploiting javascript to reverse engineer cognitive score"
+                                                      })
             , ("content/ipynb-singleline.ipynb", dovr { upid    = j "ipynb_singleline"
                                                       , title   = j "Forcing IPython to display multiple equations in single line"
-                                                      , summary = j "How I sacrificed few hours of my life for aethetics" })
+                                                      , summary = j "How I sacrificed few hours of my life for aethetics"
+                                                      })
             , ("content/recycling-is-hard.md"  , dovr { upid    = j "recycling_is_hard"
                                                       , summary = j "So many questions, so little answers"
+                                                      })
+            , ("content/test.org"              , dovr { upid    = j "test"
+                                                      , summary = j "test"
                                                       })
             ] :: [(String, Overrides)] where
   dovr = defaultOverrides
@@ -118,6 +125,8 @@ combineContexts (Context f) (Context g) = Context $ \k a Item{itemBody=PandocX p
 -- myContext :: Context PandocX
 -- myContext = combineContexts pandocContext defaultContext
 
+----- ipython stuff
+
 -- thanks to https://github.com/gibiansky/blog/blob/668a5bf7ae6815a20dd6d57c900318e34c959c13/Compilers.hs
 compileWithFilter :: String -> [String] -> Item String -> Compiler (Item String)
 compileWithFilter cmd args = withItemBody (unixFilter cmd args)
@@ -166,8 +175,6 @@ renameItem f i =  i { itemIdentifier = new_id } where
 --   new_path = f old_path
 --   new_id = old_id { identifierPath = new_path }
 
--- TODO cleanup first??
--- TODO html --basic??
 ipynbCompile = stripPrivateTodos >=> ipynbFilterOutput >=> ipynbRun
   -- ipy <- ipynbRun i  -- x <&> (renameItem (\f -> replaceExtension f ".md")) -- ipynbFilterOutput >> ipynbRun
   -- let ipy_md = renameItem (\f -> replaceExtension f ".md") ipy -- change the extension to trick pandoc...
@@ -176,10 +183,24 @@ ipynbCompile = stripPrivateTodos >=> ipynbFilterOutput >=> ipynbRun
   -- let res = renameItem (\f -> replaceExtension f ".ipynb") html 
   -- return ipy
 
--- TODO css for ipython notebooks? highligh python?
 -- TODO release ipython stuff in a separate file so it's easy to share
--- TODO mathjax (if necessary)
 
+----- end of ipython stuff
+
+
+---- start of org mode stuff
+  
+-- pandoc doesn't seem to be capable of handling many org clases.. 
+-- https://github.com/jgm/pandoc/blob/f3080c0c22470e7ecccbef86c1cd0b1339a6de9b/src/Text/Pandoc/Readers/Org/ExportSettings.hs#L61
+renderOrg :: Item String -> Compiler (Item String)
+renderOrg   = compileWithFilter "misc/compile-org" []  -- trace (toFilePath $ itemIdentifier x) $ undefined
+
+extractBody = compileWithFilter "xmllint" ["--html", "--xpath", "//div[@id='content']/node()", "--format", "-"]
+
+orgCompile = renderOrg >=> extractBody
+
+
+--- end of org mode stuff
 
 main :: IO ()
 main = hakyll $ do
@@ -198,7 +219,7 @@ main = hakyll $ do
 
 
     -- TODO shit this is problematic for all simple web servers, they think it's octet-stream :(
-    let simpleRoute =
+    let postRoute =
           gsubRoute "content/" (const "")
           `composeRoutes` setExtension "html" -- TODO fucking hell it's annoying. couldn't force github pages or preview server to support that
           -- `composeRoutes` setExtension "" -- TODO fucking hell it's annoying. couldn't force github pages or preview server to support that
@@ -209,13 +230,21 @@ main = hakyll $ do
             >>= loadAndApplyTemplate "templates/default.html" postCtx
             >>= relativizeUrls
 
+    let postCompiler = loadAndApplyTemplate "templates/post.html"    postCtx
+            >=> loadAndApplyTemplate "templates/default.html" postCtx
+            >=> relativizeUrls
+
+    match "content/test.org" $ do
+        route   postRoute
+        compile $ getResourceString
+            >>= orgCompile
+            >>= postCompiler
+
     -- TODO think how to infer date?
     match "content/*.md" $ do
-        route   simpleRoute
+        route   postRoute
         compile $ pandocCompiler
-            >>= loadAndApplyTemplate "templates/post.html"    postCtx
-            >>= loadAndApplyTemplate "templates/default.html" postCtx
-            >>= relativizeUrls
+            >>= postCompiler
 
 -- TODO in org mode files, date should be present
 -- if it's not, complain, but the whole thing shouldn't fail!
@@ -225,9 +254,11 @@ main = hakyll $ do
     -- TODO tags would be nice...
     match "content/*.ipynb" $ do
         let ctx = postCtx <> constField "ipynb" "yes"
-        route   simpleRoute
+        route   postRoute
         compile $ getResourceString
               >>= ipynbCompile
+              >>= postCompiler
+              -- TODO use postCompiler , but need to handle ctx properly
               >>= loadAndApplyTemplate "templates/post.html"    ctx
               >>= loadAndApplyTemplate "templates/default.html" ctx
               >>= relativizeUrls

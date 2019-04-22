@@ -1,0 +1,24 @@
+#!/usr/bin/env python3
+import sys
+import tempfile
+from subprocess import check_call
+from pathlib import Path
+
+def main():
+    org_data = sys.stdin.read()
+    with tempfile.TemporaryDirectory() as td:
+        td = Path(td)
+        inp_org  = td / 'input.org'
+        inp_org.write_text(org_data)
+
+        out_html = td / 'output.html'
+        # TODO make sure it propagates errors properly...
+        check_call([
+            'emacs', '--kill', '--no-init-file',
+            '--batch', str(inp_org),
+            '--eval', f'(progn (org-html-export-as-html) (write-file "{str(out_html)}"))'
+        ])
+        sys.stdout.write(out_html.read_text())
+
+if __name__ == '__main__':
+    main()

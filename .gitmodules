@@ -1,0 +1,3 @@
+[submodule "orgcss"]
+	path = orgcss
+	url = git@github.com:gongzhitaao/orgcss.git
