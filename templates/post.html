@@ -8,8 +8,11 @@
     $body$
     </section>
     <!-- TODO surely that's not header? -->
-    <section class="header">
-        Posted on $date$
+    <section class="footer">
+        $if(tags)$
+        <div class="tags"># $tags$</div>
+        $endif$
+        <div class="date">$date$</div>
     </section>
     <section class="comments">
     $partial("templates/isso.html")$

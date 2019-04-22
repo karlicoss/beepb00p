@@ -126,7 +126,7 @@ h2 {
   font-size: 1.4rem;
 }
 
-article .header {
+article .footer .date {
   /* font-size: 1.4rem; */
   font-style: italic;
   color: #555;
