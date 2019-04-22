@@ -62,7 +62,7 @@ overrides = [ ("meta/me.md"                    , dovr { upid    = j "me" } )
             , ("content/recycling-is-hard.md"  , dovr { upid    = j "recycling_is_hard"
                                                       , summary = j "So many questions, so little answers"
                                                       })
-            , ("content/test.org"              , dovr { upid    = j "test"
+            , ("content/ideas.org"             , dovr { upid    = j "ideas"
                                                       })
             ] :: [(String, Overrides)] where
   dovr = defaultOverrides
@@ -221,7 +221,6 @@ main = hakyll $ do
     let postRoute =
           gsubRoute "content/" (const "")
           `composeRoutes` setExtension "html" -- TODO fucking hell it's annoying. couldn't force github pages or preview server to support that
-          -- `composeRoutes` setExtension "" -- TODO fucking hell it's annoying. couldn't force github pages or preview server to support that
 
     match (fromList ["meta/me.md"]) $ do
         route   $ gsubRoute "meta/" (const "") `composeRoutes` setExtension "html"
@@ -238,7 +237,9 @@ main = hakyll $ do
     let ipynb = style "ipynb"
     let md    = style "md"
 
-    match "content/test.org" $ do
+    -- TODO careful not to pick this file up when we have more org posts
+    -- perhaps should just move the link out of content root
+    match "content/ideas.org" $ do
         -- -- let ff  = constField "css" "hello"
         -- let ff = field "css" $ \x -> itemBody x
         -- let ctx = postCtx <> listField "extra_styles" ff (return ["HELLO", "WHOOPS"])

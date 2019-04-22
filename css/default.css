@@ -33,15 +33,15 @@ nav {
     align-items: baseline;
 }
 
-nav a {
+nav {
   font-size: 1.8rem;
 }
 
-nav a.nav-left {
+nav .nav-left {
   float: left;
 }
 
-nav a.nav-right {
+nav .nav-right {
   float: right;
 }
 
