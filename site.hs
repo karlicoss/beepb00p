@@ -6,7 +6,7 @@ import           Hakyll
 import Control.Applicative (empty)
 import Control.Monad ((>=>))
 import Data.Maybe (fromJust, fromMaybe, catMaybes)
-import System.FilePath (replaceExtension)
+import System.FilePath (replaceExtension, (</>))
 
 import Text.Pandoc (readOrg, Pandoc(..), docTitle, docDate, Meta, Inline)
 import Text.Pandoc.Shared (stringify)
@@ -183,6 +183,11 @@ ipynbCompile = stripPrivateTodos >=> ipynbFilterOutput >=> ipynbRun
 
 main :: IO ()
 main = hakyll $ do
+    match ("meta/favicon.ico" .||. "meta/robots.txt") $ do
+        route   $ gsubRoute "meta/" (const "")
+        compile   copyFileCompiler
+
+
     match "images/*" $ do
         route   idRoute
         compile copyFileCompiler
