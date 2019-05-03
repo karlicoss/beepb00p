@@ -60,7 +60,6 @@ overrides = [ ("meta/me.md"                    , dovr { upid    = j "me" } )
                                                       , summary = j "How I sacrificed few hours of my life for aethetics"
                                                       })
             , ("content/recycling-is-hard.md"  , dovr { upid    = j "recycling_is_hard"
-                                                      , summary = j "So many questions, so little answers"
                                                       })
             , ("content/ideas.org"             , dovr { upid    = j "ideas"
                                                       })
@@ -83,7 +82,6 @@ overridesCtx = Context makeItem where
       | fname == "date"        = date
       | fname == "title"       = title
       | fname == "summary"     = summary
-      | fname == "description" = summary
       | otherwise              = \_ -> Nothing -- TODO ??
 
     ovd = getter fname $ getOverrides $ toFilePath $ itemIdentifier item
@@ -303,7 +301,7 @@ main = hakyll $ do
     match "meta/index.html" $ do
         route   $ gsubRoute "meta/" (const "")
         compile $ do
-            -- TODO sorting: I guess we want datetime in case of multiple posts
+            -- TODO sorting: I guess we want datetime in case of multiple posts on the same day
             posts <- recentFirst =<< loadPosts
             let indexCtx =
                     listField "posts" postCtx (return posts)
@@ -317,18 +315,18 @@ main = hakyll $ do
 
     -- TODO atom -- published, updated , I guess handle carefully so there aren't too many annoying updates
     -- TODO include latest only?
-    -- TODO use proper description?
+    -- TODO not sure if need to prettify description
+    let feedCtx = postCtx <> bodyField "description"
+
     create ["atom.xml"] $ do
         route idRoute
         compile $ do
-            let feedCtx = postCtx
             posts <- loadPosts
             renderAtom myFeedConfiguration feedCtx posts
 
     create ["rss.xml"] $ do
         route idRoute
         compile $ do
-            let feedCtx = postCtx
             posts <- loadPosts
             renderRss myFeedConfiguration feedCtx posts
 
