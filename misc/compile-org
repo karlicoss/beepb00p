@@ -4,19 +4,35 @@ import tempfile
 from subprocess import check_call
 from pathlib import Path
 
+
+# This is necessary because otherwise emacs loads default outdated org-mode (e.g. in /usr/share) in batch mode
+def get_org_plus_path() -> Path:
+    pp = Path('~/.emacs.d/elpa/').expanduser()
+    matches = list(pp.glob('*/*/org-plus-contrib-*/'))
+    assert len(matches) == 1
+    return matches[0]
+
+
 def main():
     org_data = sys.stdin.read()
     with tempfile.TemporaryDirectory() as td:
         td = Path(td)
         inp_org  = td / 'input.org'
         inp_org.write_text(org_data)
-
         out_html = td / 'output.html'
+
         # TODO make sure it propagates errors properly...
         check_call([
-            'emacs', '--kill', '--no-init-file',
-            '--batch', str(inp_org),
-            '--eval', f'(progn (org-html-export-as-html) (write-file "{str(out_html)}"))'
+            'emacs',
+            '--kill',
+            '--batch',
+            '--directory', str(get_org_plus_path()),
+            str(inp_org),
+            '--eval', f'''(progn
+                (org-html-export-as-html nil nil nil t)
+                ; t is for BODY-ONLY
+                (write-file "{str(out_html)}")
+            )'''
         ])
         sys.stdout.write(out_html.read_text())
 

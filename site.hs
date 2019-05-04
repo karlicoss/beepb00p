@@ -192,7 +192,7 @@ ipynbCompile = stripPrivateTodos >=> ipynbFilterOutput >=> ipynbRun
 renderOrg :: Item String -> Compiler (Item String)
 renderOrg   = compileWithFilter "misc/compile-org" []  -- trace (toFilePath $ itemIdentifier x) $ undefined
 
-extractBody = compileWithFilter "xmllint" ["--html", "--xpath", "//div[@id='content']/node()", "--format", "-"]
+extractBody = compileWithFilter "xmllint" ["--html", "--xpath", "//body/node()", "--format", "-"]
 
 orgCompile = renderOrg >=> extractBody
 
