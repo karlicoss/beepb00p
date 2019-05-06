@@ -1,3 +1,40 @@
+/* xxx nice stuff from org.css */
+blockquote {
+    margin: 1em 2em;
+    padding-left: 1em;
+    border-left: 3px solid #ccc;
+}
+
+/*
+TODO hmm. not sure how to fit tags in TOC nicely..
+.tag {
+    all: unset;
+}
+
+$monospace: Lucida Console, monospace;
+.tag {
+    font-family: $monospace;
+    font-size: 0.7em;
+    font-weight: normal;
+}
+
+.tag span {
+    padding: 0.3em 0.3em;
+    float: right;
+    margin-right: .5em;
+    border: 1px solid #bbb;
+    border-radius: 3px;
+    background-clip: padding-box;
+    color: #333;
+    background-color: #eee;
+    line-height: 1;
+}
+*/
+
+/* xxx */
+
+
+
 /* hack to get around emacs always adding title to org mode export.. */
 .content .title {
     display: none;
@@ -11,3 +48,13 @@
     font-family: monospace;
     font-size: small;
 }
+
+
+/* hide 'Table of Contents', couldn't control it via org... */
+#table-of-contents h2 {
+    display: none;
+}
+
+
+
+
