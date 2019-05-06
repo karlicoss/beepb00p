@@ -1,6 +1,7 @@
 /* TODO testing css changes via screenshot?? */
 html {
   font-size: 100%;
+  font-family: sans-serif;
 }
 
 @media (min-width: 80rem) {
