@@ -27,11 +27,8 @@ myFeedConfiguration = FeedConfiguration
     , feedRoot        = baseUrl -- TODO how to test feed?
     }
 
-  
--- TODO think about naming?
-name2disqusid = [ ("me.md", "blog-me")
-                ] :: [(String, String)]
 
+-- TODO think about naming?
 data Overrides = Overrides { upid :: Maybe String, date :: Maybe String, title :: Maybe String, summary :: Maybe String }
 
 
@@ -61,14 +58,12 @@ overrides = [ ("meta/me.md"                    , dovr { upid    = j "me" } )
                                                       })
             , ("content/recycling-is-hard.md"  , dovr { upid    = j "recycling_is_hard"
                                                       })
-            , ("content/special/ideas.org"     , dovr { upid    = j "ideas"
-                                                      })
             ] :: [(String, Overrides)] where
   dovr = defaultOverrides
   j = Just
 
-getOverrides :: String -> Overrides
-getOverrides x = fromMaybe (error $ "no overrides for " ++ x) $ lookup x overrides -- TODO maybe in that case empty? dangerous though... for disqus id
+getOverrides :: String -> Maybe Overrides
+getOverrides x = lookup x overrides -- TODO maybe in that case empty? dangerous though... for disqus id
 
 overridesCtx :: Context a
 overridesCtx = Context makeItem where
@@ -78,23 +73,22 @@ overridesCtx = Context makeItem where
       Nothing -> empty
     where
     getter fname
-      | fname == "issoid"      = fmap ("isso_" ++ ) . upid
+      | fname == "upid"        = upid
       | fname == "date"        = date
       | fname == "title"       = title
       | fname == "summary"     = summary
       | otherwise              = \_ -> Nothing -- TODO ??
 
-    ovd = getter fname $ getOverrides $ toFilePath $ itemIdentifier item
+    ovd = do
+      ov <- getOverrides $ toFilePath $ itemIdentifier item
+      getter fname ov
 
 -- upid
 -- should be path independent
 -- should be extension independent
 -- ok, so a static map for now
--- TODO if possible, define it in post itself
 -- TODO make sure they are unchanged? dump them?
 -- TODO warn if some are gone too?
--- getUpid :: String -> String
--- getUpid x = fromMaybe (error $ "no UPID for " ++ x) $ lookup x path2upid
 
 
 
@@ -269,10 +263,13 @@ main = hakyll $ do
         compile $ ipynbCompiler
               >>= postCompiler ctx
 
-    -- TODO appendIndex??https://github.com/aherrmann/jekyll_style_urls_with_hakyll_examples/blob/master/site.hs
+    match "content/*.org" $ do
+        let ctx = postCtx <> org
+        route   postRoute
+        compile $ orgCompiler
+              >>= postCompiler ctx
 
-
-
+-- TODO appendIndex??https://github.com/aherrmann/jekyll_style_urls_with_hakyll_examples/blob/master/site.hs
 -- https://github.com/turboMaCk/turboMaCk.github.io/blob/develop/site.hs#L61 ??
 -- TODO reference to how to read my posts?? e.g. what todo states mean etc
     -- match "posts/**.org" $ do
@@ -297,7 +294,7 @@ main = hakyll $ do
     --             >>= loadAndApplyTemplate "templates/default.html" archiveCtx
     --             >>= relativizeUrls
 
-    let loadPosts = loadAll ("content/*.md" .||. "content/*.ipynb")
+    let loadPosts = loadAll ("content/*.md" .||. "content/*.ipynb" .||. "content/*.org")
 
 
     match "meta/index.html" $ do
@@ -334,7 +331,20 @@ main = hakyll $ do
 
     match "templates/*" $ compile templateBodyCompiler
 
+-- ugh. there must be an easier way...
+transformCtx :: String -> String -> (ContextField -> ContextField) -> Context a -> Context a
+transformCtx name oldname transform (Context c) = Context $ \k a i -> do
+  if k /= name
+    then c k a i
+    else do
+      fld <- c oldname a i
+      return $ transform fld
+
+issoIdCtx = transformCtx "issoid" "upid" mapfield where
+  mapfield (StringField fld) = StringField $ "isso_" ++ fld
+  mapfield _ = error "unsupported field type"
 
 postCtx :: Context String
 -- left takes precedence
-postCtx = overridesCtx <> defaultContext
+postCtx = issoIdCtx (overridesCtx <> defaultContext)
+
