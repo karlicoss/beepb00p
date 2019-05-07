@@ -61,7 +61,7 @@ overrides = [ ("meta/me.md"                    , dovr { upid    = j "me" } )
                                                       })
             , ("content/recycling-is-hard.md"  , dovr { upid    = j "recycling_is_hard"
                                                       })
-            , ("content/ideas.org"             , dovr { upid    = j "ideas"
+            , ("content/special/ideas.org"     , dovr { upid    = j "ideas"
                                                       })
             ] :: [(String, Overrides)] where
   dovr = defaultOverrides
@@ -216,9 +216,10 @@ main = hakyll $ do
 
 
     -- TODO shit this is problematic for all simple web servers, they think it's octet-stream :(
-    let postRoute =
-          gsubRoute "content/" (const "")
+    let chopOffRoute thing = gsubRoute thing (const "" )
           `composeRoutes` setExtension "html" -- TODO fucking hell it's annoying. couldn't force github pages or preview server to support that
+  
+    let postRoute = chopOffRoute "content/"
 
     match (fromList ["meta/me.md"]) $ do
         route   $ gsubRoute "meta/" (const "") `composeRoutes` setExtension "html"
@@ -235,16 +236,18 @@ main = hakyll $ do
     let ipynb = style "ipynb"
     let md    = style "md"
 
+
+    let orgCompiler   = getResourceString >>= orgCompile
+    let ipynbCompiler = getResourceString >>= ipynbCompile
     -- TODO careful not to pick this file up when we have more org posts
     -- perhaps should just move the link out of content root
-    match "content/ideas.org" $ do
+    match "content/special/ideas.org" $ do
         -- -- let ff  = constField "css" "hello"
         -- let ff = field "css" $ \x -> itemBody x
         -- let ctx = postCtx <> listField "extra_styles" ff (return ["HELLO", "WHOOPS"])
         let ctx = postCtx <> org
-        route   postRoute
-        compile $ getResourceString
-            >>= orgCompile
+        route   $ chopOffRoute "content/special/"
+        compile $ orgCompiler
             >>= postCompiler ctx
 
     -- TODO think how to infer date?
@@ -263,8 +266,7 @@ main = hakyll $ do
     match "content/*.ipynb" $ do
         let ctx = postCtx <> ipynb
         route   postRoute
-        compile $ getResourceString
-              >>= ipynbCompile
+        compile $ ipynbCompiler
               >>= postCompiler ctx
 
     -- TODO appendIndex??https://github.com/aherrmann/jekyll_style_urls_with_hakyll_examples/blob/master/site.hs
