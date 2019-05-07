@@ -29,6 +29,8 @@ def main():
             '--directory', str(get_org_plus_path()),
             str(inp_org),
             '--eval', f'''(progn
+                ; TODO hmm. find another way to configure these...
+                (setq org-todo-keywords '((sequence "TODO" "START" "DONE")))
                 (org-html-export-as-html nil nil nil t)
                 ; t is for BODY-ONLY
                 (write-file "{str(out_html)}")

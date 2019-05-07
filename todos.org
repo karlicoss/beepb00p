@@ -1,3 +1,4 @@
+* Lisbon notes
 -- TODO pandoc lisbon.org -s -o lisbon.html ok that works; also use pandoc -D html for help..
 -- pandoc lisbon.org -s -o lisbon.html --metadata author='Dima'
   
@@ -17,3 +18,5 @@
         --   -- right ok, so it's got meta in Pandoc thing.
 
 * stack build && stack exec site rebuild
+* TODO [2019-05-07 Tue 20:27] rerender regularly so I could fix typos etc?
+Can I base in on or perhaps manual inotify or something?? use folder differen than _site for output?
