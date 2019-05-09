@@ -132,7 +132,7 @@ stripPrivateTodos = compileWithFilter "grep" ["-v", "TODO P "]
 ipynbFilterOutput :: Item String -> Compiler (Item String)
 ipynbFilterOutput = compileWithFilter cmd args
   where cmd = "python3"
-        args = [ "/L/Dropbox/repos/ipynb_output_filter/ipynb_output_filter.py" ] -- TODO use nbstripout??
+        args = [ "/L/soft/ipynb_output_filter/ipynb_output_filter.py" ] -- TODO use nbstripout??
 
 
 -- ugh, images do not really work in markdown..

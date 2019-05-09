@@ -22,3 +22,6 @@
 Can I base in on or perhaps manual inotify or something?? use folder differen than _site for output?
 
 * TODO [2019-05-07 Tue 21:33] shit, org mode generates some random ids every time
+  
+* TODO [2019-05-09 Thu 21:59] for sufs, would be good to have a special 'github' type of post? not sure how to cache local/offline copy... or just need to merge md files
+* TODO [#C] [2019-05-09 Thu 22:01] add importance, so it's easier to skip over not necessarily interesting stuff (like sufs)
