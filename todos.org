@@ -25,3 +25,12 @@ Can I base in on or perhaps manual inotify or something?? use folder differen th
   
 * TODO [2019-05-09 Thu 21:59] for sufs, would be good to have a special 'github' type of post? not sure how to cache local/offline copy... or just need to merge md files
 * TODO [#C] [2019-05-09 Thu 22:01] add importance, so it's easier to skip over not necessarily interesting stuff (like sufs)
+* [2019-05-12 Sun 21:28] old attempts to process org with pandoc
+  
+    -- match "posts/**.org" $ do
+    --     route $ setExtension "html"
+    --     compile $ (do
+    --       pandoc <- getResourceBody >>= readPandoc
+    --       let rendered = writePandoc pandoc
+    --       loadAndApplyTemplate "templates/post.html" myContext $ combineItems PandocX pandoc rendered
+    --       ) >>= relativizeUrls

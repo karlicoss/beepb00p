@@ -272,13 +272,6 @@ main = hakyll $ do
 -- TODO appendIndex??https://github.com/aherrmann/jekyll_style_urls_with_hakyll_examples/blob/master/site.hs
 -- https://github.com/turboMaCk/turboMaCk.github.io/blob/develop/site.hs#L61 ??
 -- TODO reference to how to read my posts?? e.g. what todo states mean etc
-    -- match "posts/**.org" $ do
-    --     route $ setExtension "html"
-    --     compile $ (do
-    --       pandoc <- getResourceBody >>= readPandoc
-    --       let rendered = writePandoc pandoc
-    --       loadAndApplyTemplate "templates/post.html" myContext $ combineItems PandocX pandoc rendered
-    --       ) >>= relativizeUrls
 
     -- create ["archive.html"] $ do
     --     route idRoute
@@ -294,6 +287,7 @@ main = hakyll $ do
     --             >>= loadAndApplyTemplate "templates/default.html" archiveCtx
     --             >>= relativizeUrls
 
+    -- let loadPosts = loadAll ("content/*.md" .||. "content/*.ipynb")
     let loadPosts = loadAll ("content/*.md" .||. "content/*.ipynb" .||. "content/*.org")
 
 
