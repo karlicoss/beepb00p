@@ -1,29 +1,17 @@
 <table class="posts-list">
     $for(posts)$
-    <tr class="sep">
-        <td colspan="2"></td>
-    </tr>
+    <tr class="sep"><td colspan="2"></td></tr>
 
     <tr class="post">
         <td class="title"><a href="$url$">$title$</a></td>
         <td class="date">$date$</td>
     </tr>
-
-    $if(summary)$
+    <!-- TODO careful with span -->
     <tr>
-        <td colspan="2" class="summary">
-            $summary$
-        </td>
+        <td class="summary">$if(summary)$ $summary$ $endif$</td>
+        <td class="tags">$if(tags)$ $tags$ $endif$</td>
     </tr>
-    $endif$
-
-    $if(tags)$
-    <tr>
-        <td colspan="2" class="tags">
-            # $tags$
-        </td>
-    </tr>
-    $endif$
 
     $endfor$
+    <tr class="sep"><td colspan="2"></td></tr>
 </table>

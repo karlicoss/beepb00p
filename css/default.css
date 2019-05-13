@@ -73,9 +73,9 @@ tr.post {
 .posts-list tr.sep td {
   border-top  : 0.5px dotted gray;
 }
-.posts-list tr:last-child td {
-  border-bottom: 0.5px dotted gray;
-}
+/* .posts-list tr:last-child td { */
+/*   border-bottom: 0.5px dotted gray; */
+/* } */
 
 .posts-list .summary {
   padding-left: 0.5em;
@@ -90,9 +90,14 @@ tr.post {
 .posts-list .date {
   font-size: 0.8em;
   float: right;
-  white-space: pre;
+  white-space: pre; /* TODO is this necessary? */
 }
 
+.posts-list .tags {
+  float: right;
+  word-break: break-word;
+  text-align: right;
+}
 
 /* END posts list configuring */
 
