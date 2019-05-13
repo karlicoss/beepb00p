@@ -221,7 +221,9 @@ main = hakyll $ do
             >>= loadAndApplyTemplate "templates/default.html" postCtx
             >>= relativizeUrls
 
-    let postCompiler ctx = loadAndApplyTemplate "templates/post.html" ctx
+    let postCompiler ctx =
+            saveSnapshot "feed-body"
+            >=> loadAndApplyTemplate "templates/post.html" ctx
             >=> loadAndApplyTemplate "templates/default.html" ctx
             >=> relativizeUrls
 
@@ -288,14 +290,13 @@ main = hakyll $ do
     --             >>= relativizeUrls
 
     -- let loadPosts = loadAll ("content/*.md" .||. "content/*.ipynb")
-    let loadPosts = loadAll ("content/*.md" .||. "content/*.ipynb" .||. "content/*.org")
-
+    let patterns = "content/*.md" .||. "content/*.ipynb" .||. "content/*.org"
 
     match "meta/index.html" $ do
         route   $ gsubRoute "meta/" (const "")
         compile $ do
             -- TODO sorting: I guess we want datetime in case of multiple posts on the same day
-            posts <- recentFirst =<< loadPosts
+            posts <- recentFirst =<< loadAll patterns
             let indexCtx =
                     listField "posts" postCtx (return posts)
                     <> constField "title" "Home"
@@ -309,18 +310,22 @@ main = hakyll $ do
     -- TODO atom -- published, updated , I guess handle carefully so there aren't too many annoying updates
     -- TODO include latest only?
     -- TODO not sure if need to prettify description
+    -- TODO use 'content' field??
     let feedCtx = postCtx <> bodyField "description"
+    -- https://jip.dev/posts/post-feed-in-hakyll/
+    -- let feedPosts = loadAllSnapshots patterns "feed-body"
+    let feedPosts = loadAll patterns
 
     create ["atom.xml"] $ do
         route idRoute
         compile $ do
-            posts <- loadPosts
+            posts <- feedPosts
             renderAtom myFeedConfiguration feedCtx posts
 
     create ["rss.xml"] $ do
         route idRoute
         compile $ do
-            posts <- loadPosts
+            posts <- feedPosts
             renderRss myFeedConfiguration feedCtx posts
 
     match "templates/*" $ compile templateBodyCompiler
