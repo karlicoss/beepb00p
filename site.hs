@@ -237,10 +237,19 @@ main = hakyll $ do
     let ipynbCompiler = getResourceString >>= ipynbCompile
     -- TODO careful not to pick this file up when we have more org posts
     -- perhaps should just move the link out of content root
+
+
+    -- TODO unify these 'special' pages
+    -- -- let ff  = constField "css" "hello"
+    -- let ff = field "css" $ \x -> itemBody x
+    -- let ctx = postCtx <> listField "extra_styles" ff (return ["HELLO", "WHOOPS"])
     match "content/special/ideas.org" $ do
-        -- -- let ff  = constField "css" "hello"
-        -- let ff = field "css" $ \x -> itemBody x
-        -- let ctx = postCtx <> listField "extra_styles" ff (return ["HELLO", "WHOOPS"])
+        let ctx = postCtx <> org
+        route   $ chopOffRoute "content/special/"
+        compile $ orgCompiler
+            >>= postCompiler ctx
+
+    match "content/special/notes.org" $ do
         let ctx = postCtx <> org
         route   $ chopOffRoute "content/special/"
         compile $ orgCompiler
