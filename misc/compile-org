@@ -29,19 +29,26 @@ def main():
             '--directory', str(get_org_plus_path()),
             str(inp_org),
             '--eval', f'''(progn
-                ; TODO hmm. find another way to configure these...
-                ; TODO use STRT?
-                (setq org-todo-keywords '((sequence "TODO" "START" "DONE")))
+; TODO ok, so maybe do not export CREATED property, but show it as a tooltip?
+; TODO hmm. find another way to configure these...
+; TODO use STRT?
+(setq org-todo-keywords '((sequence "TODO" "START" "DONE")))
 
-                (defun org-export-deterministic-reference (references)
-                  (let ((new 0))
-                    (while (rassq new references) (setq new (+ new 1))) ; TODO shit, quadratic time! perhaps start with max??
-                    new))
-                (advice-add #'org-export-new-reference :override #'org-export-deterministic-reference)
+(defun org-export-deterministic-reference (references)
+  (let ((new 0))
+    (while (rassq new references) (setq new (+ new 1))) ; TODO shit, quadratic time! perhaps start with max??
+    new))
+(advice-add #'org-export-new-reference :override #'org-export-deterministic-reference)
 
-                (org-html-export-as-html nil nil nil t)
-                ; t is for BODY-ONLY
-                (write-file "{str(out_html)}")
+(setq org-time-stamp-custom-formats
+       '("[%Y-%m-%d]" . "[%Y-%m-%d %H:%M]"))
+
+(setq org-display-custom-times 't)
+
+(org-html-export-as-html nil nil nil t)
+; t is for BODY-ONLY
+(write-file "{str(out_html)}")
+
             )'''
         ])
         sys.stdout.write(out_html.read_text())
