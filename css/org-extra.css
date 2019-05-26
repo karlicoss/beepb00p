@@ -1,5 +1,6 @@
 /* xxx nice stuff from org.css */
 blockquote {
+    /* TODO not sure what margin is for here */
     margin: 1em 2em;
     padding-left: 1em;
     border-left: 3px solid #ccc;
@@ -33,6 +34,28 @@ $monospace: Lucida Console, monospace;
 
 /* xxx */
 
+/* mm. a bit ugly that 3 and 4 are hardcoded. just to tabulate subtasts */
+.outline-3 {
+    padding-left: 0.5em;
+    border-left-width: 3px;
+    border-left-style: dotted;
+
+    border-left-color: transparent;
+}
+.outline-3:hover {
+    border-left-color: #ccc;
+}
+/* TODO ugh. copy pasting */
+.outline-4 {
+    padding-left: 0.5em;
+    border-left-width: 3px;
+    border-left-style: dotted;
+
+    border-left-color: transparent;
+}
+.outline-4:hover {
+    border-left-color: #ccc;
+}
 
 
 /* hack to get around emacs always adding title to org mode export.. */
