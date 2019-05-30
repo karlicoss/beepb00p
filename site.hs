@@ -11,7 +11,7 @@ import Data.Char (toLower)
 import Data.List (intercalate)
 import Data.List.Split (splitOn)
 
-import System.FilePath (replaceExtension, (</>))
+import System.FilePath (takeExtension, replaceExtension, (</>))
 
 import Text.Pandoc (readOrg, Pandoc(..), docTitle, docDate, Meta, Inline)
 import Text.Pandoc.Shared (stringify)
@@ -184,10 +184,12 @@ orgMetadatas = lines |. map tryMeta |. catMaybes
 orgMetas :: Context String
 orgMetas = Context $ \key _ item -> do
   let idd = itemIdentifier item
-  raw_org :: Item String  <- loadSnapshot idd raw_org_key
-  let metas = orgMetadatas $ itemBody raw_org
-  let meta = lookup key metas
-  maybe empty (StringField |. return) meta
+  let path = toFilePath idd
+  if takeExtension path /= ".org" then empty else do
+    raw_org :: Item String  <- loadSnapshot idd raw_org_key
+    let metas = orgMetadatas $ itemBody raw_org
+    let meta = lookup key metas
+    maybe empty (StringField |. return) meta
 
 --- end of org mode stuff
 
@@ -229,7 +231,7 @@ main = hakyll $ do
     let org   = style "org"
     let ipynb = style "ipynb"
     let md    = style "md"
-    let orgCtx = org <> orgMetas <> postCtx -- TODO shit, orgMetas need to be sort of part of postCtx for proper tag extraction on index page?
+    let orgCtx = org <> postCtx
 
     let special = constField "type_special" "x"
 
@@ -345,8 +347,8 @@ issoIdCtx = field "issoid" $ \item -> do
 
 
 postCtx :: Context String
--- left takes precedence
-postCtx = issoIdCtx <> listContextWith "tags" <> defaultContext
+-- orgMetas need to be sort of part of postCtx so its fields are accessible for index page, RSS, etc
+postCtx = issoIdCtx <> listContextWith "tags" <> orgMetas <> defaultContext
 
 -- TODO ok, so this works.. I wonder if I should rely on yaml list or split by spaces instead... later is more org mode friendly. or could have a special org mode context??
 listContextWith :: String -> Context a
