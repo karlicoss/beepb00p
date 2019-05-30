@@ -80,7 +80,8 @@ overridesCtx = Context makeItem where
       | otherwise              = \_ -> Nothing -- TODO ??
 
     ovd = do
-      ov <- getOverrides $ toFilePath $ itemIdentifier item
+      let idd = itemIdentifier item
+      ov <- getOverrides $ toFilePath $ idd
       getter fname ov
 
 -- upid
@@ -348,11 +349,46 @@ transformCtx name oldname transform (Context c) = Context $ \k a i -> do
       fld <- c oldname a i
       return $ transform fld
 
+parseListMetadata :: String -> Context a
+parseListMetadata s = listField s defaultContext $ do
+    identifier <- getUnderlying
+    metadata <- getMetadata identifier
+    let metas = trace (show identifier ++ show metadata) $ maybe [] (map trim . splitAll ",") $ lookupString s metadata
+    let mmm = trace (show metas) $ metas
+    -- let metas = lookupStringList s metadata
+    return $ map (\x -> Item (fromFilePath x) x) $ mmm
+
 issoIdCtx = transformCtx "issoid" "upid" mapfield where
   mapfield (StringField fld) = StringField $ "isso_" ++ fld
   mapfield _ = error "unsupported field type"
 
 postCtx :: Context String
 -- left takes precedence
-postCtx = issoIdCtx (overridesCtx <> defaultContext)
+postCtx = issoIdCtx (listContextWith "tags" <> overridesCtx <> defaultContext)
 
+(|>) = flip ($)
+
+-- TODO ok, so this works.. I wonder if I should rely on yaml list or split by spaces instead... later is more org mode friendly. or could have a special org mode context??
+listContextWith :: String -> Context a
+listContextWith s = listFieldWith s defaultContext (getList s)
+
+
+-- TODO wonder if should implement isso thing same way
+
+-- thanks to https://ohanhi.com/from-jekyll-to-hakyll.html for initial inspiration,
+-- however getUndelying would return index.html for index page
+-- thanks to this post http://beerendlauwers.be/posts/2015-08-17-hacking-on-hakyll-pt-2.html for listFieldWith
+
+getList :: String -> Item a -> Compiler [Item String]
+getList s item = do
+    let idd = itemIdentifier item
+    meta <- getMetadata idd
+    meta
+        |> lookupStringList s
+        |> fromMaybe ["DEFAULT"] -- TODO not sure, maybe fromJust makes more sense?
+        |> map toItem
+        |> return
+
+
+toItem x =
+    Item (fromFilePath x) x

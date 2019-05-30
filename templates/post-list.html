@@ -6,12 +6,13 @@
         <td class="title"><a href="$url$">$title$</a></td>
         <td class="date">$date$</td>
     </tr>
-    <!-- TODO careful with span -->
+    <!-- TODO careful with colspan -->
     <tr>
         <td class="summary">$if(summary)$ $summary$ $endif$</td>
-        <td class="tags">$if(tags)$ $tags$ $endif$</td>
+        <td class="tags">$for(tags)$ $body$ $endfor$</td>
     </tr>
 
     $endfor$
+
     <tr class="sep"><td colspan="2"></td></tr>
 </table>
