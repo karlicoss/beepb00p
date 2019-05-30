@@ -28,61 +28,11 @@ myFeedConfiguration = FeedConfiguration
     }
 
 
--- TODO think about naming?
-data Overrides = Overrides { upid :: Maybe String, date :: Maybe String, title :: Maybe String, summary :: Maybe String }
+-- , ("content/lagrangians.ipynb"     , dovr { upid    = j "they_see_me_flowing"
+--                                           , date    = j "2019-01-01" -- FIXME
+--                                           , title   = j "They see me flowin' they hatin'"
+--                                           , summary = j "Visualising some unconventional Lagrangians and their Hamiltonian flows."
 
-
-defaultOverrides = Overrides { upid = Nothing, date = Nothing, title = Nothing, summary = Nothing }
-
-
--- TODO right, get rid of these in favor of .metadata files?
-overrides = [ ("meta/me.md"                    , dovr { upid    = j "me" } )
-            , ("meta/index.html"               , dovr { upid    = j "index" } )
-            , ("content/lagrangians.ipynb"     , dovr { upid    = j "they_see_me_flowing"
-                                                      , date    = j "2019-01-01" -- FIXME
-                                                      , title   = j "They see me flowin' they hatin'"
-                                                      , summary = j "Visualising some unconventional Lagrangians and their Hamiltonian flows."
-                                                      })
-            , ("content/grasp.md"              , dovr { upid    = j "org_grasp"
-                                                      , summary = j "How to capture information from your browser and stay sane"
-                                                      })
-            , ("content/sleep-tracking.md"     , dovr { upid    = j "sleep_tracking"
-                                                      , summary = j "How not to do it"
-                                                      })
-            , ("content/quantified-mind.md"    , dovr { upid    = j "quantified_mind"
-                                                      , summary = j "Exploiting javascript to reverse engineer cognitive score"
-                                                      })
-            , ("content/ipynb-singleline.ipynb", dovr { upid    = j "ipynb_singleline"
-                                                      , title   = j "Forcing IPython to display multiple equations in single line"
-                                                      , summary = j "How I sacrificed few hours of my life for aethetics"
-                                                      })
-            , ("content/recycling-is-hard.md"  , dovr { upid    = j "recycling_is_hard"
-                                                      })
-            ] :: [(String, Overrides)] where
-  dovr = defaultOverrides
-  j = Just
-
-getOverrides :: String -> Maybe Overrides
-getOverrides x = lookup x overrides -- TODO maybe in that case empty? dangerous though... for disqus id
-
-overridesCtx :: Context a
-overridesCtx = Context makeItem where
-  -- ok, so it's name, parameters, item
-  makeItem fname a item = case ovd of
-      Just x  -> return $ StringField x
-      Nothing -> empty
-    where
-    getter fname
-      | fname == "upid"        = upid
-      | fname == "date"        = date
-      | fname == "title"       = title
-      | fname == "summary"     = summary
-      | otherwise              = \_ -> Nothing -- TODO ??
-
-    ovd = do
-      let idd = itemIdentifier item
-      ov <- getOverrides $ toFilePath $ idd
-      getter fname ov
 
 -- upid
 -- should be path independent
@@ -349,22 +299,14 @@ transformCtx name oldname transform (Context c) = Context $ \k a i -> do
       fld <- c oldname a i
       return $ transform fld
 
-parseListMetadata :: String -> Context a
-parseListMetadata s = listField s defaultContext $ do
-    identifier <- getUnderlying
-    metadata <- getMetadata identifier
-    let metas = trace (show identifier ++ show metadata) $ maybe [] (map trim . splitAll ",") $ lookupString s metadata
-    let mmm = trace (show metas) $ metas
-    -- let metas = lookupStringList s metadata
-    return $ map (\x -> Item (fromFilePath x) x) $ mmm
-
 issoIdCtx = transformCtx "issoid" "upid" mapfield where
   mapfield (StringField fld) = StringField $ "isso_" ++ fld
   mapfield _ = error "unsupported field type"
 
+
 postCtx :: Context String
 -- left takes precedence
-postCtx = issoIdCtx (listContextWith "tags" <> overridesCtx <> defaultContext)
+postCtx = issoIdCtx (listContextWith "tags" <> defaultContext)
 
 (|>) = flip ($)
 

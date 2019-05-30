@@ -1,5 +1,6 @@
 ---
 title: Me
+upid: me
 ---
 In my free time apart from the maintenance of my [physical shell](https://twitter.com/mspowahs/status/957995279092875264) I mostly enjoy building things (sadly, that only involves programming so far) and learning.
 This blog will hopefully aid the latter!
