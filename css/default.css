@@ -93,7 +93,7 @@ tr.post {
   white-space: pre; /* TODO is this necessary? */
 }
 
-.posts-list .tags {
+.posts-list .post-tags {
   float: right;
   word-break: break-word;
   text-align: right;
@@ -102,7 +102,7 @@ tr.post {
 /* END posts list configuring */
 
 
-.tags {
+.post-tag {
   font-size: 0.95em;
   color: #a51;
 }

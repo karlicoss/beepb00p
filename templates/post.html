@@ -23,7 +23,8 @@ $endif$
     </section>
 
     <section class="footer">
-        <div class="tags">$for(tags)$#$body$$sep$ $endfor$</div>
+        <div class="post-tags">$for(tags)$<span class="post-tag">#$body$</span>$sep$ $endfor$</div>
+        <!-- TODO post-date? -->
         <div class="date">$date$</div>
     </section>
 

@@ -163,7 +163,7 @@ main = hakyll $ do
     -- TODO shit this is problematic for all simple web servers, they think it's octet-stream :(
     let chopOffRoute thing = gsubRoute thing (const "" )
           `composeRoutes` setExtension "html" -- TODO fucking hell it's annoying. couldn't force github pages or preview server to support that
-  
+
     let postRoute = chopOffRoute "content/"
 
     match (fromList ["meta/me.md"]) $ do
@@ -190,17 +190,10 @@ main = hakyll $ do
     -- perhaps should just move the link out of content root
 
 
-    -- TODO unify these 'special' pages
     -- -- let ff  = constField "css" "hello"
     -- let ff = field "css" $ \x -> itemBody x
     -- let ctx = postCtx <> listField "extra_styles" ff (return ["HELLO", "WHOOPS"])
-    match "content/special/ideas.org" $ do
-        let ctx = postCtx <> org
-        route   $ chopOffRoute "content/special/"
-        compile $ orgCompiler
-            >>= postCompiler ctx
-
-    match "content/special/notes.org" $ do
+    match "content/special/*.org" $ do
         let ctx = postCtx <> org
         route   $ chopOffRoute "content/special/"
         compile $ orgCompiler
@@ -318,7 +311,7 @@ getList s item = do
     meta <- getMetadata idd
     meta
         |> lookupStringList s
-        |> fromMaybe ["DEFAULT"] -- TODO not sure, maybe fromJust makes more sense?
+        |> fromMaybe [] -- TODO not sure, maybe fromJust makes more sense?
         |> map toItem
         |> return
 

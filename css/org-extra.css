@@ -63,7 +63,7 @@ $monospace: Lucida Console, monospace;
     display: none;
 }
 
-.tag {
+.content .tag {
     float: right;
 }
 
