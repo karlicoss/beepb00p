@@ -290,32 +290,23 @@ main = hakyll $ do
 
     match "templates/*" $ compile templateBodyCompiler
 
--- ugh. there must be an easier way...
-transformCtx :: String -> String -> (ContextField -> ContextField) -> Context a -> Context a
-transformCtx name oldname transform (Context c) = Context $ \k a i -> do
-  if k /= name
-    then c k a i
-    else do
-      fld <- c oldname a i
-      return $ transform fld
+(|>) = flip ($)
 
-issoIdCtx = transformCtx "issoid" "upid" mapfield where
-  mapfield (StringField fld) = StringField $ "isso_" ++ fld
-  mapfield _ = error "unsupported field type"
+issoIdCtx :: Context String
+issoIdCtx = field "issoid" $ \item -> do
+  let idd = itemIdentifier item
+  meta <- getMetadata idd
+  meta |> lookupString "upid" |> fromJust |> ("isso_" ++ ) |> return
 
 
 postCtx :: Context String
 -- left takes precedence
-postCtx = issoIdCtx (listContextWith "tags" <> defaultContext)
-
-(|>) = flip ($)
+postCtx = issoIdCtx <> listContextWith "tags" <> defaultContext
 
 -- TODO ok, so this works.. I wonder if I should rely on yaml list or split by spaces instead... later is more org mode friendly. or could have a special org mode context??
 listContextWith :: String -> Context a
 listContextWith s = listFieldWith s defaultContext (getList s)
 
-
--- TODO wonder if should implement isso thing same way
 
 -- thanks to https://ohanhi.com/from-jekyll-to-hakyll.html for initial inspiration,
 -- however getUndelying would return index.html for index page
