@@ -114,15 +114,11 @@ ipynbRun = compileWithFilter command arguments
                     , "--stdout"
                     ]
 
--- (<&>)  = flip fmap
--- infixl 1 <&>
-
-
-renameItem :: (String -> String) -> Item a -> Item a
-renameItem f i =  i { itemIdentifier = new_id } where
-  old_id = itemIdentifier i
-  old_version = identifierVersion old_id
-  new_id = setVersion old_version $ (fromFilePath $ f $ toFilePath old_id)
+-- renameItem :: (String -> String) -> Item a -> Item a
+-- renameItem f i =  i { itemIdentifier = new_id } where
+--   old_id = itemIdentifier i
+--   old_version = identifierVersion old_id
+--   new_id = setVersion old_version $ (fromFilePath $ f $ toFilePath old_id)
 
 -- TODO ugh itemIdentifier is not exported???
 -- renameItem f x = x { itemIdentifier = new_id } where
@@ -193,6 +189,35 @@ orgMetas = Context $ \key _ item -> do
 
 --- end of org mode stuff
 
+postCompiler ctx =
+    saveSnapshot "feed-body"
+    >=> loadAndApplyTemplate "templates/post.html" ctx
+    >=> loadAndApplyTemplate "templates/default.html" ctx
+    >=> relativizeUrls
+
+style x = constField ("style_" ++ x) "x"  -- kinda like a flag
+-- TODO dispatch based on extension?
+
+mdCtx    = style "md"    <> postCtx
+orgCtx   = style "org"   <> postCtx
+ipynbCtx = style "ipynb" <> postCtx
+
+special = constField "type_special" "x"
+
+-- TODO that's pretty horrible... maybe I need a special item type... and combine compilers?
+orgCompiler   = do
+  res <- getResourceString
+  _ <- saveSnapshot raw_org_key res
+  orgCompile res
+ipynbCompiler = getResourceString >>= ipynbCompile
+-- TODO careful not to pick this file up when we have more org posts
+-- perhaps should just move the link out of content root
+
+
+-- -- let ff  = constField "css" "hello"
+-- let ff = field "css" $ \x -> itemBody x
+-- let ctx = postCtx <> listField "extra_styles" ff (return ["HELLO", "WHOOPS"])
+
 main :: IO ()
 main = hakyll $ do
     match ("meta/favicon.ico" .||. "meta/robots.txt") $ do
@@ -218,36 +243,9 @@ main = hakyll $ do
     match (fromList ["meta/me.md"]) $ do
         route   $ gsubRoute "meta/" (const "") `composeRoutes` setExtension "html"
         compile $ pandocCompiler
-            >>= loadAndApplyTemplate "templates/default.html" postCtx
+            >>= loadAndApplyTemplate "templates/default.html" postCtx -- TODO mdCtx?
             >>= relativizeUrls
 
-    let postCompiler ctx =
-            saveSnapshot "feed-body"
-            >=> loadAndApplyTemplate "templates/post.html" ctx
-            >=> loadAndApplyTemplate "templates/default.html" ctx
-            >=> relativizeUrls
-
-    let style x = constField ("style_" ++ x) "x"  -- kinda like a flag
-    let org   = style "org"
-    let ipynb = style "ipynb"
-    let md    = style "md"
-    let orgCtx = org <> postCtx
-
-    let special = constField "type_special" "x"
-
-    -- TODO that's pretty horrible... maybe I need a special item type... and combine compilers?
-    let orgCompiler   = do
-          res <- getResourceString
-          _ <- saveSnapshot raw_org_key res
-          orgCompile res
-    let ipynbCompiler = getResourceString >>= ipynbCompile
-    -- TODO careful not to pick this file up when we have more org posts
-    -- perhaps should just move the link out of content root
-
-
-    -- -- let ff  = constField "css" "hello"
-    -- let ff = field "css" $ \x -> itemBody x
-    -- let ctx = postCtx <> listField "extra_styles" ff (return ["HELLO", "WHOOPS"])
     match "content/special/*.org" $ do
         let ctx = special <> orgCtx
         route   $ chopOffRoute "content/special/"
@@ -256,7 +254,7 @@ main = hakyll $ do
 
     -- TODO think how to infer date?
     match "content/*.md" $ do
-        let ctx = postCtx <> md
+        let ctx = mdCtx
         route   postRoute
         compile $ pandocCompiler
             >>= postCompiler ctx
@@ -268,7 +266,7 @@ main = hakyll $ do
     -- TODO posts/etc is lame, use top level
     -- TODO tags would be nice...
     match "content/*.ipynb" $ do
-        let ctx = postCtx <> ipynb
+        let ctx = ipynbCtx
         route   postRoute
         compile $ ipynbCompiler
               >>= postCompiler ctx
@@ -342,12 +340,13 @@ main = hakyll $ do
 issoIdCtx :: Context String
 issoIdCtx = field "issoid" $ \item -> do
   let idd = itemIdentifier item
-  meta <- getMetadata idd
+  meta <- getMetadata idd -- TODO ugh. wonder if I need to rewrite back to getting it from Context so org compiling works
   meta |> lookupString "upid" |> fromJust |> ("isso_" ++ ) |> return
 
 
 postCtx :: Context String
 -- orgMetas need to be sort of part of postCtx so its fields are accessible for index page, RSS, etc
+-- TODO def need to write about it, this looks like the way to go and pretty tricky
 postCtx = issoIdCtx <> listContextWith "tags" <> orgMetas <> defaultContext
 
 -- TODO ok, so this works.. I wonder if I should rely on yaml list or split by spaces instead... later is more org mode friendly. or could have a special org mode context??
