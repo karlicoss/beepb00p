@@ -178,11 +178,12 @@ main = hakyll $ do
             >=> loadAndApplyTemplate "templates/default.html" ctx
             >=> relativizeUrls
 
-    let style x = constField ("style_" ++ x) ""  -- kinda like a flag
+    let style x = constField ("style_" ++ x) "x"  -- kinda like a flag
     let org   = style "org"
     let ipynb = style "ipynb"
     let md    = style "md"
 
+    let special = constField "type_special" "x"
 
     let orgCompiler   = getResourceString >>= orgCompile
     let ipynbCompiler = getResourceString >>= ipynbCompile
@@ -194,7 +195,7 @@ main = hakyll $ do
     -- let ff = field "css" $ \x -> itemBody x
     -- let ctx = postCtx <> listField "extra_styles" ff (return ["HELLO", "WHOOPS"])
     match "content/special/*.org" $ do
-        let ctx = postCtx <> org
+        let ctx = special <> postCtx <> org
         route   $ chopOffRoute "content/special/"
         compile $ orgCompiler
             >>= postCompiler ctx

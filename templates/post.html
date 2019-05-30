@@ -22,11 +22,14 @@ $endif$
     $body$
     </section>
 
+    $if(type_special)$
+    $else$
     <section class="footer">
         <div class="post-tags">$for(tags)$<span class="post-tag">#$body$</span>$sep$ $endfor$</div>
         <!-- TODO post-date? -->
         <div class="date">$date$</div>
     </section>
+    $endif$
 
     <section class="comments">
     $partial("templates/isso.html")$
