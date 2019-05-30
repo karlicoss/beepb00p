@@ -9,7 +9,7 @@
     <!-- TODO careful with colspan -->
     <tr>
         <td class="summary">$if(summary)$ $summary$ $endif$</td>
-        <td class="tags">$for(tags)$ $body$ $endfor$</td>
+        <td class="tags">$for(tags)$$body$$sep$ $endfor$</td>
     </tr>
 
     $endfor$

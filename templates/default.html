@@ -9,7 +9,7 @@
         <meta name="generator" content="hakyll">
         <meta name="language"  content="English">
         $if(tags)$
-        <meta name="keywords"  content="$tags$">
+        <meta name="keywords"  content="$for(tags)$$body$$sep$ $endfor$">
         $endif$
         <!-- TODO concat with keywords tags; also need to make comma separated? -->
 
