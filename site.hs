@@ -343,17 +343,34 @@ main = hakyll $ do
 
     match "templates/*" $ compile templateBodyCompiler
 
-issoIdCtx :: Context String
-issoIdCtx = field "issoid" $ \item -> do
-  let idd = itemIdentifier item
-  meta <- getMetadata idd -- TODO ugh. wonder if I need to rewrite back to getting it from Context so org compiling works
-  meta |> lookupString "upid" |> fromJust |> ("isso_" ++ ) |> return
+type DependentField = (String -> Compiler ContextField) -> Compiler ContextField
+
+issoid :: DependentField
+issoid handle = do
+  (StringField value) <- handle "upid"
+  return $ StringField $ "isso_" ++ value
+
+dependentField :: String -> DependentField -> Context a -> Context a
+dependentField new_key value (Context c) = Context $ \key a item -> do
+   if key /= new_key
+     then empty
+     else value (\k -> c k a item)
+
+
+-- TODO ugh, that looks somewhat wrong and against the Monoid interface, but not sure if I can do anything in the absence of metadata
+issoIdCtx :: Context a -> Context a
+issoIdCtx ctx = (dependentField "issoid" issoid ctx) <> ctx
+
+-- issoIdCtx = field "issoid" $ \item -> do
+--   let idd = itemIdentifier item
+--   meta <- getMetadata idd -- TODO ugh. wonder if I need to rewrite back to getting it from Context so org compiling works
+--   meta |> lookupString "upid" |> fromJust |> ("isso_" ++ ) |> return
 
 
 postCtx :: Context String
 -- orgMetas need to be sort of part of postCtx so its fields are accessible for index page, RSS, etc
 -- TODO def need to write about it, this looks like the way to go and pretty tricky
-postCtx = issoIdCtx <> listContextWith "tags" <> orgMetas <> defaultContext
+postCtx = issoIdCtx $ listContextWith "tags" <> orgMetas <> defaultContext
 
 -- TODO ok, so this works.. I wonder if I should rely on yaml list or split by spaces instead... later is more org mode friendly. or could have a special org mode context??
 listContextWith :: String -> Context a
