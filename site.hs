@@ -10,6 +10,8 @@ import Data.Maybe (fromJust, fromMaybe, catMaybes)
 import Data.Char (toLower)
 import Data.List (intercalate)
 import Data.List.Split (splitOn)
+import           Data.Time.Clock   (UTCTime (..))
+import qualified Data.Time.Format  as TF
 
 import System.FilePath (takeExtension, replaceExtension, (</>))
 
@@ -28,6 +30,10 @@ import qualified Hakyll.Core.Store       as Store
 
 (|>) = flip ($)
 (|.) = flip (.)
+
+the :: [a] -> a
+the [x] = x
+the l   = error $ "expected single item, got " ++ (show $ length l) ++ " instead"
 
 baseUrl = "https://beepb00p.xyz"
 
@@ -350,6 +356,7 @@ issoid handle = do
   (StringField value) <- handle "upid"
   return $ StringField $ "isso_" ++ value
 
+-- TODO ugh, that looks somewhat wrong and against the Monoid interface, but not sure if I can do anything in the absence of metadata
 dependentField :: String -> DependentField -> Context a -> Context a
 dependentField new_key value (Context c) = Context $ \key a item -> do
    if key /= new_key
@@ -357,7 +364,7 @@ dependentField new_key value (Context c) = Context $ \key a item -> do
      else value (\k -> c k a item)
 
 
--- TODO ugh, that looks somewhat wrong and against the Monoid interface, but not sure if I can do anything in the absence of metadata
+-----
 issoIdCtx :: Context a -> Context a
 issoIdCtx ctx = (dependentField "issoid" issoid ctx) <> ctx
 
@@ -365,12 +372,43 @@ issoIdCtx ctx = (dependentField "issoid" issoid ctx) <> ctx
 --   let idd = itemIdentifier item
 --   meta <- getMetadata idd -- TODO ugh. wonder if I need to rewrite back to getting it from Context so org compiling works
 --   meta |> lookupString "upid" |> fromJust |> ("isso_" ++ ) |> return
+-----
+
+
+-----
+-- judging by https://jaspervdj.be/hakyll/reference/src/Hakyll.Web.Template.Context.html#dateFieldWith,
+-- builtin dateField always looks at item UTC time, which is not necessarily what we want
+-- also it suffers from the same problem of depending on intrinsic metadata :(
+inputDtFormats =
+    [ "%a, %d %b %Y %H:%M:%S %Z"
+    , "%Y-%m-%dT%H:%M:%S%Z"
+    , "%Y-%m-%d %H:%M:%S%Z"
+    , "%Y-%m-%d"
+    , "%B %e, %Y"
+
+    -- org mode timestamps
+    , "[%Y-%m-%d %a %H:%M]"
+    , "[%Y-%m-%d %a]"
+    ]
+outputDtFormat = "%d %B %Y" -- TODO might want to include time in some places...
+
+dateExtractor :: DependentField
+dateExtractor reader = do
+  (StringField dstr) <- reader "date"
+  let ut :: UTCTime = the $ catMaybes $ [TF.parseTimeM False TF.defaultTimeLocale fmt dstr | fmt <- inputDtFormats]
+  let ds = TF.formatTime TF.defaultTimeLocale outputDtFormat ut
+  return $ StringField $ ds
+
+dateCtx :: Context a -> Context a
+dateCtx ctx = (dependentField "date" dateExtractor ctx) <> ctx
+
+-----
 
 
 postCtx :: Context String
 -- orgMetas need to be sort of part of postCtx so its fields are accessible for index page, RSS, etc
 -- TODO def need to write about it, this looks like the way to go and pretty tricky
-postCtx = issoIdCtx $ listContextWith "tags" <> orgMetas <> defaultContext
+postCtx = dateCtx $ issoIdCtx $ listContextWith "tags" <> orgMetas <> defaultContext
 
 -- TODO ok, so this works.. I wonder if I should rely on yaml list or split by spaces instead... later is more org mode friendly. or could have a special org mode context??
 listContextWith :: String -> Context a
