@@ -92,7 +92,7 @@ compileWithFilter cmd args = withItemBody (unixFilter cmd args)
 -- python3 ./ipynb_output_filter.py <lagr.ipynb >lagr2.ipynb 
 
 stripPrivateTodos :: Item String -> Compiler (Item String)
-stripPrivateTodos = compileWithFilter "grep" ["-v", "TODO P "]
+stripPrivateTodos = compileWithFilter "grep" ["-v", "NOEXPORT"]
 
 ipynbFilterOutput :: Item String -> Compiler (Item String)
 ipynbFilterOutput = compileWithFilter cmd args

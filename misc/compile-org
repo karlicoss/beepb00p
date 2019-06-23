@@ -13,12 +13,22 @@ def get_org_plus_path() -> Path:
     return matches[0]
 
 
+def filter_private(data: str) -> str:
+    lines = [l for l in data.splitlines() if 'NOEXPORT' not in l]
+    return '\n'.join(lines)
+
+
 def main():
     org_data = sys.stdin.read()
     with tempfile.TemporaryDirectory() as td:
         td = Path(td)
+
+        org_data = filter_private(org_data)
+
         inp_org  = td / 'input.org'
         inp_org.write_text(org_data)
+
+
         out_html = td / 'output.html'
 
         # TODO make sure it propagates errors properly...
