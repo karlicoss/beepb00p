@@ -246,6 +246,12 @@ main = hakyll $ do
             >>= loadAndApplyTemplate "templates/default.html" postCtx -- TODO mdCtx?
             >>= relativizeUrls
 
+    match "content/meta/*.org" $ do
+        let ctx = special <> orgCtx
+        route   $ chopOffRoute "content/meta/"
+        compile $ orgCompiler
+            >>= postCompiler ctx
+
     match "content/special/*.org" $ do
         let ctx = special <> orgCtx
         route   $ chopOffRoute "content/special/"
