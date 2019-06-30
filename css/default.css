@@ -12,6 +12,28 @@ html {
     }
 }
 
+
+a:link {
+    text-decoration: none;
+    font-weight: bold;
+}
+
+a:visited {
+    text-decoration: none;
+    font-weight: bold;
+}
+
+a:hover {
+    text-decoration: underline;
+    font-weight: bold;
+}
+
+a:active {
+    text-decoration: underline;
+    font-weight: bold;
+}
+
+
 /* not sure about this one.. */
 header {
    border-bottom: 0.1rem solid;
@@ -65,38 +87,66 @@ footer {
   table-layout: fixed; width: 100%;
 }
 
-tr.post {
-  padding-top   : 1em;
-  padding-bottom: 1em;
-}
 
-.posts-list tr.sep td {
-  border-top  : 0.5px dotted gray;
-}
+/* .posts-list tr.sep td { */
+/*     border-top  : 0.5px dotted gray; */
+/* } */
+/* .posts-list .sep { */
+/*     padding-left: 2em; */
+/*     padding-right: 2em; */
+/* } */
 /* .posts-list tr:last-child td { */
 /*   border-bottom: 0.5px dotted gray; */
 /* } */
 
-.posts-list .summary {
-  padding-left: 0.5em;
-  font-size: 0.95em;
+
+.posts-list tr td {
+    border: 10px solid transparent
 }
 
-.posts-list .sep {
-  padding-left: 2em;
-  padding-right: 2em;
+.posts-list {
+    border-collapse: collapse;
+}
+
+.posts-list tr:nth-child(4n+1) {
+    background: #EEE;
+}
+.posts-list tr:nth-child(4n+2) {
+    background: #EEE;
+}
+.posts-list tr:nth-child(4n+3) {
+    background: #FFF;
+}
+.posts-list tr:nth-child(4n) {
+    background: #FFF;
+}
+
+.posts-list .post {
+    vertical-align: top;
+}
+
+.posts-list .post a:link {
+    text-decoration: none;
+    font-weight: initial;
+}
+
+.posts-list .summary {
+  padding-left: 0.5em;
+  font-size: 0.9em;
 }
 
 .posts-list .date {
   font-size: 0.8em;
   float: right;
   white-space: pre; /* TODO is this necessary? */
+  font-family: "Lucida Console", Monaco, monospace;
 }
 
 .posts-list .post-tags {
   float: right;
   word-break: break-word;
   text-align: right;
+  font-family: "Lucida Console", Monaco, monospace;
 }
 
 /* END posts list configuring */
@@ -143,26 +193,6 @@ article .footer .date {
   color: #555;
 }
 
-
-a:link {
-    text-decoration: none;
-    font-weight: bold;
-}
-
-a:visited {
-    text-decoration: none;
-    font-weight: bold;
-}
-
-a:hover {
-    text-decoration: underline;
-    font-weight: bold;
-}
-
-a:active {
-    text-decoration: underline;
-    font-weight: bold;
-}
 
 img {
     max-width: 100%;
