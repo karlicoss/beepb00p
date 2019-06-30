@@ -246,7 +246,7 @@ main = hakyll $ do
 
     let postRoute = chopOffRoute "content/"
 
-    match (fromList ["meta/me.md"]) $ do
+    match (fromList ["meta/me.md", "meta/feed.md"]) $ do
         route   $ gsubRoute "meta/" (const "") `composeRoutes` setExtension "html"
         compile $ pandocCompiler
             >>= loadAndApplyTemplate "templates/default.html" postCtx -- TODO mdCtx?
