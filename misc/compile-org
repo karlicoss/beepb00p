@@ -55,6 +55,13 @@ def main():
 
 (setq org-display-custom-times 't)
 
+; TODO give tags different colors depending on whether it actually exists or not?
+(defun org-blog-tag (path desc fmt)
+   (format "<a class='post-tag' href='./tags.html#%s'>#%s</a>" path path)
+)
+(org-add-link-type "tag" nil 'org-blog-tag)
+
+
 (org-html-export-as-html nil nil nil t)
 ; t is for BODY-ONLY
 (write-file "{str(out_html)}")
