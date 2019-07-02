@@ -237,7 +237,8 @@ main = hakyll $ do
 
     match "css/*" $ do
         route   idRoute
-        compile compressCssCompiler -- TODO eh? do not compress?
+        -- compile compressCssCompiler -- compressed css is pretty git unfriendly. I bet it doesn't matter in modern browsers
+        compile copyFileCompiler
 
 
     -- TODO shit this is problematic for all simple web servers, they think it's octet-stream :(
