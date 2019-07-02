@@ -25,7 +25,7 @@ $endif$
     $if(type_special)$
     $else$
     <section class="footer">
-        <div class="post-tags">$for(tags)$<span class="post-tag">#$body$</span>$sep$ $endfor$</div>
+        <td class="post-tags">$for(tags)$<a class="post-tag" href="/tags.html#$body$">#$body$</a>$sep$ $endfor$</td>
         <!-- TODO post-date? -->
         <div class="date">$date$</div>
     </section>
