@@ -13,24 +13,28 @@ html {
 }
 
 
+:root {
+    --link-color: #0000EE;
+    --visited-link-color: #551A8B;
+}
+
+/*
+   Used to be bold, but visually a bit too spammy. I wouldn't mind 'slightly' bold perhaps at some point..
+ */
 a:link {
     text-decoration: none;
-    font-weight: bold;
 }
 
 a:visited {
     text-decoration: none;
-    font-weight: bold;
 }
 
 a:hover {
     text-decoration: underline;
-    font-weight: bold;
 }
 
 a:active {
     text-decoration: underline;
-    font-weight: bold;
 }
 
 
