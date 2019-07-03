@@ -21,10 +21,20 @@ SPEC = [
         'stack-exchange',
         '*="stackexchange.com"'
     ),
+    (
+        'youtube',
+        '*="youtube.com"',
+        '*="youtu.be"',
+    ),
+    (
+        'image',
+        '$=".png"',
+        '$=".jpg"',
+    ),
 ]
 
 TEMPLATE = """
-a[hrefLOC]::after {
+_UNVISITED_ {
     content: "";
     opacity: 0.85;
 
@@ -39,10 +49,16 @@ a[hrefLOC]::after {
     mask-image: url('../images/links/ICON.svg');
     background-color: var(--link-color);
 }
-a[hrefLOC]:visited::after {
+_VISITED_ {
     background-color: var(--visited-link-color);
 }
 """.lstrip()
+
+def make(locs):
+    unv = ' ,\n'.join(f"a[href{loc}]::after" for loc in locs)
+    vis = ' ,\n'.join(f"a[href{loc}]:visited::after" for loc in locs)
+    return TEMPLATE.replace('_UNVISITED_', unv).replace('_VISITED_', vis)
+
 
 BASE = """
 /*
@@ -86,8 +102,10 @@ def main():
     out = Path(__file__).parent / 'links.css'
     with out.open('w') as fo:
         fo.write(BASE)
-        for icon, loc in SPEC:
-            thing = TEMPLATE.replace('ICON', icon).replace('LOC', loc)
+        for xx in SPEC:
+            icon = xx[0]
+            locs = xx[1:]
+            thing = make(locs).replace('ICON', icon)
             fo.write(thing)
 
 

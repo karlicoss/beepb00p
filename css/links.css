@@ -121,3 +121,43 @@ a[href*="stackexchange.com"]::after {
 a[href*="stackexchange.com"]:visited::after {
     background-color: var(--visited-link-color);
 }
+a[href*="youtube.com"]::after ,
+a[href*="youtu.be"]::after {
+    content: "";
+    opacity: 0.85;
+
+    mask-repeat: no-repeat;
+    width: 0.85em;
+    height: 0.75em;
+    display: inline-block;
+    vertical-align: top;
+
+    margin-left: 0.1em;
+
+    mask-image: url('../images/links/youtube.svg');
+    background-color: var(--link-color);
+}
+a[href*="youtube.com"]:visited::after ,
+a[href*="youtu.be"]:visited::after {
+    background-color: var(--visited-link-color);
+}
+a[href$=".png"]::after ,
+a[href$=".jpg"]::after {
+    content: "";
+    opacity: 0.85;
+
+    mask-repeat: no-repeat;
+    width: 0.85em;
+    height: 0.75em;
+    display: inline-block;
+    vertical-align: top;
+
+    margin-left: 0.1em;
+
+    mask-image: url('../images/links/image.svg');
+    background-color: var(--link-color);
+}
+a[href$=".png"]:visited::after ,
+a[href$=".jpg"]:visited::after {
+    background-color: var(--visited-link-color);
+}
