@@ -11,7 +11,15 @@ SPEC = [
     ),
     (
         'github',
-        '*="github.com"'
+        '*="github.com"',
+    ),
+    (
+        'reddit',
+        '*="reddit.com"',
+    ),
+    (
+        'stack-exchange',
+        '*="stackexchange.com"'
     ),
 ]
 

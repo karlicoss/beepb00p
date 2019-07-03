@@ -85,3 +85,39 @@ a[href*="github.com"]::after {
 a[href*="github.com"]:visited::after {
     background-color: var(--visited-link-color);
 }
+a[href*="reddit.com"]::after {
+    content: "";
+    opacity: 0.85;
+
+    mask-repeat: no-repeat;
+    width: 0.85em;
+    height: 0.75em;
+    display: inline-block;
+    vertical-align: top;
+
+    margin-left: 0.1em;
+
+    mask-image: url('../images/links/reddit.svg');
+    background-color: var(--link-color);
+}
+a[href*="reddit.com"]:visited::after {
+    background-color: var(--visited-link-color);
+}
+a[href*="stackexchange.com"]::after {
+    content: "";
+    opacity: 0.85;
+
+    mask-repeat: no-repeat;
+    width: 0.85em;
+    height: 0.75em;
+    display: inline-block;
+    vertical-align: top;
+
+    margin-left: 0.1em;
+
+    mask-image: url('../images/links/stack-exchange.svg');
+    background-color: var(--link-color);
+}
+a[href*="stackexchange.com"]:visited::after {
+    background-color: var(--visited-link-color);
+}
