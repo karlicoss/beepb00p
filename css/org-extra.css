@@ -82,3 +82,11 @@ $monospace: Lucida Console, monospace;
     display: inline-block;
     width: 5ch; /* to fit in START. perhaps need 6 for CANCEL as well? */
 }
+
+
+tbody tr:nth-child(2n+1) {
+    background: #EEE;
+}
+tbody tr:nth-child(2n+2) {
+    background: #FFF;
+}
