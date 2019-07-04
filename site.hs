@@ -226,8 +226,11 @@ ipynbCompiler = getResourceString >>= ipynbCompile
 
 main :: IO ()
 main = hakyll $ do
+    -- TODO shit this is problematic for all simple web servers, they think it's octet-stream :(
+    let chopOffRoute thing = gsubRoute thing (const "" )
+
     match ("meta/favicon.ico" .||. "meta/robots.txt") $ do
-        route   $ gsubRoute "meta/" (const "")
+        route   $ chopOffRoute "meta/"
         compile   copyFileCompiler
 
 
@@ -241,27 +244,32 @@ main = hakyll $ do
         compile copyFileCompiler
 
 
-    -- TODO shit this is problematic for all simple web servers, they think it's octet-stream :(
-    let chopOffRoute thing = gsubRoute thing (const "" )
-          `composeRoutes` setExtension "html" -- TODO fucking hell it's annoying. couldn't force github pages or preview server to support that
+    -- TODO fucking hell it's annoying. couldn't force github pages or preview server to support that
+    let html = setExtension "html"
 
-    let postRoute = chopOffRoute "content/"
+    let (|-) = composeRoutes
+
+    let postRoute = chopOffRoute "content/" |- html
 
     match (fromList ["meta/me.md", "meta/feed.md"]) $ do
-        route   $ gsubRoute "meta/" (const "") `composeRoutes` setExtension "html"
+        route   $ chopOffRoute "meta/" |- html
         compile $ pandocCompiler
             >>= loadAndApplyTemplate "templates/default.html" postCtx -- TODO mdCtx?
             >>= relativizeUrls
 
+    match "content/**.jpg" $ do
+      route   $ chopOffRoute "content/"
+      compile copyFileCompiler
+
     match "content/meta/*.org" $ do
         let ctx = special <> orgCtx
-        route   $ chopOffRoute "content/meta/"
+        route   $ chopOffRoute "content/meta/" |- html
         compile $ orgCompiler
             >>= postCompiler ctx
 
     match "content/special/*.org" $ do
         let ctx = special <> orgCtx
-        route   $ chopOffRoute "content/special/"
+        route   $ chopOffRoute "content/special/" |- html
         compile $ orgCompiler
             >>= postCompiler ctx
 
