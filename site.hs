@@ -325,8 +325,10 @@ main = hakyll $ do
         compile $ do
             -- TODO sorting: I guess we want datetime in case of multiple posts on the same day
             posts <- recentFirst =<< loadAll patterns
+            let forIndex = filter (\p -> itemIdentifier p /= "content/annotating.org") posts -- TODO FIXME remove
+            -- TODO eh, extract it...
             let indexCtx =
-                    listField "posts" postCtx (return posts)
+                    listField "posts" postCtx (return forIndex)
                     <> constField "title" "Home"
                     <> defaultContext
 
@@ -347,14 +349,16 @@ main = hakyll $ do
     create ["atom.xml"] $ do
         route idRoute
         compile $ do
-            posts <- feedPosts
-            renderAtom myFeedConfiguration feedCtx posts
+            posts <-  feedPosts
+            let forIndex = filter (\p -> itemIdentifier p /= "content/annotating.org") posts -- TODO FIXME remove
+            renderAtom myFeedConfiguration feedCtx forIndex
 
     create ["rss.xml"] $ do
         route idRoute
         compile $ do
             posts <- feedPosts
-            renderRss myFeedConfiguration feedCtx posts
+            let forIndex = filter (\p -> itemIdentifier p /= "content/annotating.org") posts -- TODO FIXME remove
+            renderRss myFeedConfiguration feedCtx forIndex
 
     match "templates/*" $ compile templateBodyCompiler
 
