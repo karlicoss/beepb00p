@@ -320,12 +320,14 @@ main = hakyll $ do
     -- let loadPosts = loadAll ("content/*.md" .||. "content/*.ipynb")
     let patterns = "content/*.md" .||. "content/*.ipynb" .||. "content/*.org"
 
+    let prefilter p = True -- itemIdentifier p /= "content/annotating.org" -- TODO FIXME meh, implement properly..
+
     match "meta/index.html" $ do
         route   $ gsubRoute "meta/" (const "")
         compile $ do
             -- TODO sorting: I guess we want datetime in case of multiple posts on the same day
             posts <- recentFirst =<< loadAll patterns
-            let forIndex = filter (\p -> itemIdentifier p /= "content/annotating.org") posts -- TODO FIXME remove
+            let forIndex = filter prefilter posts
             -- TODO eh, extract it...
             let indexCtx =
                     listField "posts" postCtx (return forIndex)
@@ -350,14 +352,14 @@ main = hakyll $ do
         route idRoute
         compile $ do
             posts <-  feedPosts
-            let forIndex = filter (\p -> itemIdentifier p /= "content/annotating.org") posts -- TODO FIXME remove
+            let forIndex = filter prefilter posts
             renderAtom myFeedConfiguration feedCtx forIndex
 
     create ["rss.xml"] $ do
         route idRoute
         compile $ do
             posts <- feedPosts
-            let forIndex = filter (\p -> itemIdentifier p /= "content/annotating.org") posts -- TODO FIXME remove
+            let forIndex = filter prefilter posts
             renderRss myFeedConfiguration feedCtx forIndex
 
     match "templates/*" $ compile templateBodyCompiler
