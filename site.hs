@@ -415,7 +415,13 @@ dateExtractor reader = do
   return $ StringField $ ds
 
 dateCtx :: Context a -> Context a
-dateCtx ctx = (dependentField "date" dateExtractor ctx) <> ctx
+dateCtx ctx = (dependentField "date" dateExtractor ctx)
+           <> ctx
+           -- <> (dependentField "published" dateExtractor ctx)
+           -- <> (dependentField "updated" dateExtractor ctx)
+-- TODO ugh. not sure if I want 'updated' to be curated or not?? basically it should reflect underlying content changes only, no css etc
+-- TODO for symlinks, should resolve them as well
+-- hmm, for updated git wouldn't preserve timestamp; so I should use last git modification time if it's in git, or follow symlink and use mtime? What if it's in git there?.... need some debugging overview
 
 -----
 
