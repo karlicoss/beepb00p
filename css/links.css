@@ -35,7 +35,9 @@ a[href$=".pdf"]::after {
     content: "";
     opacity: 0.85;
 
-    mask-repeat: no-repeat;
+    -webkit-mask-repeat: no-repeat;
+            mask-repeat: no-repeat;
+
     width: 0.85em;
     height: 0.75em;
     display: inline-block;
@@ -43,7 +45,9 @@ a[href$=".pdf"]::after {
 
     margin-left: 0.1em;
 
-    mask-image: url('../images/links/file-pdf.svg');
+    -webkit-mask-image: url('../images/links/file-pdf.svg');
+            mask-image: url('../images/links/file-pdf.svg');
+
     background-color: var(--link-color);
 }
 a[href$=".pdf"]:visited::after {
@@ -53,7 +57,9 @@ a[href*="wikipedia.org/wiki/"]::after {
     content: "";
     opacity: 0.85;
 
-    mask-repeat: no-repeat;
+    -webkit-mask-repeat: no-repeat;
+            mask-repeat: no-repeat;
+
     width: 0.85em;
     height: 0.75em;
     display: inline-block;
@@ -61,7 +67,9 @@ a[href*="wikipedia.org/wiki/"]::after {
 
     margin-left: 0.1em;
 
-    mask-image: url('../images/links/wikipedia.svg');
+    -webkit-mask-image: url('../images/links/wikipedia.svg');
+            mask-image: url('../images/links/wikipedia.svg');
+
     background-color: var(--link-color);
 }
 a[href*="wikipedia.org/wiki/"]:visited::after {
@@ -71,7 +79,9 @@ a[href*="github.com"]::after {
     content: "";
     opacity: 0.85;
 
-    mask-repeat: no-repeat;
+    -webkit-mask-repeat: no-repeat;
+            mask-repeat: no-repeat;
+
     width: 0.85em;
     height: 0.75em;
     display: inline-block;
@@ -79,7 +89,9 @@ a[href*="github.com"]::after {
 
     margin-left: 0.1em;
 
-    mask-image: url('../images/links/github.svg');
+    -webkit-mask-image: url('../images/links/github.svg');
+            mask-image: url('../images/links/github.svg');
+
     background-color: var(--link-color);
 }
 a[href*="github.com"]:visited::after {
@@ -89,7 +101,9 @@ a[href*="reddit.com"]::after {
     content: "";
     opacity: 0.85;
 
-    mask-repeat: no-repeat;
+    -webkit-mask-repeat: no-repeat;
+            mask-repeat: no-repeat;
+
     width: 0.85em;
     height: 0.75em;
     display: inline-block;
@@ -97,7 +111,9 @@ a[href*="reddit.com"]::after {
 
     margin-left: 0.1em;
 
-    mask-image: url('../images/links/reddit.svg');
+    -webkit-mask-image: url('../images/links/reddit.svg');
+            mask-image: url('../images/links/reddit.svg');
+
     background-color: var(--link-color);
 }
 a[href*="reddit.com"]:visited::after {
@@ -107,7 +123,9 @@ a[href*="stackexchange.com"]::after {
     content: "";
     opacity: 0.85;
 
-    mask-repeat: no-repeat;
+    -webkit-mask-repeat: no-repeat;
+            mask-repeat: no-repeat;
+
     width: 0.85em;
     height: 0.75em;
     display: inline-block;
@@ -115,7 +133,9 @@ a[href*="stackexchange.com"]::after {
 
     margin-left: 0.1em;
 
-    mask-image: url('../images/links/stack-exchange.svg');
+    -webkit-mask-image: url('../images/links/stack-exchange.svg');
+            mask-image: url('../images/links/stack-exchange.svg');
+
     background-color: var(--link-color);
 }
 a[href*="stackexchange.com"]:visited::after {
@@ -126,7 +146,9 @@ a[href*="youtu.be"]::after {
     content: "";
     opacity: 0.85;
 
-    mask-repeat: no-repeat;
+    -webkit-mask-repeat: no-repeat;
+            mask-repeat: no-repeat;
+
     width: 0.85em;
     height: 0.75em;
     display: inline-block;
@@ -134,7 +156,9 @@ a[href*="youtu.be"]::after {
 
     margin-left: 0.1em;
 
-    mask-image: url('../images/links/youtube.svg');
+    -webkit-mask-image: url('../images/links/youtube.svg');
+            mask-image: url('../images/links/youtube.svg');
+
     background-color: var(--link-color);
 }
 a[href*="youtube.com"]:visited::after ,
@@ -146,7 +170,9 @@ a[href$=".jpg"]::after {
     content: "";
     opacity: 0.85;
 
-    mask-repeat: no-repeat;
+    -webkit-mask-repeat: no-repeat;
+            mask-repeat: no-repeat;
+
     width: 0.85em;
     height: 0.75em;
     display: inline-block;
@@ -154,7 +180,9 @@ a[href$=".jpg"]::after {
 
     margin-left: 0.1em;
 
-    mask-image: url('../images/links/image.svg');
+    -webkit-mask-image: url('../images/links/image.svg');
+            mask-image: url('../images/links/image.svg');
+
     background-color: var(--link-color);
 }
 a[href$=".png"]:visited::after ,

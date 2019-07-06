@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+# TODO hmm use that?
+
 SPEC = [
     (
         'file-pdf',
@@ -38,7 +40,9 @@ _UNVISITED_ {
     content: "";
     opacity: 0.85;
 
-    mask-repeat: no-repeat;
+    -webkit-mask-repeat: no-repeat;
+            mask-repeat: no-repeat;
+
     width: 0.85em;
     height: 0.75em;
     display: inline-block;
@@ -46,7 +50,9 @@ _UNVISITED_ {
 
     margin-left: 0.1em;
 
-    mask-image: url('../images/links/ICON.svg');
+    -webkit-mask-image: url('../images/links/ICON.svg');
+            mask-image: url('../images/links/ICON.svg');
+
     background-color: var(--link-color);
 }
 _VISITED_ {
