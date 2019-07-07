@@ -46,13 +46,6 @@ myFeedConfiguration = FeedConfiguration
     , feedRoot        = baseUrl -- TODO how to test feed?
     }
 
-
--- , ("content/lagrangians.ipynb"     , dovr { upid    = j "they_see_me_flowing"
---                                           , date    = j "2019-01-01" -- FIXME
---                                           , title   = j "They see me flowin' they hatin'"
---                                           , summary = j "Visualising some unconventional Lagrangians and their Hamiltonian flows."
-
-
 -- upid
 -- should be path independent
 -- should be extension independent
@@ -317,8 +310,25 @@ main = hakyll $ do
     --             >>= loadAndApplyTemplate "templates/default.html" archiveCtx
     --             >>= relativizeUrls
 
-    -- let loadPosts = loadAll ("content/*.md" .||. "content/*.ipynb")
     let patterns = "content/*.md" .||. "content/*.ipynb" .||. "content/*.org"
+
+    tags <- buildTags patterns (fromCapture "tags/*.html")
+    -- TODO ok, so tags are in here
+    -- TODO how to refer to them on tags page?
+    -- TODO that would require some elaborate matching with CUSTOM_ID...
+
+    -- tagsRules tags $ \tag pattern -> do
+    --   let title = "Posts tagged \"" ++ tag ++ "\""
+    --   route idRoute
+    --   compile $ do
+    --       posts <- recentFirst =<< loadAll pattern
+    --       let ctx = constField "title" title
+    --                 `mappend` listField "posts" postCtx (return posts)
+    --                 `mappend` defaultContext
+
+    --       makeItem ""
+    --           >>= loadAndApplyTemplate "templates/tag.html" ctx
+    --           >>= relativizeUrls
 
     let prefilter p = True -- itemIdentifier p /= "content/annotating.org" -- TODO FIXME meh, implement properly..
 
@@ -430,6 +440,7 @@ postCtx :: Context String
 -- orgMetas need to be sort of part of postCtx so its fields are accessible for index page, RSS, etc
 -- TODO def need to write about it, this looks like the way to go and pretty tricky
 postCtx = dateCtx $ issoIdCtx $ listContextWith "tags" <> orgMetas <> defaultContext
+-- TODO need to handle org tags via dependentCtx as well.. not sure perhaps merge with ones in metadata since org syntax doesn't allow some of the tags?
 
 -- TODO ok, so this works.. I wonder if I should rely on yaml list or split by spaces instead... later is more org mode friendly. or could have a special org mode context??
 listContextWith :: String -> Context a
