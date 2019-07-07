@@ -4,6 +4,7 @@ build-type:         Simple
 cabal-version:      >= 1.10
 
 executable site
+  other-modules:    Common, Org
   main-is:          site.hs
   build-depends:    base == 4.*
                   , hakyll == 4.12.*
