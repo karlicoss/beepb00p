@@ -11,10 +11,15 @@ import Data.Maybe (fromJust, fromMaybe, catMaybes)
 import System.FilePath (takeExtension, replaceExtension, (</>))
 
 
-import Hakyll (Item, Compiler, Context, Context(..), ContextField(StringField), loadSnapshot, itemBody, itemIdentifier)
+import Hakyll (Item, Compiler, Context, Context(..), ContextField(StringField), loadSnapshot, itemBody, itemIdentifier, getResourceString, saveSnapshot)
 
 import Common (compileWithFilter, (|>), (|.))
 
+
+-- import Text.Pandoc.Shared (stringify)
+-- import Text.Pandoc.Options (def, writerVariables, writerTableOfContents)
+
+-- import Hakyll.Web.Pandoc
 -- import Text.Pandoc (readOrg, Pandoc(..), docTitle, docDate, Meta, Inline)
 -- pandocMeta :: (Meta -> [Inline]) -> (Item Pandoc -> Compiler String)
 -- pandocMeta extractor Item {itemBody=Pandoc meta _} = return $ stringify $ extractor meta -- TODO proper html??
@@ -41,8 +46,6 @@ import Common (compileWithFilter, (|>), (|.))
 
 -- myContext :: Context PandocX
 -- myContext = combineContexts pandocContext defaultContext
-
----- start of org mode stuff
 
 -- pandoc doesn't seem to be capable of handling many org clases.. 
 -- https://github.com/jgm/pandoc/blob/f3080c0c22470e7ecccbef86c1cd0b1339a6de9b/src/Text/Pandoc/Readers/Org/ExportSettings.hs#L61
@@ -89,4 +92,12 @@ orgMetas = Context $ \key _ item -> do
     let meta = lookup key metas
     maybe empty (StringField |. return) meta
 
---- end of org mode stuff
+
+-- TODO that's pretty horrible... maybe I need a special item type... and combine compilers?
+orgCompiler   = do
+  res <- getResourceString
+  _ <- saveSnapshot raw_org_key res
+  orgCompile res
+-- TODO careful not to pick this file up when we have more org posts
+-- perhaps should just move the link out of content root
+
