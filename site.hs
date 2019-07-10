@@ -116,6 +116,13 @@ main = hakyll $ do
         compile $ pandocCompiler
             >>= postCompiler ctx
 
+    -- TODO fixme find out how to combine patterns
+    match "content/generated/*.md" $ do
+        let ctx = mdCtx
+        route   $ chopOffRoute "content/generated/" |- html
+        compile $ pandocCompiler
+            >>= postCompiler ctx
+
 -- TODO in org mode files, date should be present
 -- if it's not, complain, but the whole thing shouldn't fail!
 

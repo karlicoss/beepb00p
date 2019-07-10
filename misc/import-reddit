@@ -4,22 +4,20 @@ from pathlib import Path
 
 from kython.kompress import open as kopen
 
-OUTPUT_DIR = Path()
+OUTPUT_DIR = Path(__file__).absolute().parent.parent / 'content' / 'generated'
 
-def main():
-    with kopen(max(Path('/L/backups/reddit').glob('*.json.xz'))) as fo:
-        j = json.load(fo)
+POSTS = {
+    'ayt5cu': 'takeout-data-gone.md',
+}
 
-    subs = {s['id']: s for s in j['submissions']}
-    sub = subs['ayt5cu']
 
+def render(sub):
     # tags -- external
     # summary: ??? manual maybe?
     # upid: ??? manual?
     # date: ??? format manually I guess, but could include time too now
-    import ipdb; ipdb.set_trace() 
     title = sub['title']
-    dts = sub['created_utc']
+    dts = sub['created_utc'] # TODO format it.. not sure what's about tz
     '/' + sub['subreddit_name_prefixed']
     url = sub['url'] # TODO what's the difference with permalink?
     content = sub['selftext']
@@ -33,8 +31,20 @@ Reddit link: {url}
 
 {content}
 """.lstrip()
-    Path('output.md').write_text(post)
-    # print(sub)
+    return post
+
+
+def main():
+    assert OUTPUT_DIR.exists()
+
+    with kopen(max(Path('/L/backups/reddit').glob('*.json.xz'))) as fo:
+        j = json.load(fo)
+
+    subs = {s['id']: s for s in j['submissions']}
+    for pid, out in POSTS.items():
+        print(f"Rendering: {pid} -> {out}")
+        sub = subs[pid]
+        (OUTPUT_DIR / out).write_text(render(sub))
 
 if __name__ == '__main__':
     main()
