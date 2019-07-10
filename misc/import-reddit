@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
+from datetime import datetime
 import json
 from pathlib import Path
+
+import pytz
 
 from kython.kompress import open as kopen
 
@@ -17,17 +20,21 @@ def render(sub):
     # upid: ??? manual?
     # date: ??? format manually I guess, but could include time too now
     title = sub['title']
-    dts = sub['created_utc'] # TODO format it.. not sure what's about tz
-    '/' + sub['subreddit_name_prefixed']
     url = sub['url'] # TODO what's the difference with permalink?
     content = sub['selftext']
+
+    ts = sub['created_utc']
+    dt = datetime.fromtimestamp(ts, tz=pytz.utc)
+    dts = dt.strftime('%B %e, %Y')
+    '/' + sub['subreddit_name_prefixed']
     # url: ?? put in title? or summary? or smth else?
+    # TODO not sure if we necessarily wanna reuse the title...
+    # title: {title}
     post = f"""
 ---
-title: {title}
 date: {dts}
 ---
-Reddit link: {url}
+This is a [crosspost]({url}) from Reddit.
 
 {content}
 """.lstrip()

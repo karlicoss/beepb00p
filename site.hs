@@ -160,7 +160,11 @@ main = hakyll $ do
     --             >>= loadAndApplyTemplate "templates/default.html" archiveCtx
     --             >>= relativizeUrls
 
-    let patterns = "content/*.md" .||. "content/*.ipynb" .||. "content/*.org"
+    let patterns =
+               "content/*.md"
+          .||. "content/generated/*.md"
+          .||. "content/*.ipynb"
+          .||. "content/*.org"
 
     tags <- buildTags patterns (fromCapture "tags/*.html")
     -- TODO ok, so tags are in here
