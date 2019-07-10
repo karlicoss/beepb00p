@@ -1,0 +1,40 @@
+#!/usr/bin/env python3
+import json
+from pathlib import Path
+
+from kython.kompress import open as kopen
+
+OUTPUT_DIR = Path()
+
+def main():
+    with kopen(max(Path('/L/backups/reddit').glob('*.json.xz'))) as fo:
+        j = json.load(fo)
+
+    subs = {s['id']: s for s in j['submissions']}
+    sub = subs['ayt5cu']
+
+    # tags -- external
+    # summary: ??? manual maybe?
+    # upid: ??? manual?
+    # date: ??? format manually I guess, but could include time too now
+    import ipdb; ipdb.set_trace() 
+    title = sub['title']
+    dts = sub['created_utc']
+    '/' + sub['subreddit_name_prefixed']
+    url = sub['url'] # TODO what's the difference with permalink?
+    content = sub['selftext']
+    # url: ?? put in title? or summary? or smth else?
+    post = f"""
+---
+title: {title}
+date: {dts}
+---
+Reddit link: {url}
+
+{content}
+""".lstrip()
+    Path('output.md').write_text(post)
+    # print(sub)
+
+if __name__ == '__main__':
+    main()
