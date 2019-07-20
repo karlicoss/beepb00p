@@ -6,7 +6,7 @@ html {
 
 @media (min-width: 80rem) {
     body {
-        width: 60rem; /* TODO how to choose good width?? */
+        width: 70rem; /* TODO how to choose good width?? */
         margin: 0 auto;
         padding: 0;
     }
@@ -212,30 +212,31 @@ img {
     max-height: 100%;
 }
 
-body {
-    --aside-width: 10rem;
-}
 
-article {
+article .content {
+    --aside-width: 10rem;
     position: relative;
 }
 
-article > * {
+article .content > * {
     padding-right: calc(var(--aside-width));
 }
 
 /* TODO highlight sidenotes maybe? */
-article aside {
+article .content aside {
     /* makes it work in conjucion with position: relative in article */
     position: absolute;
     right: 0;
+
+    width: var(--aside-width);
 
     /* for horizontal padding between text and note */
     padding-left: 2em;
     box-sizing: border-box;
 
-    width: var(--aside-width);
 
+    text-align: left;
     font-size: 0.8em;
+    color: gray;
 }
 
