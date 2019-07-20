@@ -61,6 +61,14 @@ def main():
 )
 (org-add-link-type "tag" nil 'org-blog-tag)
 
+(defun org-blog-sidenote (path desc fmt)
+; TODO ugh. can't nest link inside the sidenote content??
+; and writing that on elisp is gonna suck. really need python exporting backend...
+; (message (format "HELLOO  =================== %s" desc))
+   (format "<aside class='sidenote'>%s</aside>" desc)
+)
+(org-add-link-type "sidenote" nil 'org-blog-sidenote)
+
 
 (org-html-export-as-html nil nil nil t)
 ; t is for BODY-ONLY

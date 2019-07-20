@@ -211,3 +211,31 @@ img {
     max-width: 100%;
     max-height: 100%;
 }
+
+body {
+    --aside-width: 10rem;
+}
+
+article {
+    position: relative;
+}
+
+article > * {
+    padding-right: calc(var(--aside-width));
+}
+
+/* TODO highlight sidenotes maybe? */
+article aside {
+    /* makes it work in conjucion with position: relative in article */
+    position: absolute;
+    right: 0;
+
+    /* for horizontal padding between text and note */
+    padding-left: 2em;
+    box-sizing: border-box;
+
+    width: var(--aside-width);
+
+    font-size: 0.8em;
+}
+
