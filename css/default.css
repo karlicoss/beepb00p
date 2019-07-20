@@ -218,18 +218,33 @@ article .content {
     position: relative;
 }
 
+
+@media (min-width: 80rem) {
+    article .content {
+        --sn-position: absolute;
+        --sn-right   : 0;
+        --sn-width   : var(--aside-width);
+    }
+}
+
+@media (max-width: 80rem) {
+    article .content {
+    }
+}
+
 article .content > * {
-    padding-right: calc(var(--aside-width));
+    padding-right: var(--sn-width);
 }
 
 /* TODO highlight sidenotes maybe? */
 article .content aside {
     /* makes it work in conjucion with position: relative in article */
-    position: absolute;
-    right: 0;
+    position: var(--sn-position);
+    right   : var(--sn-right);
 
-    width: var(--aside-width);
+    width   : var(--sn-width);
 
+    /* TODO maybe decorate somehow on mobile devices... */
     /* for horizontal padding between text and note */
     padding-left: 2em;
     box-sizing: border-box;
