@@ -9,6 +9,10 @@ html {
         width: 70rem; /* TODO how to choose good width?? */
         margin: 0 auto;
         padding: 0;
+
+
+        /* debugging */
+        /* color: red; */
     }
 }
 
@@ -221,14 +225,21 @@ article .content {
 
 @media (min-width: 80rem) {
     article .content {
-        --sn-position: absolute;
-        --sn-right   : 0;
-        --sn-width   : var(--aside-width);
+        --sn-position   : absolute;
+        --sn-right      : 0;
+        --sn-width      : var(--aside-width);
+        --sn-display    : inline;
+    }
+
+    .before-aside {
+        /* hacky way of forcing aside to display on the same line.... */
+        display: inline-block;
     }
 }
 
 @media (max-width: 80rem) {
     article .content {
+        --sn-display    : block;
     }
 }
 
@@ -253,5 +264,8 @@ article .content aside {
     text-align: left;
     font-size: 0.8em;
     color: gray;
+
+    /* to match with corresponding <p> */
+    display: var(--sn-display);
 }
 

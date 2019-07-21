@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import argparse
 import sys
 import tempfile
 from subprocess import check_call
@@ -19,7 +20,28 @@ def filter_private(data: str) -> str:
 
 
 def main():
-    org_data = sys.stdin.read()
+    p = argparse.ArgumentParser()
+    p.add_argument('--test', action='store_true')
+    args = p.parse_args()
+    if args.test:
+        org_data = """
+#+OPTIONS: toc:2
+#+OPTIONS: author:nil pri:t
+#+OPTIONS: num:1
+
+* what about that?
+one [[sidenote:][testing sidenote]]
+
+two
+
+
+
+* Motivation
+At some point in my life I realized I didn't remember most of the books/papers/posts/videos I had consumed few years before. [[sidenote:][For brevity I'll just refer to all of this as 'content' further on]]
+
+"""
+    else:
+        org_data = sys.stdin.read()
     with tempfile.TemporaryDirectory() as td:
         td = Path(td)
 
@@ -76,7 +98,33 @@ def main():
 
             )'''
         ])
-        sys.stdout.write(out_html.read_text())
+
+        html = out_html.read_text()
+
+        from bs4 import BeautifulSoup
+        soup = BeautifulSoup(html, 'lxml')
+        # convert all
+        # <p>text<aside>something<aside><pp>
+        # to
+        # <div><span>text</span><aside>something</aside></p>
+        for aside in soup.find_all('aside'):
+            parent = aside.parent
+            assert parent.name == 'p'
+
+            aside.extract()
+
+            div = soup.new_tag('div')
+            oldp = parent.replace_with(div)
+            div.append(oldp)
+            div.append(aside)
+            oldp.name = 'span'
+            oldp['class'] = oldp.get('class', []) + ['before-aside']
+
+        html = str(soup)
+        # patch up sidenotes now..
+
+        sys.stdout.write(html)
 
 if __name__ == '__main__':
+
     main()
