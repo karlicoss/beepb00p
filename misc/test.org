@@ -1,0 +1,22 @@
+#+OPTIONS: toc:2
+#+OPTIONS: author:nil pri:t
+#+OPTIONS: num:1
+
+#+MACRO: aside      @@html:<aside>$0</aside>@@
+
+* what about that?
+one [[sidenote:][testing sidenote]]
+
+- two {{{aside(test)}}}
+
+
+
+* Motivation
+At some point in my life I realized I didn't remember most of the books/papers/posts/videos I had consumed few years before. [[sidenote:][For brevity I'll just refer to all of this as 'content' further on]]
+
+
+- I often struggle to describe my interests to new people I meet, and it's hard to guess what other people might be interested to know about you. This site could potentially serve as a rough idea of "what's on my mind" for other people to explore. {{{aside(see <a class='post-tag' href='./tags.html#extendedmind'>#extendedmind</a>)}}}
+
+[[http://test][broken\uparrow]]
+
+

@@ -52,9 +52,7 @@ import Common (compileWithFilter, (|>), (|.))
 renderOrg :: Item String -> Compiler (Item String)
 renderOrg   = compileWithFilter "misc/compile-org" []
 
-extractBody = compileWithFilter "xmllint" ["--html", "--xpath", "//body/node()", "--format", "-"]
-
-orgCompile = renderOrg >=> extractBody
+orgCompile = renderOrg
 
 raw_org_key = "raw_org"
 meta_start = "#+"

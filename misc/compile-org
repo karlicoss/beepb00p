@@ -21,30 +21,10 @@ def filter_private(data: str) -> str:
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument('--test', action='store_true')
+    p.add_argument('--test', type=Path, default=None)
     args = p.parse_args()
-    if args.test:
-        org_data = """
-#+OPTIONS: toc:2
-#+OPTIONS: author:nil pri:t
-#+OPTIONS: num:1
-
-#+MACRO: aside      @@html:<aside>$0</aside>@@
-
-* what about that?
-one [[sidenote:][testing sidenote]]
-
-- two {{{aside(test)}}}
-
-
-
-* Motivation
-At some point in my life I realized I didn't remember most of the books/papers/posts/videos I had consumed few years before. [[sidenote:][For brevity I'll just refer to all of this as 'content' further on]]
-
-
-- I often struggle to describe my interests to new people I meet, and it's hard to guess what other people might be interested to know about you. This site could potentially serve as a rough idea of "what's on my mind" for other people to explore. {{{aside(see <a class='post-tag' href='./tags.html#extendedmind'>#extendedmind</a>)}}}
-
-"""
+    if args.test is not None:
+        org_data = args.test.read_text()
     else:
         org_data = sys.stdin.read()
     with tempfile.TemporaryDirectory() as td:
@@ -108,6 +88,7 @@ At some point in my life I realized I didn't remember most of the books/papers/p
 
         from bs4 import BeautifulSoup
         soup = BeautifulSoup(html, 'lxml')
+
         # convert all
         # <?>text<aside>something<aside><?>
         # to
@@ -133,11 +114,13 @@ At some point in my life I realized I didn't remember most of the books/papers/p
             div.append(aside)
             oldp.name = 'span'
             oldp['class'] = oldp.get('class', []) + ['before-aside']
+        #
 
-        html = str(soup)
-        # patch up sidenotes now..
+        # extract body because that's what hakyll expects
+        body = soup.find('body')
+        #
 
-        sys.stdout.write(html)
+        sys.stdout.write(str(body))
 
 if __name__ == '__main__':
 
