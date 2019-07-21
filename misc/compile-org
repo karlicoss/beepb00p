@@ -117,10 +117,14 @@ def main():
         #
 
         # extract body because that's what hakyll expects
-        body = soup.find('body')
+        body = str(soup.find('body'))
         #
 
-        sys.stdout.write(str(body))
+        # ugh. didn't find a nice way to extract contents of tag
+        assert body.startswith('<body>')
+        assert body.endswith('</body>')
+        body = body[6: -7]
+        sys.stdout.write(body)
 
 if __name__ == '__main__':
 
