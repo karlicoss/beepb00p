@@ -29,15 +29,20 @@ def main():
 #+OPTIONS: author:nil pri:t
 #+OPTIONS: num:1
 
+#+MACRO: aside      @@html:<aside>$0</aside>@@
+
 * what about that?
 one [[sidenote:][testing sidenote]]
 
-two
+- two {{{aside(test)}}}
 
 
 
 * Motivation
 At some point in my life I realized I didn't remember most of the books/papers/posts/videos I had consumed few years before. [[sidenote:][For brevity I'll just refer to all of this as 'content' further on]]
+
+
+- I often struggle to describe my interests to new people I meet, and it's hard to guess what other people might be interested to know about you. This site could potentially serve as a rough idea of "what's on my mind" for other people to explore. {{{aside(see <a class='post-tag' href='./tags.html#extendedmind'>#extendedmind</a>)}}}
 
 """
     else:
@@ -104,11 +109,20 @@ At some point in my life I realized I didn't remember most of the books/papers/p
         from bs4 import BeautifulSoup
         soup = BeautifulSoup(html, 'lxml')
         # convert all
-        # <p>text<aside>something<aside><pp>
+        # <?>text<aside>something<aside><?>
         # to
-        # <div><span>text</span><aside>something</aside></p>
+        # <div><span>text</span><aside>something</aside></div>
         for aside in soup.find_all('aside'):
             parent = aside.parent
+
+            assert parent.name in {'p', 'li'}
+            if parent.name != 'p':
+                pp = soup.new_tag(parent.name)
+                old = parent.replace_with(pp)
+                old.name = 'p'
+                pp.append(old)
+                parent = old
+
             assert parent.name == 'p'
 
             aside.extract()

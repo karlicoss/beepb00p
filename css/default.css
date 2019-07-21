@@ -235,6 +235,10 @@ article .content {
         /* hacky way of forcing aside to display on the same line.... */
         display: inline-block;
     }
+    li .before-aside {
+        /* for li, that breaks the list marker alignment...  I guess that's a relatively small price to pay for now... */
+        display: initial;
+    }
 }
 
 @media (max-width: 80rem) {
