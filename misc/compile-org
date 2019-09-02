@@ -122,7 +122,7 @@ def main():
         # to
         # <h? id=someid><a href='#someid'></a>...</h?>
         # TODO title?
-        for lvl in [2]:
+        for lvl in [2, 3]:
             htag = f'h{lvl}'
             for hh in soup.find_all(htag):
                 parent = hh.parent
