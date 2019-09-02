@@ -273,3 +273,25 @@ article .content aside {
     display: var(--sn-display);
 }
 
+
+/*  */
+a.headerlink {
+    /* padding: 0 4px 0 4px; */
+    text-decoration: none;
+    color: lightgrey;
+}
+h1:hover > a.headerlink,
+h2:hover > a.headerlink,
+h3:hover > a.headerlink,
+h4:hover > a.headerlink,
+h5:hover > a.headerlink,
+h6:hover > a.headerlink {
+    color: #c60f0f
+}
+/*
+a.headerlink:hover {
+    background-color: #c60f0f;
+    color: white;
+}
+*/
+/* */

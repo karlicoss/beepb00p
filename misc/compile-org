@@ -116,6 +116,39 @@ def main():
             oldp['class'] = oldp.get('class', []) + ['before-aside']
         #
 
+
+        # convert all
+        # <h? id=someid>...</h?>
+        # to
+        # <h? id=someid><a href='#someid'></a>...</h?>
+        # TODO title?
+        for lvl in [2]:
+            htag = f'h{lvl}'
+            for hh in soup.find_all(htag):
+                parent = hh.parent
+
+                if parent.name != 'div':
+                    continue
+
+                if parent.attrs.get('id') == 'table-of-contents':
+                    continue
+
+                pcls = parent.attrs['class']
+                if f'outline-{lvl}' not in pcls:
+                    continue
+
+                hid = hh.attrs['id']
+
+                newa = soup.new_tag('a', attrs={
+                    'href' : '#' + hid,
+                    'class': 'headerlink',
+                })
+                newa.string = '¶'
+                hh.insert(0, newa)
+
+        # TODO some whitespace in tags???
+
+
         # extract body because that's what hakyll expects
         body = str(soup.find('body'))
         #
