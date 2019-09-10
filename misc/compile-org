@@ -2,14 +2,20 @@
 import argparse
 import sys
 import tempfile
-from subprocess import check_call
+from subprocess import check_call, check_output
 from pathlib import Path
+
+def emacs_version() -> str:
+    head = check_output(['emacs', '--version']).decode('utf8').splitlines()[0]
+    return head[len("GNU Emacs "):]
 
 
 # This is necessary because otherwise emacs loads default outdated org-mode (e.g. in /usr/share) in batch mode
 def get_org_plus_path() -> Path:
+    version = emacs_version() # ugh
+
     pp = Path('~/.emacs.d/elpa/').expanduser()
-    matches = list(pp.glob('*/*/org-plus-contrib-*/'))
+    matches = list(pp.glob(f'{version}/*/org-plus-contrib-*/'))
     assert len(matches) == 1
     return matches[0]
 
