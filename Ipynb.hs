@@ -32,8 +32,7 @@ ipynbRun = compileWithFilter command arguments
   where command = "jupyter"
         arguments = ["nbconvert"
                     , "--execute"
-                    , "--TagRemovePreprocessor.remove_cell_tags={\"noexport\"}" -- TODO emacs tags?
-                    , "--to", "html", "--template", "misc/mybasic.tpl"
+                    , "--config", "misc/ipynbconfig.py"
                     , "--stdin"
                     , "--stdout"
                     ]
