@@ -26,6 +26,7 @@ ipynbFilterOutput = compileWithFilter cmd args
 -- ugh, images do not really work in markdown..
 -- , "--to", "markdown"
 -- TODO patch notebook and add %matplotlib inline automalically?
+-- TODO --allow-errors??
 ipynbRun :: Item String -> Compiler (Item String)
 ipynbRun = compileWithFilter command arguments
   where command = "jupyter"

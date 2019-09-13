@@ -109,6 +109,12 @@ main = hakyll $ do
         compile $ orgCompiler
             >>= postCompiler ctx
 
+    match "content/special/*.ipynb" $ do
+        let ctx = special <> orgCtx
+        route   $ chopOffRoute "content/special/" |- html
+        compile $ ipynbCompiler
+            >>= postCompiler ctx
+
     -- TODO think how to infer date?
     match "content/*.md" $ do
         let ctx = mdCtx
