@@ -1,0 +1,41 @@
+#!/usr/bin/env python3
+from argparse import ArgumentParser
+from subprocess import check_call
+from pathlib import Path
+from tempfile import TemporaryDirectory
+import shutil
+import sys
+
+
+def main():
+    p = ArgumentParser()
+    p.add_argument('--item'      , type=Path, required=True, help='temporary hack to output images separately')
+    p.add_argument('--output-dir', type=Path, required=True, help='temporary hack to output images separately')
+    args = p.parse_args()
+
+    with TemporaryDirectory() as tdir:
+        run(Path(tdir), args)
+
+
+def run(tdir: Path, args):
+    outdir = args.output_dir
+    # TODO FIXME relies on outputting to root dir...
+    stem = args.item.stem
+
+    check_call([
+        "jupyter", "nbconvert",
+        "--execute",
+        "--config", "misc/ipynbconfig.py",
+        "--stdin",
+        # right, looks like in --stdout mode notebook files are not output anywhere... 
+        "--output-dir", str(tdir),
+        "--output", stem,
+    ])
+
+    ff = tdir   / f'{stem}_files'
+    tt = outdir / f'{stem}_files'
+    shutil.move(str(ff), str(tt))
+    sys.stdout.write((tdir / (stem + '.html')).read_text())
+
+if __name__ == '__main__':
+    main()

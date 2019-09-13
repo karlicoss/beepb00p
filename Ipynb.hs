@@ -8,6 +8,7 @@ import Hakyll (Item, Compiler, Context, Context(..), ContextField(StringField), 
 
 import Common (compileWithFilter, (|>), (|.))
 
+import Debug.Trace (trace)
 
 
 -- TODO hmm, that should probably be pre commit hook for content git repo?
@@ -27,15 +28,16 @@ ipynbFilterOutput = compileWithFilter cmd args
 -- , "--to", "markdown"
 -- TODO patch notebook and add %matplotlib inline automalically?
 -- TODO --allow-errors??
+
 ipynbRun :: Item String -> Compiler (Item String)
-ipynbRun = compileWithFilter command arguments
-  where command = "jupyter"
-        arguments = ["nbconvert"
-                    , "--execute"
-                    , "--config", "misc/ipynbconfig.py"
-                    , "--stdin"
-                    , "--stdout"
-                    ]
+ipynbRun item = do
+  -- TODO I suspect that proper way to do it is for Item to hold String + list of extra files...
+  -- for now just hack it
+  let iid = show $ itemIdentifier item
+  -- TODO unhardcode _site? Configuration { destinationDirectory = "_site"
+  res <- compileWithFilter "misc/compile-ipynb" ["--output-dir", "_site", "--item", iid] item
+  return res
+
 
 -- renameItem :: (String -> String) -> Item a -> Item a
 -- renameItem f i =  i { itemIdentifier = new_id } where
