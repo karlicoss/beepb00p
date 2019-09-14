@@ -60,16 +60,22 @@ special = constField "type_special" "x"
 -- let ff = field "css" $ \x -> itemBody x
 -- let ctx = postCtx <> listField "extra_styles" ff (return ["HELLO", "WHOOPS"])
 
+
+-- TODO shit this is problematic for all simple web servers, they think it's octet-stream :(
+chopOffRoute thing = gsubRoute thing (const "" )
+
+-- TODO fucking hell it's annoying. couldn't force github pages or preview server to support that
+html = setExtension "html"
+
+(|-) = composeRoutes
+
+
 main :: IO ()
 main = hakyll $ do
-    -- TODO shit this is problematic for all simple web servers, they think it's octet-stream :(
-    let chopOffRoute thing = gsubRoute thing (const "" )
-
     -- TODO just keep it in 'content' to simplify?
     match ("meta/favicon.ico" .||. "meta/robots.txt") $ do
         route   $ chopOffRoute "meta/"
         compile   copyFileCompiler
-
 
     match "images/**" $ do
         route   idRoute
@@ -79,13 +85,6 @@ main = hakyll $ do
         route   idRoute
         -- compile compressCssCompiler -- compressed css is pretty git unfriendly. I bet it doesn't matter in modern browsers
         compile copyFileCompiler
-
-
-    -- TODO fucking hell it's annoying. couldn't force github pages or preview server to support that
-    let html = setExtension "html"
-
-    let (|-) = composeRoutes
-
 
     match "content/**.jpg" $ do
       route   $ chopOffRoute "content/"
