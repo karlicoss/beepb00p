@@ -65,6 +65,7 @@ main = hakyll $ do
     -- TODO shit this is problematic for all simple web servers, they think it's octet-stream :(
     let chopOffRoute thing = gsubRoute thing (const "" )
 
+    -- TODO just keep it in 'content' to simplify?
     match ("meta/favicon.ico" .||. "meta/robots.txt") $ do
         route   $ chopOffRoute "meta/"
         compile   copyFileCompiler
@@ -97,23 +98,21 @@ main = hakyll $ do
       route   $ chopOffRoute "content/"
       compile copyFileCompiler
 
+
     match "content/meta/*.org" $ do
         let ctx = special <> orgCtx
         route   $ chopOffRoute "content/meta/" |- html
         compile $ orgCompiler
             >>= postCompiler ctx
 
-    match "content/special/*.org" $ do
-        let ctx = special <> orgCtx
-        route   $ chopOffRoute "content/special/" |- html
-        compile $ orgCompiler
-            >>= postCompiler ctx
+    let doSpecial pat ectx comp = match pat $ do
+          let ctx = special <> ectx
+          route   $ chopOffRoute "content/special/" |- html
+          compile $ comp
+              >>= postCompiler ctx
 
-    match "content/special/*.ipynb" $ do
-        let ctx = special <> orgCtx
-        route   $ chopOffRoute "content/special/" |- html
-        compile $ ipynbCompiler
-            >>= postCompiler ctx
+    doSpecial "content/special/*.org"   orgCtx   orgCompiler
+    doSpecial "content/special/*.ipynb" ipynbCtx ipynbCompiler
 
     -- TODO think how to infer date?
     match "content/*.md" $ do
