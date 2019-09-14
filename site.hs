@@ -204,24 +204,22 @@ main = hakyll $ do
     -- TODO include latest only?
     -- TODO not sure if need to prettify description
     -- TODO use 'content' field??
-    let feedCtx = postCtx <> bodyField "description"
+
+
     -- https://jip.dev/posts/post-feed-in-hakyll/
     -- let feedPosts = loadAllSnapshots patterns "feed-body" -- TODO err.. what's up with that, why is it not used???
     let feedPosts = loadAll patterns
+    let feedCtx = postCtx <> bodyField "description"
 
-    create ["atom.xml"] $ do
-        route idRoute
-        compile $ do
-            posts <-  feedPosts
-            let forIndex = filter prefilter posts
-            renderAtom myFeedConfiguration feedCtx forIndex
-
-    create ["rss.xml"] $ do
-        route idRoute
-        compile $ do
+    let createFeed file render = create [file] $ do
+          route idRoute
+          compile $ do
             posts <- feedPosts
             let forIndex = filter prefilter posts
-            renderRss myFeedConfiguration feedCtx forIndex
+            render myFeedConfiguration feedCtx forIndex
+
+    createFeed "atom.xml" renderAtom
+    createFeed "rss.xml"  renderRss
 
     match "templates/*" $ compile templateBodyCompiler
 
