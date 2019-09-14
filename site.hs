@@ -86,7 +86,6 @@ main = hakyll $ do
 
     let (|-) = composeRoutes
 
-    let postRoute = chopOffRoute "content/" |- html
 
     match (fromList ["meta/me.md", "meta/feed.md"]) $ do
         route   $ chopOffRoute "meta/" |- html
@@ -114,12 +113,11 @@ main = hakyll $ do
     doSpecial "content/special/*.org"   orgCtx   orgCompiler
     doSpecial "content/special/*.ipynb" ipynbCtx ipynbCompiler
 
-    -- TODO think how to infer date?
-    match "content/*.md" $ do
-        let ctx = mdCtx
-        route   postRoute
-        compile $ pandocCompiler
-            >>= postCompiler ctx
+    let doPost pat ctx comp = match pat $ do
+          route   $ chopOffRoute "content/" |- html
+          compile $ comp
+             >>= postCompiler ctx
+
 
     -- TODO fixme find out how to combine patterns
     match "content/generated/*.md" $ do
@@ -131,21 +129,15 @@ main = hakyll $ do
 -- TODO in org mode files, date should be present
 -- if it's not, complain, but the whole thing shouldn't fail!
 
+    -- TODO think how to infer date?
+
     -- TODO make a script to check that links are reachable
     -- TODO posts/etc is lame, use top level
     -- TODO tags would be nice...
-    match "content/*.ipynb" $ do
-        let ctx = ipynbCtx
-        route   postRoute
-        compile $ ipynbCompiler
-              >>= postCompiler ctx
-
     -- TODO perhaps need to use snapshot for caching??
-    match "content/*.org" $ do
-        let ctx = orgCtx
-        route   postRoute
-        compile $ orgCompiler
-              >>= postCompiler ctx
+    doPost "content/*.md"    mdCtx    pandocCompiler
+    doPost "content/*.ipynb" ipynbCtx ipynbCompiler
+    doPost "content/*.org"   orgCtx   orgCompiler
 
 -- TODO appendIndex??https://github.com/aherrmann/jekyll_style_urls_with_hakyll_examples/blob/master/site.hs
 -- https://github.com/turboMaCk/turboMaCk.github.io/blob/develop/site.hs#L61 ??
