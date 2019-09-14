@@ -87,22 +87,19 @@ main = hakyll $ do
     let (|-) = composeRoutes
 
 
-    match (fromList ["meta/me.md", "meta/feed.md"]) $ do
-        route   $ chopOffRoute "meta/" |- html
-        compile $ pandocCompiler
-            >>= loadAndApplyTemplate "templates/default.html" postCtx -- TODO mdCtx?
-            >>= relativizeUrls
-
     match "content/**.jpg" $ do
       route   $ chopOffRoute "content/"
       compile copyFileCompiler
 
 
-    match "content/meta/*.org" $ do
-        let ctx = special <> orgCtx
-        route   $ chopOffRoute "content/meta/" |- html
-        compile $ orgCompiler
+    let doMeta pat ectx comp = match pat $ do
+          let ctx = special <> ectx
+          route   $ chopOffRoute "content/meta/" |- html
+          compile $ comp
             >>= postCompiler ctx
+
+    doMeta "content/meta/*.md"  mdCtx  pandocCompiler
+    doMeta "content/meta/*.org" orgCtx orgCompiler
 
     let doSpecial pat ectx comp = match pat $ do
           let ctx = special <> ectx
