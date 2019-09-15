@@ -131,9 +131,11 @@ main = hakyll $ do
     -- TODO posts/etc is lame, use top level
     -- TODO tags would be nice...
     -- TODO perhaps need to use snapshot for caching??
-    doPost "content/*.md"    mdCtx    pandocCompiler
-    doPost "content/*.ipynb" ipynbCtx ipynbCompiler
-    doPost "content/*.org"   orgCtx   orgCompiler
+    doPost "content/*.md"         mdCtx    pandocCompiler
+    doPost "content/*.ipynb"      ipynbCtx ipynbCompiler
+    doPost "content/*.org"        orgCtx   orgCompiler
+
+    doPost "content/drafts/*.org" orgCtx   orgCompiler
 
 -- TODO appendIndex??https://github.com/aherrmann/jekyll_style_urls_with_hakyll_examples/blob/master/site.hs
 -- https://github.com/turboMaCk/turboMaCk.github.io/blob/develop/site.hs#L61 ??
