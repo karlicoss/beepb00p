@@ -106,8 +106,8 @@ main = hakyll $ do
           compile $ comp
               >>= postCompiler ctx
 
-    doSpecial "content/special/*.org"   orgCtx   orgCompiler
-    doSpecial "content/special/*.ipynb" ipynbCtx ipynbCompiler
+    doSpecial "content/special/**.org"   orgCtx   orgCompiler
+    doSpecial "content/special/**.ipynb" ipynbCtx ipynbCompiler
 
     let doPost pat ctx comp = match pat $ do
           route   $ chopOffRoute "content/" |- html

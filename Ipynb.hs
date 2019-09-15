@@ -15,6 +15,7 @@ import Debug.Trace (trace)
 -- wouldn't hurt to run again and check?
 -- python3 ./ipynb_output_filter.py <lagr.ipynb >lagr2.ipynb 
 
+-- TODO could be implemented as a preprocessor in ipython notebook?
 stripPrivateTodos :: Item String -> Compiler (Item String)
 stripPrivateTodos = compileWithFilter "grep" ["-v", "NOEXPORT"]
 

@@ -18,9 +18,18 @@ def main():
 
 
 def run(tdir: Path, args):
+    item = args.item
     outdir = args.output_dir
-    # TODO FIXME relies on outputting to root dir...
-    stem = args.item.stem
+
+
+    # reflect the logic in site.hs for now
+    item = item.relative_to(Path('content'))
+    if 'special' == item.parts[0]:
+        # TODO chop it off since we're flattening 'special' hierarchy
+        item = item.relative_to(Path('special'))
+    outdir = outdir / item.parent
+
+    stem = item.stem
 
     check_call([
         "jupyter", "nbconvert",
