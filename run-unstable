@@ -2,14 +2,14 @@
 from pathlib import Path
 from subprocess import check_call
 
-cwd = Path(__file__).absolute().parent
+this = Path(__file__).absolute()
 
 def beepb00p(*args):
     bin = '/L/soft/beepb00p/site'
     check_call([
         bin,
         *args,
-    ], cwd=cwd)
+    ], cwd=this.parent)
 
 
 # run beepb00p watch --no-server (how to make sure it's not buffering output?)
@@ -20,8 +20,20 @@ def beepb00p(*args):
 # Removing _site...
 # beepb00p: _site: removeDirectoryRecursive: inappropriate type (not a directory)
 
-# TODO need to start via systemd?
 def main():
+    import argparse
+    p = argparse.ArgumentParser()
+    p.add_argument('--setup', action='store_true')
+    args = p.parse_args()
+
+    if args.setup:
+        from kython.ksystemd import setup
+        setup(
+            unit_name='beepb00p.service',
+            exec_start=str(this),
+        )
+        return
+
     beepb00p('clean')
     beepb00p('watch', '--no-server')
 
