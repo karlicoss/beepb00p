@@ -6,8 +6,10 @@ import           Hakyll
 
 import   Control.Applicative (empty, (<|>))
 import         Control.Monad ((>=>))
-import            Data.Maybe (fromJust, fromMaybe, catMaybes)
+import            Data.Maybe (fromJust, fromMaybe, catMaybes, isJust)
 import           Data.Monoid (mappend)
+import    System.Environment (lookupEnv)
+import      System.IO.Unsafe (unsafePerformIO)
 
 import           Data.Time.Clock   (UTCTime (..))
 import qualified Data.Time.Format  as TF
@@ -71,7 +73,8 @@ html = setExtension "html"
 
 
 main :: IO ()
-main = hakyll $ do
+main = do
+  hakyll $ do
     -- TODO just keep it in 'content' to simplify?
     match ("meta/favicon.ico" .||. "meta/robots.txt") $ do
         route   $ chopOffRoute "meta/"
@@ -191,7 +194,7 @@ main = hakyll $ do
             let indexCtx =
                     listField "posts" postCtx (return forIndex)
                     <> constField "title" "Home"
-                    <> defaultContext
+                    <> baseCtx
 
             getResourceBody
                 >>= applyAsTemplate indexCtx
@@ -282,16 +285,22 @@ dateCtx ctx = (dependentField "date" dateExtractor ctx)
 
 -----
 
+stableCtx :: Context String
+stableCtx = if isStable then constField "is_stable" "flag" else mempty where
+  isStable = isJust $ unsafePerformIO $ lookupEnv "BEEPB00P_STABLE"
+
+
+baseCtx = stableCtx <> defaultContext
 
 postCtx :: Context String
 -- orgMetas need to be sort of part of postCtx so its fields are accessible for index page, RSS, etc
 -- TODO def need to write about it, this looks like the way to go and pretty tricky
-postCtx = dateCtx $ issoIdCtx $ listContextWith "tags" <> orgMetas <> defaultContext
+postCtx = dateCtx $ issoIdCtx $ listContextWith "tags" <> orgMetas <> stableCtx <> baseCtx
 -- TODO need to handle org tags via dependentCtx as well.. not sure perhaps merge with ones in metadata since org syntax doesn't allow some of the tags?
 
 -- TODO ok, so this works.. I wonder if I should rely on yaml list or split by spaces instead... later is more org mode friendly. or could have a special org mode context??
 listContextWith :: String -> Context a
-listContextWith s = listFieldWith s defaultContext (getList s)
+listContextWith s = listFieldWith s baseCtx (getList s)
 
 
 -- thanks to https://ohanhi.com/from-jekyll-to-hakyll.html for initial inspiration,

@@ -43,6 +43,7 @@ def run(tdir: Path, args):
 
     ff = tdir   / f'{stem}_files'
     tt = outdir / f'{stem}_files'
+    # TODO need to be careful because hakyll wouldn't clean it in preview mode
     shutil.move(str(ff), str(tt))
     sys.stdout.write((tdir / (stem + '.html')).read_text())
 
