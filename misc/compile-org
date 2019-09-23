@@ -55,7 +55,7 @@ def main():
 ; TODO ok, so maybe do not export CREATED property, but show it as a tooltip?
 ; TODO hmm. find another way to configure these...
 ; TODO use STRT?
-(setq org-todo-keywords '((sequence "TODO" "START" "DONE")))
+(setq org-todo-keywords '((sequence "TODO" "STRT" "START" "DONE")))
 
 (defun org-export-deterministic-reference (references)
   (let ((new 0))
