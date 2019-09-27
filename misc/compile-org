@@ -14,11 +14,11 @@ def emacs_version() -> str:
 # https://stackoverflow.com/a/24087061/706389
 
 # This is necessary because otherwise emacs loads default outdated org-mode (e.g. in /usr/share) in batch mode
-def get_org_plus_path() -> Path:
+def get_module_path(module: str) -> Path:
     version = emacs_version() # ugh
 
     pp = Path('~/.emacs.d/elpa/').expanduser()
-    matches = list(pp.glob(f'{version}/*/org-plus-contrib-*/'))
+    matches = list(pp.glob(f'{version}/*/{module}-*/'))
     assert len(matches) == 1
     return matches[0]
 
@@ -52,7 +52,8 @@ def main():
             'emacs',
             '--kill',
             '--batch',
-            '--directory', str(get_org_plus_path()),
+            '--directory', str(get_module_path('org-plus-contrib')),
+            '--directory', str(get_module_path('htmlize')),
             str(inp_org),
             '--eval', f'''(progn
 ; TODO ok, so maybe do not export CREATED property, but show it as a tooltip?
