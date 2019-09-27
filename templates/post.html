@@ -4,6 +4,11 @@ $if(style_ipynb)$
 $endif$
 $if(style_org)$
 <!-- <link rel="stylesheet" href="/css/org.css" /> -->
+$if(comment)$
+TODO hmm only add htmlize on demand?
+TODO shit, htmlize messes with a and body tags...
+$endif$
+<link rel="stylesheet" href="/css/htmlize.css" />
 <link rel="stylesheet" href="/css/org-default.css" />
 
 <link rel="stylesheet" href="/css/org-extra.css?v=2" />

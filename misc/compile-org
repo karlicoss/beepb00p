@@ -10,6 +10,9 @@ def emacs_version() -> str:
     return head[len("GNU Emacs "):]
 
 
+# TODO mm, might need to apt install emacs-goodies-el first for code hightlight...
+# https://stackoverflow.com/a/24087061/706389
+
 # This is necessary because otherwise emacs loads default outdated org-mode (e.g. in /usr/share) in batch mode
 def get_org_plus_path() -> Path:
     version = emacs_version() # ugh
@@ -82,6 +85,9 @@ def main():
 )
 (org-add-link-type "sidenote" nil 'org-blog-sidenote)
 
+
+; https://github.com/gongzhitaao/orgcss#code-highlight
+(setq org-html-htmlize-output-type 'css)
 
 (org-html-export-as-html nil nil nil t)
 ; t is for BODY-ONLY
