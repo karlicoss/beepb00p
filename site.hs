@@ -133,11 +133,10 @@ main = do
           compile $ comp
              >>= postCompiler ctx
 
-
     let doAll dodo prefix = do
-          dodo (fromGlob $ prefix ++ ".org"  ) orgCtx   orgCompiler    [compileOrgBin]
-          dodo (fromGlob $ prefix ++ ".ipynb") ipynbCtx ipynbCompiler  [compileIpynbBin]
-          dodo (fromGlob $ prefix ++ ".md"   ) mdCtx    pandocCompiler []
+          dodo (globalFilter .&&. fromGlob (prefix ++ ".org"))   orgCtx   orgCompiler    [compileOrgBin]
+          dodo (globalFilter .&&. fromGlob (prefix ++ ".ipynb")) ipynbCtx ipynbCompiler  [compileIpynbBin]
+          dodo (globalFilter .&&. fromGlob (prefix ++ ".md"))    mdCtx    pandocCompiler []
 
     -- TODO publish: doAll is good for handling different formats
 
@@ -309,6 +308,13 @@ dateCtx ctx = (dependentField "date" dateExtractor ctx)
 -- hmm, for updated git wouldn't preserve timestamp; so I should use last git modification time if it's in git, or follow symlink and use mtime? What if it's in git there?.... need some debugging overview
 
 -----
+
+globalFilter :: Pattern
+globalFilter = fromGlob pat where
+  filt = unsafePerformIO $ lookupEnv "FILTER"
+  pat = fromMaybe "**" filt
+
+
 
 stableCtx :: Context String
 stableCtx = if isStable then constField "is_stable" "flag" else mempty where
