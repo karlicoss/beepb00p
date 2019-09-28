@@ -274,9 +274,8 @@ article .content aside {
 }
 
 
-/*  */
 a.headerlink {
-    /* padding: 0 4px 0 4px; */
+    margin-left: -1em;
     text-decoration: none;
     color: lightgrey;
 }
