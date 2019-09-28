@@ -95,18 +95,26 @@ main = do
       route   $ chopOffRoute "content/"
       compile copyFileCompiler
 
+    match "templates/*" $ compile templateBodyCompiler
 
-    let doMeta pat ectx comp = match pat $ do
+    -- TODO when I publish that, mention that this thing is important!
+
+    -- TODO ugh. use mapM/map (value $) or something?
+    let source pat = match pat $ compile getResourceBody
+
+    source "misc/compile-org"
+    compileOrgBin   <- makePatternDependency "misc/compile-org"
+
+    source "misc/compile-ipynb"
+    source "misc/mybasic.tpl"
+    source "misc/ipynbconfig.py"
+    compileIpynbBin <- makePatternDependency $ "misc/compile-ipynb" .||. "misc/mybasic.tpl" .||. "misc/ipynbconfig.py"
+
+    let doMeta pat ectx comp deps = rulesExtraDependencies deps $ match pat $ do
           let ctx = special <> ectx
           route   $ chopOffRoute "content/meta/" |- html
           compile $ comp
             >>= postCompiler ctx
-
-    doMeta "content/meta/*.md"  mdCtx  pandocCompiler
-    doMeta "content/meta/*.org" orgCtx orgCompiler
-
-    compileOrgBin   <- makePatternDependency "misc/compile-org"
-    compileIpynbBin <- makePatternDependency "misc/compile-ipynb"
 
     let doSpecial pat ectx comp deps = rulesExtraDependencies deps $ match pat $ do
           let ctx = special <> ectx
@@ -114,40 +122,39 @@ main = do
           compile $ comp
               >>= postCompiler ctx
 
-    let doAll dodo prefix = do
-          dodo (fromGlob $ prefix ++ "/**.org"  ) orgCtx   orgCompiler    [compileOrgBin]
-          dodo (fromGlob $ prefix ++ "/**.ipynb") ipynbCtx ipynbCompiler  [compileIpynbBin]
-          dodo (fromGlob $ prefix ++ "/**.md"   ) mdCtx    pandocCompiler []
+    let doGenerated pat ctx comp deps = rulesExtraDependencies deps $ match pat $ do
+          route   $ chopOffRoute "content/generated/" |- html
+          compile $ comp
+             >>= postCompiler ctx
 
-    doAll doSpecial "content/special"
-
-    let doPost pat ctx comp = match pat $ do
+    let doPost pat ctx comp deps = rulesExtraDependencies deps $ match pat $ do
           route   $ chopOffRoute "content/" |- html
           compile $ comp
              >>= postCompiler ctx
 
 
-    -- TODO fixme find out how to combine patterns
-    match "content/generated/*.md" $ do
-        let ctx = mdCtx
-        route   $ chopOffRoute "content/generated/" |- html
-        compile $ pandocCompiler
-            >>= postCompiler ctx
+    let doAll dodo prefix = do
+          dodo (fromGlob $ prefix ++ ".org"  ) orgCtx   orgCompiler    [compileOrgBin]
+          dodo (fromGlob $ prefix ++ ".ipynb") ipynbCtx ipynbCompiler  [compileIpynbBin]
+          dodo (fromGlob $ prefix ++ ".md"   ) mdCtx    pandocCompiler []
+
+    -- TODO publish: doAll is good for handling different formats
+
+    doAll doMeta      "content/meta/**"
+    doAll doSpecial   "content/special/**"
+    doAll doPost      "content/*"
+    doAll doPost      "content/drafts/*"
+    doAll doGenerated "content/generated/*"
+
 
 -- TODO in org mode files, date should be present
 -- if it's not, complain, but the whole thing shouldn't fail!
 
     -- TODO think how to infer date?
 
-    -- TODO make a script to check that links are reachable
     -- TODO posts/etc is lame, use top level
     -- TODO tags would be nice...
     -- TODO perhaps need to use snapshot for caching??
-    doPost "content/*.md"         mdCtx    pandocCompiler
-    doPost "content/*.ipynb"      ipynbCtx ipynbCompiler
-    doPost "content/*.org"        orgCtx   orgCompiler
-
-    doPost "content/drafts/*.org" orgCtx   orgCompiler
 
 -- TODO appendIndex??https://github.com/aherrmann/jekyll_style_urls_with_hakyll_examples/blob/master/site.hs
 -- https://github.com/turboMaCk/turboMaCk.github.io/blob/develop/site.hs#L61 ??
@@ -230,8 +237,6 @@ main = do
 
     createFeed "atom.xml" renderAtom
     createFeed "rss.xml"  renderRss
-
-    match "templates/*" $ compile templateBodyCompiler
 
 type DependentField = (String -> Compiler ContextField) -> Compiler ContextField
 
