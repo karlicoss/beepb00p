@@ -6,6 +6,7 @@ import           Hakyll
 
 import   Control.Applicative (empty, (<|>))
 import         Control.Monad ((>=>))
+import       Data.List.Split (splitOn)
 import            Data.Maybe (fromJust, fromMaybe, catMaybes, isJust)
 import           Data.Monoid (mappend)
 import    System.Environment (lookupEnv)
@@ -288,6 +289,16 @@ dateExtractor reader = do
   let ds = TF.formatTime TF.defaultTimeLocale outputDtFormat ut
   return $ StringField $ ds
 
+tagExtractor :: DependentField
+tagExtractor reader = do
+  (StringField filetags) <- reader "filetags"
+  let tags = filter (\x -> x /= "") $ splitOn ":" filetags
+  return $ ListField baseCtx $ map toItem tags
+
+
+orgTagsCtx :: Context a -> Context a
+orgTagsCtx ctx = (dependentField "tags" tagExtractor ctx) <> listField "tags" baseCtx (return []) <> ctx
+
 dateCtx :: Context a -> Context a
 dateCtx ctx = (dependentField "date" dateExtractor ctx)
            <> ctx
@@ -306,11 +317,14 @@ stableCtx = if isStable then constField "is_stable" "flag" else mempty where
 
 baseCtx = stableCtx <> defaultContext
 
+metaTags = listContextWith "tags"
+
 postCtx :: Context String
 -- orgMetas need to be sort of part of postCtx so its fields are accessible for index page, RSS, etc
 -- TODO def need to write about it, this looks like the way to go and pretty tricky
-postCtx = dateCtx $ issoIdCtx $ listContextWith "tags" <> orgMetas <> stableCtx <> baseCtx
--- TODO need to handle org tags via dependentCtx as well.. not sure perhaps merge with ones in metadata since org syntax doesn't allow some of the tags?
+-- left takes precedence
+postCtx = dateCtx $ issoIdCtx $ metaTags <> (orgTagsCtx orgMetas) <> stableCtx <> baseCtx
+
 
 -- TODO ok, so this works.. I wonder if I should rely on yaml list or split by spaces instead... later is more org mode friendly. or could have a special org mode context??
 listContextWith :: String -> Context a
@@ -325,11 +339,10 @@ getList :: String -> Item a -> Compiler [Item String]
 getList s item = do
     let idd = itemIdentifier item
     meta <- getMetadata idd
-    meta
-        |> lookupStringList s
-        |> fromMaybe [] -- TODO not sure, maybe fromJust makes more sense?
-        |> map toItem
-        |> return
+    let list =  meta |> lookupStringList s
+    case list of
+      Nothing -> fail $ "No " ++ s ++ " field"
+      Just ts -> map toItem ts |> return
 
 
 toItem x =

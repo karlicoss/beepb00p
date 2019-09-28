@@ -16,43 +16,8 @@ import Hakyll (Item, Compiler, Context, Context(..), ContextField(StringField), 
 import Common (compileWithFilter, (|>), (|.))
 
 
--- import Text.Pandoc.Shared (stringify)
--- import Text.Pandoc.Options (def, writerVariables, writerTableOfContents)
-
--- import Hakyll.Web.Pandoc
--- import Text.Pandoc (readOrg, Pandoc(..), docTitle, docDate, Meta, Inline)
--- pandocMeta :: (Meta -> [Inline]) -> (Item Pandoc -> Compiler String)
--- pandocMeta extractor Item {itemBody=Pandoc meta _} = return $ stringify $ extractor meta -- TODO proper html??
-
--- -- TODO extract that stuff somewhere and share??
--- orgFileTags = field "filetags" (\p -> return "TODO FILETAGS")
--- orgAuthor = constField "author" "Dima" -- TODO docAuthors??
--- orgTitle = field "title" $ pandocMeta docTitle
--- orgDate = field "date" $ pandocMeta docDate
-
--- pandocContext :: Context Pandoc
--- pandocContext = orgFileTags <> orgAuthor <> orgTitle <> orgDate
-
--- -- TODO ugh. surely it can't be that ugly right?
--- data PandocX = PandocX Pandoc String
-
--- combineItems :: (a -> b -> c) -> Item a -> Item b -> Item c
--- combineItems f Item{itemBody=ba, itemIdentifier=ii} Item{itemBody=bb} = Item {itemBody=f ba bb, itemIdentifier=ii}
-
--- combineContexts :: Context Pandoc -> Context String -> Context PandocX
--- combineContexts (Context f) (Context g) = Context $ \k a Item{itemBody=PandocX pdoc rendered} -> f k a Item {itemBody=pdoc, itemIdentifier=""} <|> g k a Item {itemBody=rendered, itemIdentifier=""} -- TODO break down item ;
-
--- TODO readPandocWith??
-
--- myContext :: Context PandocX
--- myContext = combineContexts pandocContext defaultContext
-
--- pandoc doesn't seem to be capable of handling many org clases.. 
--- https://github.com/jgm/pandoc/blob/f3080c0c22470e7ecccbef86c1cd0b1339a6de9b/src/Text/Pandoc/Readers/Org/ExportSettings.hs#L61
-renderOrg :: Item String -> Compiler (Item String)
-renderOrg   = compileWithFilter "misc/compile-org" []
-
-orgCompile = renderOrg
+orgCompile :: Item String -> Compiler (Item String)
+orgCompile   = compileWithFilter "misc/compile-org" []
 
 raw_org_key = "raw_org"
 meta_start = "#+"
@@ -99,3 +64,37 @@ orgCompiler   = do
 -- TODO careful not to pick this file up when we have more org posts
 -- perhaps should just move the link out of content root
 
+
+-- import Text.Pandoc.Shared (stringify)
+-- import Text.Pandoc.Options (def, writerVariables, writerTableOfContents)
+
+-- import Hakyll.Web.Pandoc
+-- import Text.Pandoc (readOrg, Pandoc(..), docTitle, docDate, Meta, Inline)
+-- pandocMeta :: (Meta -> [Inline]) -> (Item Pandoc -> Compiler String)
+-- pandocMeta extractor Item {itemBody=Pandoc meta _} = return $ stringify $ extractor meta -- TODO proper html??
+
+-- -- TODO extract that stuff somewhere and share??
+-- orgFileTags = field "filetags" (\p -> return "TODO FILETAGS")
+-- orgAuthor = constField "author" "Dima" -- TODO docAuthors??
+-- orgTitle = field "title" $ pandocMeta docTitle
+-- orgDate = field "date" $ pandocMeta docDate
+
+-- pandocContext :: Context Pandoc
+-- pandocContext = orgFileTags <> orgAuthor <> orgTitle <> orgDate
+
+-- -- TODO ugh. surely it can't be that ugly right?
+-- data PandocX = PandocX Pandoc String
+
+-- combineItems :: (a -> b -> c) -> Item a -> Item b -> Item c
+-- combineItems f Item{itemBody=ba, itemIdentifier=ii} Item{itemBody=bb} = Item {itemBody=f ba bb, itemIdentifier=ii}
+
+-- combineContexts :: Context Pandoc -> Context String -> Context PandocX
+-- combineContexts (Context f) (Context g) = Context $ \k a Item{itemBody=PandocX pdoc rendered} -> f k a Item {itemBody=pdoc, itemIdentifier=""} <|> g k a Item {itemBody=rendered, itemIdentifier=""} -- TODO break down item ;
+
+-- TODO readPandocWith??
+
+-- myContext :: Context PandocX
+-- myContext = combineContexts pandocContext defaultContext
+
+-- pandoc doesn't seem to be capable of handling many org clases.. 
+-- https://github.com/jgm/pandoc/blob/f3080c0c22470e7ecccbef86c1cd0b1339a6de9b/src/Text/Pandoc/Readers/Org/ExportSettings.hs#L61
