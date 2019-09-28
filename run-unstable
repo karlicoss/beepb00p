@@ -20,6 +20,7 @@ def beepb00p(*args):
 # Removing _site...
 # beepb00p: _site: removeDirectoryRecursive: inappropriate type (not a directory)
 
+# TODO maybe restart via systemd instead?
 def main():
     import argparse
     p = argparse.ArgumentParser()
