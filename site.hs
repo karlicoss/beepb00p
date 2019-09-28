@@ -72,6 +72,8 @@ html = setExtension "html"
 (|-) = composeRoutes
 
 
+data Thing a = Thing (Context a) (Compiler a) [Dependency]
+
 main :: IO ()
 main = do
   hakyll $ do
@@ -103,14 +105,21 @@ main = do
     doMeta "content/meta/*.md"  mdCtx  pandocCompiler
     doMeta "content/meta/*.org" orgCtx orgCompiler
 
-    let doSpecial pat ectx comp = match pat $ do
+    compileOrgBin   <- makePatternDependency "misc/compile-org"
+    compileIpynbBin <- makePatternDependency "misc/compile-ipynb"
+
+    let doSpecial pat ectx comp deps = rulesExtraDependencies deps $ match pat $ do
           let ctx = special <> ectx
           route   $ chopOffRoute "content/special/" |- html
           compile $ comp
               >>= postCompiler ctx
 
-    doSpecial "content/special/**.org"   orgCtx   orgCompiler
-    doSpecial "content/special/**.ipynb" ipynbCtx ipynbCompiler
+    let doAll dodo prefix = do
+          dodo (fromGlob $ prefix ++ "/**.org"  ) orgCtx   orgCompiler    [compileOrgBin]
+          dodo (fromGlob $ prefix ++ "/**.ipynb") ipynbCtx ipynbCompiler  [compileIpynbBin]
+          dodo (fromGlob $ prefix ++ "/**.md"   ) mdCtx    pandocCompiler []
+
+    doAll doSpecial "content/special"
 
     let doPost pat ctx comp = match pat $ do
           route   $ chopOffRoute "content/" |- html
