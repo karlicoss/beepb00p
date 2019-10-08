@@ -133,6 +133,12 @@ main = do
           compile $ comp
              >>= postCompiler ctx
 
+    let draftCtx = constField "date" "[2019-09-20]" -- arbitrary
+                <> constField "upid" "whaat"
+                <> constField "issoid" "whaat"
+                -- <> field "upid" (\x -> itemIdentifier x |> show |> return) -- TODO eh, should depend on item name maybe?'
+    let doDraft pat ctx  = doPost pat (ctx <> draftCtx)
+
     let doAll dodo prefix = do
           dodo (globalFilter .&&. fromGlob (prefix ++ ".org"))   orgCtx   orgCompiler    [compileOrgBin]
           dodo (globalFilter .&&. fromGlob (prefix ++ ".ipynb")) ipynbCtx ipynbCompiler  [compileIpynbBin]
@@ -143,7 +149,7 @@ main = do
     doAll doMeta      "content/meta/**"
     doAll doSpecial   "content/special/**"
     doAll doPost      "content/*"
-    doAll doPost      "content/drafts/*"
+    doAll doDraft     "content/drafts/*"
     doAll doGenerated "content/generated/*"
 
 
