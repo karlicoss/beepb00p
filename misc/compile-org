@@ -85,10 +85,16 @@ def main():
    (format "<aside class='sidenote'>%s</aside>" desc)
 )
 (org-add-link-type "sidenote" nil 'org-blog-sidenote)
+; TODO instead, use some sort of project wise config?
 
+(setq org-export-global-macros '(("aside" . "@@html:<aside>$0</aside>@@")))
+
+(setq org-export-with-author nil)
 
 ; https://github.com/gongzhitaao/orgcss#code-highlight
 (setq org-html-htmlize-output-type 'css)
+
+
 
 (org-html-export-as-html nil nil nil t)
 ; t is for BODY-ONLY
