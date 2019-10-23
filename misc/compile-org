@@ -94,7 +94,8 @@ def main():
 ; https://github.com/gongzhitaao/orgcss#code-highlight
 (setq org-html-htmlize-output-type 'css)
 
-
+; see org-html-fontify-code
+(eval-after-load 'org '(add-to-list 'org-src-lang-modes '("mypy" . python)))
 
 (org-html-export-as-html nil nil nil t)
 ; t is for BODY-ONLY
