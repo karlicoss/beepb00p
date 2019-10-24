@@ -18,8 +18,8 @@ def get_module_path(module: str) -> Path:
     version = emacs_version() # ugh
 
     pp = Path('~/.emacs.d/elpa/').expanduser()
-    matches = list(pp.glob(f'{version}/*/{module}-*/'))
-    assert len(matches) == 1
+    matches = list(x for x in pp.glob(f'{version}/*/{module}-*/') if x.is_dir())
+    assert len(matches) == 1, matches
     return matches[0]
 
 
@@ -94,8 +94,21 @@ def main():
 ; https://github.com/gongzhitaao/orgcss#code-highlight
 (setq org-html-htmlize-output-type 'css)
 
-; see org-html-fontify-code
-(eval-after-load 'org '(add-to-list 'org-src-lang-modes '("mypy" . python)))
+
+(with-eval-after-load 'org
+            ; treat mypy highlight as python. see org-html-fontify-code
+            (add-to-list 'org-src-lang-modes '("mypy" . python))
+
+            ; necessary so it doesn't prompt us
+            (setq org-confirm-babel-evaluate nil))
+
+
+; TODO ugh. could be a good idea to write about it. otherwise,
+; org-babel-exp-results ignores it on line:
+;      (when (fboundp (intern (concat "org-babel-execute:" lang)))
+; TODO perhaps good idea at least to sugggest to emit a warning?
+(require 'ob-python)
+
 
 (org-html-export-as-html nil nil nil t)
 ; t is for BODY-ONLY
