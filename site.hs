@@ -227,8 +227,7 @@ main = do
 
     -- https://jip.dev/posts/post-feed-in-hakyll/
     -- let feedPosts = loadAllSnapshots patterns "feed-body" -- TODO err.. what's up with that, why is it not used???
-    let feedPosts = loadAll patterns
-    -- TODO FIXME let feedPosts = recentFirst =<< loadAll patterns
+    let feedPosts = recentFirst =<< loadAll patterns
     let feedCtx = postCtx <> bodyField "description"
 
     let createFeed file render = create [file] $ do
