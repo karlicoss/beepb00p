@@ -1,6 +1,11 @@
 <table class="posts-list">
     $for(posts)$
 
+    $if(draft)$
+
+    <!-- draft post: $title$ -->
+
+    $else$
     <tr class="post">
         <td rowspan="2" width="70%">
         <a href="$url$">
@@ -14,6 +19,7 @@
     <tr>
         <td class="post-tags">$for(tags)$<a class="post-tag" href="/tags.html#$body$">$body$</a>$sep$ $endfor$</td>
     </tr>
+    $endif$
 
     $endfor$
 

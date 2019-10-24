@@ -5,9 +5,9 @@ import Debug.Trace (trace)
 import           Hakyll
 
 import   Control.Applicative (empty, (<|>))
-import         Control.Monad ((>=>))
+import         Control.Monad ((>=>), filterM)
 import       Data.List.Split (splitOn)
-import            Data.Maybe (fromJust, fromMaybe, catMaybes, isJust)
+import            Data.Maybe (fromJust, fromMaybe, catMaybes, isJust, isNothing)
 import           Data.Monoid (mappend)
 import    System.Environment (lookupEnv)
 import      System.IO.Unsafe (unsafePerformIO)
@@ -204,15 +204,12 @@ main = do
     --           >>= loadAndApplyTemplate "templates/tag.html" ctx
     --           >>= relativizeUrls
 
-    let prefilter p = True -- itemIdentifier p /= "content/annotating.org" -- TODO FIXME meh, implement properly..
-
     match "meta/index.html" $ do
         route   $ gsubRoute "meta/" (const "")
         compile $ do
             -- TODO sorting: I guess we want datetime in case of multiple posts on the same day
-            posts <- recentFirst =<< loadAll patterns
-            let forIndex = filter prefilter posts
-            -- TODO eh, extract it...
+            -- TODO not sure if should reuse same filterM thing I'm using for feed?..
+            forIndex <- recentFirst =<< loadAll patterns
             let indexCtx =
                     listField "posts" postCtx (return forIndex)
                     <> constField "title" "Home"
@@ -228,18 +225,18 @@ main = do
     -- TODO not sure if need to prettify description
     -- TODO use 'content' field??
 
-
     -- https://jip.dev/posts/post-feed-in-hakyll/
     -- let feedPosts = loadAllSnapshots patterns "feed-body" -- TODO err.. what's up with that, why is it not used???
     let feedPosts = loadAll patterns
+    -- TODO FIXME let feedPosts = recentFirst =<< loadAll patterns
     let feedCtx = postCtx <> bodyField "description"
 
     let createFeed file render = create [file] $ do
           route idRoute
           compile $ do
             posts <- feedPosts
-            let forIndex = filter prefilter posts
-            render myFeedConfiguration feedCtx forIndex
+            public <- filterM (\x -> isNothing <$> getMetadataField (itemIdentifier x) "draft") posts
+            render myFeedConfiguration feedCtx public
 
     createFeed "atom.xml" renderAtom
     createFeed "rss.xml"  renderRss
