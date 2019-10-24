@@ -95,9 +95,11 @@ def main():
 (setq org-html-htmlize-output-type 'css)
 
 
+(require 'subr-x) ; ugh, for string-join...
 (with-eval-after-load 'org
             ; treat mypy highlight as python. see org-html-fontify-code
             (add-to-list 'org-src-lang-modes '("mypy" . python))
+            (load-file "~/dotfiles-emacs/babel-mypy.el")
 
             ; necessary so it doesn't prompt us
             (setq org-confirm-babel-evaluate nil)
