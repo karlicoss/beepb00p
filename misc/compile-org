@@ -100,7 +100,13 @@ def main():
             (add-to-list 'org-src-lang-modes '("mypy" . python))
 
             ; necessary so it doesn't prompt us
-            (setq org-confirm-babel-evaluate nil))
+            (setq org-confirm-babel-evaluate nil)
+
+            (setq org-babel-python-command "python3"))
+
+; TODO not sure..
+; (with-eval-after-load 'python
+;             (setq python-indent-guess-indent-offset nil))
 
 
 ; TODO ugh. could be a good idea to write about it. otherwise,
