@@ -55,7 +55,7 @@ def main():
             '--directory', str(get_module_path('org-plus-contrib')),
             '--directory', str(get_module_path('htmlize')),
             str(inp_org),
-            '--eval', f'''(progn
+            '--eval', fr'''(progn
 ; TODO ok, so maybe do not export CREATED property, but show it as a tooltip?
 ; TODO hmm. find another way to configure these...
 ; TODO use STRT?
@@ -104,7 +104,37 @@ def main():
             ; necessary so it doesn't prompt us
             (setq org-confirm-babel-evaluate nil)
 
-            (setq org-babel-python-command "python3"))
+            (setq org-babel-python-command "python3")
+
+; TODO eh, it's a bit shit..
+(defun org-babel-exp-code (info type)
+  "Return the original code block formatted for export."
+  (setf (nth 1 info)
+	(if (string= "strip-export" (cdr (assq :noweb (nth 2 info))))
+	    (replace-regexp-in-string
+	     (concat (org-babel-noweb-wrap) "\n") "" (nth 1 info))
+	  (if (org-babel-noweb-p (nth 2 info) :export)
+	      (org-babel-expand-noweb-references
+	       info org-babel-exp-reference-buffer)
+	    (nth 1 info))))
+  (org-fill-template
+   (if (eq type 'inline)
+       org-babel-exp-inline-code-template
+       org-babel-exp-code-template)
+   `(("lang"  . ,(nth 0 info))
+     ("body"  . ,(org-escape-code-in-string (nth 1 info)))
+     ("switches" . ,(let ((f (nth 3 info)))
+		      (and (org-string-nw-p f) (concat " " f))))
+     ("flags" . ,(let ((f (assq :flags (nth 2 info))))
+		   (and f (concat " " (cdr f)))))
+     ,@(mapcar (lambda (pair)
+		 (cons (substring (symbol-name (car pair)) 1)
+		       (format "%S" (cdr pair))))
+	       (nth 2 info))
+     ("name"  . ,(or (nth 4 info) "")))))
+
+            ; (setq org-babel-noweb-wrap-end ">>\n")
+            )
 
 ; TODO not sure..
 ; (with-eval-after-load 'python
