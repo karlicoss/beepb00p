@@ -87,7 +87,10 @@ def main():
 (org-add-link-type "sidenote" nil 'org-blog-sidenote)
 ; TODO instead, use some sort of project wise config?
 
-(setq org-export-global-macros '(("aside" . "@@html:<aside>@@$0@@html:</aside>@@")))
+(setq org-export-global-macros '(
+            ("aside"  . "@@html:<aside>@@$0@@html:</aside>@@")
+            ("anchor" . "@@html:<a name='$0'></a>@@")
+))
 
 (setq org-export-with-author nil)
 
