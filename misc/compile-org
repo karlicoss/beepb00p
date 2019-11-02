@@ -5,16 +5,18 @@ import tempfile
 from subprocess import check_call, check_output
 from pathlib import Path
 
-def emacs_version() -> str:
-    head = check_output(['emacs', '--version']).decode('utf8').splitlines()[0]
-    return head[len("GNU Emacs "):]
+# TODO mm, might need to apt install emacs-goodies-el first for code hightlight... https://stackoverflow.com/a/24087061/706389
 
+def get_user_package_path(module: str) -> Path:
+    """
+    Get the full path of emacs package specified by name
 
-# TODO mm, might need to apt install emacs-goodies-el first for code hightlight...
-# https://stackoverflow.com/a/24087061/706389
+    By default, Emacs would use systemwide packages (in /usr/share), which are typically very outdated.
+    """
+    def emacs_version() -> str:
+        head = check_output(['emacs', '--version']).decode('utf8').splitlines()[0]
+        return head[len("GNU Emacs "):]
 
-# This is necessary because otherwise emacs loads default outdated org-mode (e.g. in /usr/share) in batch mode
-def get_module_path(module: str) -> Path:
     version = emacs_version() # ugh
 
     pp = Path('~/.emacs.d/elpa/').expanduser()
@@ -23,37 +25,38 @@ def get_module_path(module: str) -> Path:
     return matches[0]
 
 
+# TODO work around this one..
 def filter_private(data: str) -> str:
     lines = [l for l in data.splitlines() if 'NOEXPORT' not in l]
     return '\n'.join(lines)
 
 
 def main():
-    p = argparse.ArgumentParser()
-    p.add_argument('--test', type=Path, default=None)
+    p = argparse.ArgumentParser(description='Helper script to compile Org-mode files into HTML')
+    p.add_argument('--test', type=Path, default=None, help='test on a specified files (otherwise tries to read stdin)')
     args = p.parse_args()
     if args.test is not None:
         org_data = args.test.read_text()
     else:
         org_data = sys.stdin.read()
+
+    org_data = filter_private(org_data)
+
+    # evaluate in temporary directory for deterministic runs
     with tempfile.TemporaryDirectory() as td:
         td = Path(td)
-
-        org_data = filter_private(org_data)
 
         inp_org  = td / 'input.org'
         inp_org.write_text(org_data)
 
-
         out_html = td / 'output.html'
 
-        # TODO make sure it propagates errors properly...
         check_call([
             'emacs',
             '--kill',
             '--batch',
-            '--directory', str(get_module_path('org-plus-contrib')),
-            '--directory', str(get_module_path('htmlize')),
+            '--directory', str(get_user_package_path('org-plus-contrib')),
+            '--directory', str(get_user_package_path('htmlize')),
             str(inp_org),
             '--eval', fr'''(progn
 ; TODO ok, so maybe do not export CREATED property, but show it as a tooltip?
@@ -234,5 +237,4 @@ def main():
         sys.stdout.write(body)
 
 if __name__ == '__main__':
-
     main()
