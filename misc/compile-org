@@ -44,109 +44,111 @@ def main():
 
     # evaluate in temporary directory for deterministic runs
     with tempfile.TemporaryDirectory() as td:
-        compile(tdir=Path(td), org_data=org_data)
+        html = org_to_html(tdir=Path(td), org_data=org_data)
+        body = post_process(html)
+        sys.stdout.write(body)
 
 
-def compile(*, tdir: Path, org_data: str):
-        inp_org  = tdir / 'input.org'
-        inp_org.write_text(org_data)
+def org_to_html(*, tdir: Path, org_data: str) -> str:
+    inp_org  = tdir / 'input.org'
+    inp_org.write_text(org_data)
 
-        out_html = tdir / 'output.html'
+    out_html = tdir / 'output.html'
 
-        compile_org_el = (Path(__file__).parent / 'compile-org.el').read_text()
-        compile_org_el = compile_org_el.format(out_html=out_html)
+    compile_org_el = (Path(__file__).parent / 'compile-org.el').read_text()
+    compile_org_el = compile_org_el.format(out_html=out_html)
 
-        compile_command = f'''
+    compile_command = f'''
 (progn
-        {compile_org_el}
+    {compile_org_el}
 )'''
 
-        check_call([
-            'emacs',
-            '--kill',
-            '--batch',
-            '--directory', str(get_user_package_path('org-plus-contrib')),
-            '--directory', str(get_user_package_path('htmlize')),
-            str(inp_org),
-            '--eval', compile_command,
-        ])
+    check_call([
+        'emacs',
+        '--kill',
+        '--batch',
+        '--directory', str(get_user_package_path('org-plus-contrib')),
+        '--directory', str(get_user_package_path('htmlize')),
+        str(inp_org),
+        '--eval', compile_command,
+    ])
+    return out_html.read_text()
 
-        # now, do some post processing
+def post_process(html: str) -> str:
+    from bs4 import BeautifulSoup
+    soup = BeautifulSoup(html, 'lxml')
 
-        html = out_html.read_text()
+    #### somewhat hacky support for {{{aside}}} macro for sidenotes
+    # convert all
+    # <?>text<aside>something<aside><?>
+    # to
+    # <div><span>text</span><aside>something</aside></div>
+    for aside in soup.find_all('aside'):
+        parent = aside.parent
 
-        from bs4 import BeautifulSoup
-        soup = BeautifulSoup(html, 'lxml')
+        assert parent.name in {'p', 'li'}
+        if parent.name != 'p':
+            pp = soup.new_tag(parent.name)
+            old = parent.replace_with(pp)
+            old.name = 'p'
+            pp.append(old)
+            parent = old
 
-        # convert all
-        # <?>text<aside>something<aside><?>
-        # to
-        # <div><span>text</span><aside>something</aside></div>
-        for aside in soup.find_all('aside'):
-            parent = aside.parent
+        assert parent.name == 'p'
 
-            assert parent.name in {'p', 'li'}
-            if parent.name != 'p':
-                pp = soup.new_tag(parent.name)
-                old = parent.replace_with(pp)
-                old.name = 'p'
-                pp.append(old)
-                parent = old
+        aside.extract()
 
-            assert parent.name == 'p'
-
-            aside.extract()
-
-            div = soup.new_tag('div')
-            oldp = parent.replace_with(div)
-            div.append(oldp)
-            div.append(aside)
-            oldp.name = 'span'
-            oldp['class'] = oldp.get('class', []) + ['before-aside']
-        #
-
-
-        # convert all
-        # <h? id=someid>...</h?>
-        # to
-        # <h? id=someid><a href='#someid'></a>...</h?>
-        # TODO title?
-        for lvl in [2, 3]:
-            htag = f'h{lvl}'
-            for hh in soup.find_all(htag):
-                parent = hh.parent
-
-                if parent.name != 'div':
-                    continue
-
-                if parent.attrs.get('id') == 'table-of-contents':
-                    continue
-
-                pcls = parent.attrs['class']
-                if f'outline-{lvl}' not in pcls:
-                    continue
-
-                hid = hh.attrs['id']
-
-                newa = soup.new_tag('a', attrs={
-                    'href' : '#' + hid,
-                    'class': 'headerlink',
-                })
-                newa.string = '¶'
-                hh.insert(0, newa)
-
-        # TODO some whitespace in tags???
+        div = soup.new_tag('div')
+        oldp = parent.replace_with(div)
+        div.append(oldp)
+        div.append(aside)
+        oldp.name = 'span'
+        oldp['class'] = oldp.get('class', []) + ['before-aside']
+    ####
 
 
-        # extract body because that's what hakyll expects
-        body = str(soup.find('body'))
-        #
+    #### Add paragraph anchors to the headings
+    # convert all
+    # <h? id=someid>...</h?>
+    # to
+    # <h? id=someid><a href='#someid'></a>...</h?>
+    # TODO title?
+    for lvl in [2, 3]:
+        htag = f'h{lvl}'
+        for hh in soup.find_all(htag):
+            parent = hh.parent
 
-        # ugh. didn't find a nice way to extract contents of tag
-        assert body.startswith('<body>')
-        assert body.endswith('</body>')
-        body = body[6: -7]
-        sys.stdout.write(body)
+            if parent.name != 'div':
+                continue
+
+            if parent.attrs.get('id') == 'table-of-contents':
+                continue
+
+            pcls = parent.attrs['class']
+            if f'outline-{lvl}' not in pcls:
+                continue
+
+            hid = hh.attrs['id']
+
+            newa = soup.new_tag('a', attrs={
+                'href' : '#' + hid,
+                'class': 'headerlink',
+            })
+            newa.string = '¶'
+            hh.insert(0, newa)
+    #### 
+
+    # TODO some whitespace in tags???
+
+    # extract body because that's what hakyll expects
+    body = str(soup.find('body'))
+    #
+
+    # ugh. didn't find a nicer way to extract contents of tag
+    assert body.startswith('<body>')
+    assert body.endswith('</body>')
+    body = body[6: -7]
+    return body
 
 if __name__ == '__main__':
     main()
