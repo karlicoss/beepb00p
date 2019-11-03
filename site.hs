@@ -78,8 +78,7 @@ data Thing a = Thing (Context a) (Compiler a) [Dependency]
 main :: IO ()
 main = do
   hakyll $ do
-    -- TODO just keep it in 'content' to simplify?
-    match ("meta/favicon.ico" .||. "meta/robots.txt") $ do
+    match ("meta/robot-face.png" .||. "meta/robots.txt") $ do
         route   $ chopOffRoute "meta/"
         compile   copyFileCompiler
 
