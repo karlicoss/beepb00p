@@ -22,8 +22,9 @@
         <link rel="stylesheet" href="/css/default.css?v=2" />
         <link rel="stylesheet" href="/css/links.css?v=2" />
 
-        <!-- TODO make it conditional on actually having math on page? -->
+        $if(has_math)$
         $partial("templates/mathjax.html")$
+        $endif$
     </head>
     <body>
         <header>
