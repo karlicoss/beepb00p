@@ -294,3 +294,8 @@ a.headerlink:hover {
 }
 */
 /* */
+
+
+#isso-root .avatar {
+    display: none;
+}
