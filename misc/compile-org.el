@@ -1,8 +1,9 @@
 ;; disable paredit so it doesn't mess with formatting
 
 
-;; require it straightaway so we don't need with-eval-after-load
+;; require these straightaway so we don't need with-eval-after-load
 (require 'org)
+(require 'ox-html)
 
 ;; TODO ok, so maybe do not export CREATED property, but show it as a tooltip?
 ;; TODO hmm. find another way to configure these...
@@ -48,6 +49,10 @@
 ;;; HTML specific export settings
 ;; https://github.com/gongzhitaao/orgcss#code-highlight
 (setq org-html-htmlize-output-type 'css)
+
+
+(add-to-list 'org-html-text-markup-alist '(verbatim . "<samp class='inline'>%s</samp>"))
+(add-to-list 'org-html-text-markup-alist '(code     . "<code class='inline'>%s</code>"))
 ;;;
 
 
