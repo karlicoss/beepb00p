@@ -34,7 +34,7 @@
 
 ; TODO give tags different colors depending on whether it actually exists or not?
 (defun org-blog-tag (path desc fmt)
-  (format "<a class='post-tag' href='./tags.html#%s'>#%s</a>" path path))
+  (format "<a class='post-tag' href='/tags.html#%s'>#%s</a>" path path))
 (org-add-link-type "tag" nil 'org-blog-tag)
 
 (defun org-blog-sidenote (path desc fmt)
