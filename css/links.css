@@ -31,7 +31,7 @@
    https://stackoverflow.com/questions/9007546/nesting-pseudo-elements-inside-pseudo-elements/9007628#9007628
 */
 
-a[href$=".pdf"]::after {
+main a[href$=".pdf"]::after {
     content: "";
     opacity: 0.85;
 
@@ -50,10 +50,10 @@ a[href$=".pdf"]::after {
 
     background-color: var(--link-color);
 }
-a[href$=".pdf"]:visited::after {
+main a[href$=".pdf"]:visited::after {
     background-color: var(--visited-link-color);
 }
-a[href*="wikipedia.org/wiki/"]::after {
+main a[href*="wikipedia.org/wiki/"]::after {
     content: "";
     opacity: 0.85;
 
@@ -72,10 +72,10 @@ a[href*="wikipedia.org/wiki/"]::after {
 
     background-color: var(--link-color);
 }
-a[href*="wikipedia.org/wiki/"]:visited::after {
+main a[href*="wikipedia.org/wiki/"]:visited::after {
     background-color: var(--visited-link-color);
 }
-a[href*="github.com"]::after {
+main a[href*="github.com"]::after {
     content: "";
     opacity: 0.85;
 
@@ -94,10 +94,10 @@ a[href*="github.com"]::after {
 
     background-color: var(--link-color);
 }
-a[href*="github.com"]:visited::after {
+main a[href*="github.com"]:visited::after {
     background-color: var(--visited-link-color);
 }
-a[href*="reddit.com"]::after {
+main a[href*="reddit.com"]::after {
     content: "";
     opacity: 0.85;
 
@@ -116,10 +116,10 @@ a[href*="reddit.com"]::after {
 
     background-color: var(--link-color);
 }
-a[href*="reddit.com"]:visited::after {
+main a[href*="reddit.com"]:visited::after {
     background-color: var(--visited-link-color);
 }
-a[href*="stackexchange.com"]::after {
+main a[href*="stackexchange.com"]::after {
     content: "";
     opacity: 0.85;
 
@@ -138,11 +138,11 @@ a[href*="stackexchange.com"]::after {
 
     background-color: var(--link-color);
 }
-a[href*="stackexchange.com"]:visited::after {
+main a[href*="stackexchange.com"]:visited::after {
     background-color: var(--visited-link-color);
 }
-a[href*="youtube.com"]::after ,
-a[href*="youtu.be"]::after {
+main a[href*="youtube.com"]::after ,
+main a[href*="youtu.be"]::after {
     content: "";
     opacity: 0.85;
 
@@ -161,12 +161,12 @@ a[href*="youtu.be"]::after {
 
     background-color: var(--link-color);
 }
-a[href*="youtube.com"]:visited::after ,
-a[href*="youtu.be"]:visited::after {
+main a[href*="youtube.com"]:visited::after ,
+main a[href*="youtu.be"]:visited::after {
     background-color: var(--visited-link-color);
 }
-a[href$=".png"]::after ,
-a[href$=".jpg"]::after {
+main a[href$=".png"]::after ,
+main a[href$=".jpg"]::after {
     content: "";
     opacity: 0.85;
 
@@ -185,7 +185,7 @@ a[href$=".jpg"]::after {
 
     background-color: var(--link-color);
 }
-a[href$=".png"]:visited::after ,
-a[href$=".jpg"]:visited::after {
+main a[href$=".png"]:visited::after ,
+main a[href$=".jpg"]:visited::after {
     background-color: var(--visited-link-color);
 }

@@ -19,8 +19,8 @@
         <title>$title$ | Mildly entertainingᵝ</title>
 
         <link href='https://fonts.googleapis.com/css?family=Source+Serif+Pro' rel='stylesheet' type='text/css'>
-        <link rel="stylesheet" href="/css/default.css?v=2" />
-        <link rel="stylesheet" href="/css/links.css?v=2" />
+        <link rel="stylesheet" href="/css/default.css?v=3" />
+        <link rel="stylesheet" href="/css/links.css?v=4" />
 
         $if(has_math)$
         $partial("templates/mathjax.html")$
@@ -59,6 +59,11 @@
         <!-- TODO [2019-09-21 14:06] add a link to stable version of the same page -->
         $endif$
         <footer>
+            <span style="float:left">
+            <a href="https://twitter.com/karlicoss">🐦 me @twitter</a>
+            ·
+            <a href="https://github.com/karlicoss">💻 me @github</a>
+            </span>
             $if(is_stable)$
             $else$
             Unstable version

@@ -61,8 +61,8 @@ _VISITED_ {
 """.lstrip()
 
 def make(locs):
-    unv = ' ,\n'.join(f"a[href{loc}]::after" for loc in locs)
-    vis = ' ,\n'.join(f"a[href{loc}]:visited::after" for loc in locs)
+    unv = ' ,\n'.join(f"main a[href{loc}]::after" for loc in locs)
+    vis = ' ,\n'.join(f"main a[href{loc}]:visited::after" for loc in locs)
     return TEMPLATE.replace('_UNVISITED_', unv).replace('_VISITED_', vis)
 
 
