@@ -204,21 +204,24 @@ main = do
     --           >>= loadAndApplyTemplate "templates/tag.html" ctx
     --           >>= relativizeUrls
 
-    match "meta/index.html" $ do
-        route   $ gsubRoute "meta/" (const "")
-        compile $ do
-            -- TODO sorting: I guess we want datetime in case of multiple posts on the same day
-            -- TODO not sure if should reuse same filterM thing I'm using for feed?..
-            forIndex <- recentFirst =<< loadAll patterns
-            let indexCtx =
-                    listField "posts" postCtx (return forIndex)
-                    <> constField "title" "Home"
-                    <> baseCtx
+    let createPostsList title loadPosts = do
+          route   $ gsubRoute "meta/" (const "")
+          compile $ do
+              -- TODO sorting: I guess we want datetime in case of multiple posts on the same day
+              -- TODO not sure if should reuse same filterM thing I'm using for feed?..
+              posts <- loadPosts
+              let postsListCtx =
+                      listField "posts" postCtx (return posts)
+                      <> constField "title" title
+                      <> baseCtx
 
-            getResourceBody
-                >>= applyAsTemplate indexCtx
-                >>= loadAndApplyTemplate "templates/default.html" indexCtx
-                >>= relativizeUrls
+              getResourceBody
+                  >>= applyAsTemplate postsListCtx
+                  >>= loadAndApplyTemplate "templates/default.html" postsListCtx
+                  >>= relativizeUrls
+
+    match "meta/index.html"  $ createPostsList "Home"   (recentFirst =<< loadAll patterns)
+    -- match "meta/drafts.html" $ createPostsList "Drafts" (recentFirst =<< loadAll patterns)
 
     -- TODO atom -- published, updated , I guess handle carefully so there aren't too many annoying updates
     -- TODO include latest only?
