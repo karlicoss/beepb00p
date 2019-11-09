@@ -17,6 +17,9 @@ $if(style_md)$
 $endif$
 
 <article>
+    $if(draft)$
+    <div>THIS IS A DRAFT! It will appear on the main page once finished!</div>
+    $endif$
     <section class="post-title">
     <h1>$title$</h1>
     $if(summary)$<div class="summary">$summary$</h2>$endif$
