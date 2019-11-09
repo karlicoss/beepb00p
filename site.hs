@@ -204,6 +204,19 @@ main = do
     --           >>= loadAndApplyTemplate "templates/tag.html" ctx
     --           >>= relativizeUrls
 
+    -- let getPosts :: Compiler [Item String] = do
+    let getPosts pred = do
+          allPosts <- recentFirst =<< loadAll patterns
+          posts <- filterM pred allPosts
+          return posts :: Compiler [Item String]
+
+    let publicPosts  = getPosts $ \x -> do
+          draft <- getMetadataField (itemIdentifier  x) "draft"
+          return $ isNothing draft
+    let publicDrafts = getPosts $ \x -> do
+          draft <- getMetadataField (itemIdentifier  x) "draft"
+          return $ fromMaybe "" draft == "public"
+
     let createPostsList title loadPosts = do
           route   $ gsubRoute "meta/" (const "")
           compile $ do
@@ -220,8 +233,8 @@ main = do
                   >>= loadAndApplyTemplate "templates/default.html" postsListCtx
                   >>= relativizeUrls
 
-    match "meta/index.html"  $ createPostsList "Home"   (recentFirst =<< loadAll patterns)
-    -- match "meta/drafts.html" $ createPostsList "Drafts" (recentFirst =<< loadAll patterns)
+    match "meta/index.html"  $ createPostsList "Home"   publicPosts
+    match "meta/drafts.html" $ createPostsList "Drafts" publicDrafts
 
     -- TODO atom -- published, updated , I guess handle carefully so there aren't too many annoying updates
     -- TODO include latest only?
@@ -230,15 +243,12 @@ main = do
 
     -- https://jip.dev/posts/post-feed-in-hakyll/
     -- let feedPosts = loadAllSnapshots patterns "feed-body" -- TODO err.. what's up with that, why is it not used???
-    let feedPosts = recentFirst =<< loadAll patterns
+    let feedPosts = publicPosts
     let feedCtx = postCtx <> bodyField "description"
 
     let createFeed file render = create [file] $ do
           route idRoute
-          compile $ do
-            posts <- feedPosts
-            public <- filterM (\x -> isNothing <$> getMetadataField (itemIdentifier x) "draft") posts
-            render myFeedConfiguration feedCtx public
+          compile $ render myFeedConfiguration feedCtx =<< feedPosts
 
     createFeed "atom.xml" renderAtom
     createFeed "rss.xml"  renderRss
