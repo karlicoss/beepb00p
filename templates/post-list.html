@@ -1,15 +1,10 @@
 <table class="posts-list">
     $for(posts)$
 
-    $if(draft)$
-
-    <!-- draft post: $title$ -->
-
-    $else$
     <tr class="post">
         <td rowspan="2" width="70%">
         <a href="$url$">
-            <div class="title">$title$</div>
+            <div class="title">$if(draft)$🚧$endif$$title$$if(draft)$🚧$endif$</div>
             <div class="summary">$if(summary)$ $summary$ $endif$</div>
         </a>
         </td>
@@ -19,7 +14,6 @@
     <tr>
         <td class="post-tags">$for(tags)$<a class="post-tag" href="/tags.html#$body$">$body$</a>$sep$ $endfor$</td>
     </tr>
-    $endif$
 
     $endfor$
 
