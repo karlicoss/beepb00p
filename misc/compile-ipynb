@@ -46,7 +46,8 @@ def run(tdir: Path, args):
     if tt.exists():
         print("TODO need to cleanup outputs properly via hakyll", file=sys.stderr)
         shutil.rmtree(tt)
-    shutil.move(str(ff), str(tt))
+    if ff.exists():
+        shutil.move(str(ff), str(tt))
     sys.stdout.write((tdir / (stem + '.html')).read_text())
 
 if __name__ == '__main__':
