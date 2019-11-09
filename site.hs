@@ -336,7 +336,16 @@ stableCtx = if isStable then constField "is_stable" "flag" else mempty where
   isStable = isJust $ unsafePerformIO $ lookupEnv "BEEPB00P_STABLE"
 
 
-baseCtx = stableCtx <> defaultContext
+pingbackCtx :: Context String
+pingbackCtx = (field "title" $ \i -> return $ fst $ title_and_url i)
+          <>  (field "url"   $ \i -> return $ snd $ title_and_url i) where
+  title_and_url i = (title, url) where
+    body = itemBody i
+    [title, url] = splitOn " " body
+
+pingback = listFieldWith "pingback" pingbackCtx (getList "pingback")
+
+baseCtx = pingback <> stableCtx <> defaultContext
 
 metaTags = listContextWith "tags"
 

@@ -9,6 +9,8 @@ Features:
 - feeds (rss/atom)
 - comments support using Isso
 - math support via Mathjax
+- drafts
+- custom metadata attributes (e.g. tags, special uuid attribute for linking comments, pingback)
 
 
 There are some comments in ~site.hs~, feel free to email me or open an issue if you want me to explain how something works!
@@ -47,3 +49,6 @@ When I want to release new version of site, I'm basically doing a clean rebuild 
 
 In reality it's a little more elaborate, I'm keeping the whole website (HTMLs) under git, so I can easily track changes and rollback in case of issues.
 I'll explain it and share some workflows later.
+
+* TODOs
+** TODO [2019-11-09 Sat 16:52] explain about using ~.metadata~ files

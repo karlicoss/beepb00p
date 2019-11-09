@@ -39,6 +39,16 @@ $endif$
     </section>
     $endif$
 
+    $if(pingback)$
+    <br>
+    <div>Discussion:</div>
+    <ul>
+    $for(pingback)$
+        <li><a href="$url$">$title$</a></li>
+    $endfor$
+    </ul>
+    $endif$
+
     <section class="comments">
     $partial("templates/isso.html")$
     </section>
