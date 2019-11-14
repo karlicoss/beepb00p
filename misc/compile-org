@@ -55,6 +55,7 @@ def main():
         if len(files) > 0:
             outdir = args.output_dir
             assert outdir is not None
+            outdir.mkdir(exist_ok=True, parents=True)
             for f in files:
                 shutil.move(str(f), str(outdir / f.name))
 
