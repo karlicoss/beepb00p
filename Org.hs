@@ -8,7 +8,8 @@ import Data.Char (toLower)
 import Data.List (intercalate)
 import Data.List.Split (splitOn)
 import Data.Maybe (fromJust, fromMaybe, catMaybes)
-import System.FilePath (takeExtension, replaceExtension, (</>))
+import Debug.Trace (trace)
+import System.FilePath (takeExtension, replaceExtension, (</>), makeRelative, isRelative, takeDirectory)
 
 
 import Hakyll (Item, Compiler, Context, Context(..), ContextField(StringField), loadSnapshot, itemBody, itemIdentifier, getResourceString, saveSnapshot)
@@ -17,7 +18,14 @@ import Common (compileWithFilter, (|>), (|.))
 
 
 orgCompile :: Item String -> Compiler (Item String)
-orgCompile   = compileWithFilter "misc/compile-org" []
+orgCompile item  = do
+  -- TODO eh, kinda copy pasted from Ipynb.hs...
+  let iid = show $ itemIdentifier item
+  let path = makeRelative "content/" iid
+  _ <- if path == iid then fail "Expected path relative to content/" else return () -- meh. is that really the right way?
+  let spath = makeRelative "special/" path -- we flatten 'special hierarchy'
+  let wdir = "_site" </> takeDirectory spath
+  compileWithFilter "misc/compile-org" ["--output-dir", wdir] item
 
 raw_org_key = "raw_org"
 meta_start = "#+"

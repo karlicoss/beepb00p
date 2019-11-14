@@ -4,6 +4,8 @@ import sys
 import tempfile
 from subprocess import check_call, check_output
 from pathlib import Path
+import shutil
+from typing import Tuple, List
 
 # TODO mm, might need to apt install emacs-goodies-el first for code hightlight... https://stackoverflow.com/a/24087061/706389
 
@@ -33,6 +35,7 @@ def filter_private(data: str) -> str:
 
 def main():
     p = argparse.ArgumentParser(description='Helper script to compile Org-mode files into HTML')
+    p.add_argument('--output-dir', type=Path, default=None, help='output directory for byproduct files (e.g. plots)')
     p.add_argument('--test', type=Path, default=None, help='test on a specified files (otherwise tries to read stdin)')
     args = p.parse_args()
     if args.test is not None:
@@ -44,12 +47,19 @@ def main():
 
     # evaluate in temporary directory for deterministic runs
     with tempfile.TemporaryDirectory() as td:
-        html = org_to_html(tdir=Path(td), org_data=org_data)
+        tdir = Path(td)
+        html, files = org_to_html(tdir=tdir, org_data=org_data)
         body = post_process(html)
         sys.stdout.write(body)
 
+        if len(files) > 0:
+            outdir = args.output_dir
+            assert outdir is not None
+            for f in files:
+                shutil.move(str(f), str(outdir / f.name))
 
-def org_to_html(*, tdir: Path, org_data: str) -> str:
+
+def org_to_html(*, tdir: Path, org_data: str) -> Tuple[str, List[Path]]:
     inp_org  = tdir / 'input.org'
     inp_org.write_text(org_data)
 
@@ -72,7 +82,11 @@ def org_to_html(*, tdir: Path, org_data: str) -> str:
         str(inp_org),
         '--eval', compile_command,
     ])
-    return out_html.read_text()
+
+    files = list(sorted(tdir.iterdir()))
+    files.remove(inp_org)
+    files.remove(out_html)
+    return out_html.read_text(), files
 
 def post_process(html: str) -> str:
     from bs4 import BeautifulSoup
