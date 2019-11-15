@@ -311,3 +311,8 @@ a code.inline {
     text-decoration: underline;
 }
 /* end */
+
+
+details summary {
+    cursor: pointer;
+}
