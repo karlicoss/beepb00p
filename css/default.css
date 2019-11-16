@@ -251,7 +251,7 @@ article .content > * {
 }
 
 /* TODO highlight sidenotes maybe? */
-article .content aside {
+article .content aside.sidenote {
     /* makes it work in conjucion with position: relative in article */
     position: var(--sn-position);
     right   : var(--sn-right);

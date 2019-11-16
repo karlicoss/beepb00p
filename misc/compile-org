@@ -97,7 +97,7 @@ def post_process(html: str) -> str:
     # convert all
     # <?>text<aside>something<aside><?>
     # to
-    # <div><span>text</span><aside>something</aside></div>
+    # <div><span>text</span><aside class='sidenote'>something</aside></div>
     for aside in soup.find_all('aside'):
         parent = aside.parent
 
@@ -111,6 +111,7 @@ def post_process(html: str) -> str:
 
         assert parent.name == 'p'
 
+        aside['class'] = aside.get('class', []) + ['sidenote']
         aside.extract()
 
         div = soup.new_tag('div')
@@ -121,6 +122,7 @@ def post_process(html: str) -> str:
         oldp['class'] = oldp.get('class', []) + ['before-aside']
     ####
 
+    TOC = 'table-of-contents'
 
     #### Add paragraph anchors to the headings
     # convert all
@@ -136,7 +138,7 @@ def post_process(html: str) -> str:
             if parent.name != 'div':
                 continue
 
-            if parent.attrs.get('id') == 'table-of-contents':
+            if parent.attrs.get('id') == TOC:
                 continue
 
             pcls = parent.attrs['class']
