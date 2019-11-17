@@ -61,13 +61,17 @@
   (and (org-string-nw-p contents)
        (format "<div class='properties'>\n%s</div>" contents)))
 (defun org-html-node-property (node-property _contents _info)
-  (format "<div class='property %s'><span class='property-name'>%s:</span> <span class='property-value'>%s</span></div>"
-          (org-element-property :key node-property)
-          (org-element-property :key node-property)
-          (let ((value (org-element-property :value node-property)))
-            (if value (concat " " value) ""))))
+  (let ((key (org-element-property :key node-property))
+        (val (org-element-property :value node-property)))
+   (format "<div class='property %s'><span class='property-name'>%s:</span> <span class='property-value'>%s</span></div>"
+           key
+           key
+           ; hack to display CREATED properties without the weekday in export
+           (if (string= key "CREATED") ; meh.
+               (format-time-string "[%Y-%m-%d %H:%M]" (org-read-date t t val))
+               (val)))))
 ;;;
-
+;; (format-time-string (org-time-stamp-format 'long 'inactive) org-log-note-effective-time)
 
 ;;; python specific stuff
 (setq org-babel-python-command "python3")
