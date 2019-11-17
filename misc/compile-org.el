@@ -53,6 +53,19 @@
 
 (add-to-list 'org-html-text-markup-alist '(verbatim . "<samp class='inline'>%s</samp>"))
 (add-to-list 'org-html-text-markup-alist '(code     . "<code class='inline'>%s</code>"))
+
+
+;;; see ox-html.el for original functions
+;; by default uses <pre> and 'example' class (not configurable!)
+(defun org-html-property-drawer (_property-drawer contents _info)
+  (and (org-string-nw-p contents)
+       (format "<div class='properties'>\n%s</div>" contents)))
+(defun org-html-node-property (node-property _contents _info)
+  (format "<div class='property %s'><span class='property-name'>%s:</span> <span class='property-value'>%s</span></div>"
+          (org-element-property :key node-property)
+          (org-element-property :key node-property)
+          (let ((value (org-element-property :value node-property)))
+            (if value (concat " " value) ""))))
 ;;;
 
 

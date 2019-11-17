@@ -68,10 +68,21 @@ $monospace: Lucida Console, monospace;
 }
 
 .timestamp {
+    font-family: "Source Code Pro", monospace;
+    font-size: small;
+    color: #000; /* override org-default.css */
+}
+
+.properties {
+    margin-top: -1em; /* TODO meh */
+
     font-family: monospace;
     font-size: small;
 }
 
+.property.CREATED .property-name {
+    text-transform: lowercase;
+}
 
 /* hide 'Table of Contents', couldn't control it via org... */
 #table-of-contents h2 {
