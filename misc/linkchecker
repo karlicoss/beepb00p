@@ -1,0 +1,40 @@
+#!/usr/bin/env python3
+import argparse
+import csv
+import sys
+from subprocess import Popen, PIPE
+
+# --ignore-url still checks for syntax errors :(
+def ignored(row) -> bool:
+    url = row['url']
+    if url.startswith('eshell:'):
+        return True
+    return False
+
+def errors_with(lines):
+    lines = (l.decode('utf8') for l in lines)
+    lines = (l for l in lines if not l.startswith('#'))
+    for row in csv.DictReader(lines, delimiter=';'):
+        if ignored(row):
+            print('ignored: ', row)
+        else:
+            yield row
+
+def errors(args):
+    with Popen(['linkchecker', '-o', 'csv', *args], stdout=PIPE) as p:
+        yield from errors_with(p.stdout)
+
+def main():
+    p = argparse.ArgumentParser()
+    p.add_argument('rest', nargs=argparse.REMAINDER)
+    args = p.parse_args()
+    err = False
+    for error in errors(args.rest):
+        err = True
+        print("ERROR! ", error) # TODO pretty print?
+    if err:
+       sys.exit(1) 
+
+
+if __name__ == '__main__':
+    main()
