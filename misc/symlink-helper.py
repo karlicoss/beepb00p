@@ -37,14 +37,28 @@ def run(target: Path):
     print("[symlink-helper] tracking:")
     pprint(symlinks)
 
-    for s in symlinks:
+    def add_watch(s: Path):
         try:
             res = s.resolve()
         except Exception as e:
-            print(e)
-            continue
+            print('[symlink-helper] ERROR ', e)
+            return
         path2link[res] = s
-        i.add_watch(str(res), mask=ics.IN_MODIFY | ics.IN_ATTRIB)
+        ps = str(res)
+
+        try:
+            i.remove_watch(ps, superficial=True)
+        except:
+            # ugh.. have to ignore failures from this call coming from the kernel watches
+            # see https://github.com/dsoprea/PyInotify/pull/57
+            pass
+
+        # TODO not so sure about mask because of all the weird ways of updating file..
+        # mask = ics.IN_MODIFY | ics.IN_ATTRIB
+        i.add_watch(ps)
+
+    for s in symlinks:
+        add_watch(s)
 
     def bump_mtime(path: Path):
         symlink = path2link[path]
@@ -52,10 +66,14 @@ def run(target: Path):
         check_output(["touch", "-h", str(symlink)])
 
     for event in i.event_gen(yield_nones=False):
-        (_, type_names, path, filename) = event
-
+        (_, tp, path, filename) = event
+        path = Path(path)
+        if 'IN_IGNORED' in tp:
+            # some sofware like vim would try to achieve atomic writes by deleting amd moving, which would expire inotify handle..
+            symlink = path2link[path]
+            add_watch(symlink)
         try:
-            bump_mtime(Path(path))
+            bump_mtime(path)
         except Exception as e:
             print("[symlink-helper] ERROR ", e)
 
