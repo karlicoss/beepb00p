@@ -36,6 +36,7 @@ def main():
         return
 
     beepb00p('clean')
+    # TODO FIXME add symlink helper
     beepb00p('watch', '--no-server')
 
 # TODO use asyncio?

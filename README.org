@@ -2,15 +2,16 @@ Hakyll compiler for my blog.
 
 Features:
 - formats:
-  - markdown (don't really use it anymore though)
-  - org mode 
-  - ipython notebook
+  - [[https://beepb00p.xyz/sandbox/test.html][org-mode]]
+  - [[https://beepb00p.xyz/sandbox/Test.html][ipython notebooks]]
+  - markdown (useful to link READMEs as blog posts)
 - tags
 - feeds (rss/atom)
 - comments support using Isso
 - math support via Mathjax
 - drafts
 - custom metadata attributes (e.g. tags, special uuid attribute for linking comments, pingback)
+- symlink support
 
 
 There are some comments in ~site.hs~, feel free to email me or open an issue if you want me to explain how something works!
@@ -19,6 +20,8 @@ I'll write down about it properly at some point later!
 * Post compilers
  
 ** Org-mode
+ See my [[https://beepb00p.xyz/sandbox/test.html][org-mode sandbox]].
+
  Org related stuff is in ~Org.hs~ and ~misc/compile-org~.
  To compile Org into HTML, I'm invoking Emacs in batch mode in ~compile-org~ script. 
  Your can try it with ~misc/compile-org --test misc/test.org~.
@@ -31,7 +34,9 @@ I'll write down about it properly at some point later!
 
 
 ** Ipython
- See ~Ipynb.hs~ and ~misc/compile-ipynb~. 
+ See my [[https://beepb00p.xyz/sandbox/test.html][org-mode sandbox]].
+
+ Ipython related things are in ~Ipynb.hs~ and ~misc/compile-ipynb~. 
 
  I'm compiling with ~jupyter~, that executes the code and does few extra tweaks in ~misc/ipynbconfig.py~, in particular:
 
@@ -39,7 +44,11 @@ I'll write down about it properly at some point later!
  - details/summary support, so you can collapse boilerplate or long outputs in a collapsible section.
 
 * Misc things 
-~css/generate-links.py~ for generating CSS for certain links (e.g. wikipedia/reddit/github)
+
+** ~css/generate-links.py~ for generating CSS for certain links (e.g. wikipedia/reddit/github)
+** symlink support: see [[file:misc/symlink-helper.py]] and [[file:preview]].
+   
+   Very useful when the target post (e.g. ipython notebook is in a different repository). Without this, detecting changes wouldn't work (see [[https://github.com/haskell-fswatch/hfsnotify/issues/87][issue]]).
 
 * Running & building
 I guess best place to start would be [[https://jaspervdj.be/hakyll/tutorials/02-basics.html][hakyll tutorial]].

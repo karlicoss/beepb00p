@@ -1,2 +1,16 @@
 #!/bin/bash -eu
-exec stack exec site --verbose watch -- "$@"
+cd "$(dirname "$0")"
+
+misc/symlink-helper.py 'content' &
+SH_PID="$!"
+
+function cleanup {
+    echo "killing symlink-helper $SH_PID"
+    kill "$SH_PID"
+}
+
+trap cleanup INT TERM EXIT
+
+# eh, I'd prefer exec call here, but doesn't work with trap
+# https://stackoverflow.com/a/24112832/706389 that doesn't help either
+stack exec site --verbose watch -- "$@"

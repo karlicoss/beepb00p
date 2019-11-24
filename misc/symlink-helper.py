@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # Hakyll watching doesn't follow symlinks :( https://github.com/jaspervdj/hakyll/issues/502
-# This scripts sets up watches on all symlinks and updates them (touches) every time the actual file changes
-# TODO link this script to the issue
+# This scripts compensates for it by setting up watches on all symlinks and updating them (touches) every time the referrent file changes
+# Usage: run in parallel with site watch command (see ~preview~ script)
+
 from typing import Dict
 from pathlib import Path
 from subprocess import check_output
@@ -33,7 +34,7 @@ def run(target: Path):
     symlinks = get_symlinks(target.resolve())
     path2link: Dict[Path, Path] = {} # reverse lookup
 
-    print("Tracking:")
+    print("[symlink-helper] tracking:")
     pprint(symlinks)
 
     for s in symlinks:
@@ -47,7 +48,7 @@ def run(target: Path):
 
     def bump_mtime(path: Path):
         symlink = path2link[path]
-        print("Detected change: ", path, symlink)
+        print("[symlink-helper] detected change: ", path, symlink)
         check_output(["touch", "-h", str(symlink)])
 
     for event in i.event_gen(yield_nones=False):
@@ -56,7 +57,7 @@ def run(target: Path):
         try:
             bump_mtime(Path(path))
         except Exception as e:
-            print("ERROR ", e)
+            print("[symlink-helper] ERROR ", e)
 
 
 def main():
