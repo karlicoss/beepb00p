@@ -34,14 +34,14 @@ def run(target: Path):
     symlinks = get_symlinks(target.resolve())
     path2link: Dict[Path, Path] = {} # reverse lookup
 
-    print("[symlink-helper] tracking:")
+    print("[poke-symlinks] tracking:")
     pprint(symlinks)
 
     def add_watch(s: Path):
         try:
             res = s.resolve()
         except Exception as e:
-            print('[symlink-helper] ERROR ', e)
+            print('[poke-symlinks] ERROR ', e)
             return
         path2link[res] = s
         ps = str(res)
@@ -53,16 +53,15 @@ def run(target: Path):
             # see https://github.com/dsoprea/PyInotify/pull/57
             pass
 
-        # TODO not so sure about mask because of all the weird ways of updating file..
-        # mask = ics.IN_MODIFY | ics.IN_ATTRIB
-        i.add_watch(ps)
+        mask = ics.IN_MODIFY | ics.IN_ATTRIB | ics.IN_IGNORED
+        i.add_watch(ps, mask=mask)
 
     for s in symlinks:
         add_watch(s)
 
-    def bump_mtime(path: Path):
+    def bump_mtime(path: Path, events=None):
         symlink = path2link[path]
-        print("[symlink-helper] detected change: ", path, symlink)
+        print("[poke-symlinks] detected change: ", path, symlink, events)
         check_output(["touch", "-h", str(symlink)])
 
     for event in i.event_gen(yield_nones=False):
@@ -73,9 +72,9 @@ def run(target: Path):
             symlink = path2link[path]
             add_watch(symlink)
         try:
-            bump_mtime(path)
+            bump_mtime(path, events=tp)
         except Exception as e:
-            print("[symlink-helper] ERROR ", e)
+            print("[poke-symlinks] ERROR ", e)
 
 
 def main():

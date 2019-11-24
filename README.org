@@ -46,7 +46,7 @@ I'll write down about it properly at some point later!
 * Misc things 
 
 ** ~css/generate-links.py~ for generating CSS for certain links (e.g. wikipedia/reddit/github)
-** symlink support: see [[file:misc/symlink-helper.py]] and [[file:preview]].
+** symlink support: see [[file:misc/poke-symlinks.py]] and [[file:preview]].
    
    Very useful when the target post (e.g. ipython notebook is in a different repository). Without this, detecting changes wouldn't work (see [[https://github.com/haskell-fswatch/hfsnotify/issues/87][issue]]).
 

@@ -1,11 +1,11 @@
 #!/bin/bash -eu
 cd "$(dirname "$0")"
 
-misc/symlink-helper.py 'content' &
+misc/poke-symlinks.py 'content' &
 SH_PID="$!"
 
 function cleanup {
-    echo "killing symlink-helper $SH_PID"
+    echo "killing poke-symlinks $SH_PID"
     kill "$SH_PID"
 }
 
