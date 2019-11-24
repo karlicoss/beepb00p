@@ -11,13 +11,13 @@ def main():
     p = ArgumentParser()
     p.add_argument('--item'      , type=Path, required=True, help='temporary hack to output images separately')
     p.add_argument('--output-dir', type=Path, required=True, help='temporary hack to output images separately')
-    args = p.parse_args()
+    args, rest = p.parse_known_args()
 
     with TemporaryDirectory() as tdir:
-        run(Path(tdir), args)
+        run(Path(tdir), args, *rest)
 
 
-def run(tdir: Path, args):
+def run(tdir: Path, args, *rest):
     item = args.item
     outdir = args.output_dir
 
@@ -39,6 +39,7 @@ def run(tdir: Path, args):
         # right, looks like in --stdout mode notebook files are not output anywhere... 
         "--output-dir", str(tdir),
         "--output", stem,
+        *rest,
     ])
 
     ff = tdir   / f'{stem}_files'

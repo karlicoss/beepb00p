@@ -3,8 +3,9 @@
 module Ipynb where
 
 import Control.Monad ((>=>))
+import Data.Maybe    (isJust)
 
-import Hakyll (Item, Compiler, Context, Context(..), ContextField(StringField), getResourceString, itemIdentifier)
+import Hakyll (Item, Compiler, Context, Context(..), ContextField(StringField), getResourceString, itemIdentifier, getMetadataField)
 
 import Common (compileWithFilter, (|>), (|.))
 
@@ -27,11 +28,16 @@ stripPrivateTodos = compileWithFilter "grep" ["-v", "NOEXPORT"]
 
 ipynbRun :: Item String -> Compiler (Item String)
 ipynbRun item = do
+  let iid = itemIdentifier item
+  maybe_allow_errors <- getMetadataField iid "allow_errors"
+  let allow_errors = isJust maybe_allow_errors
+
+  -- TODO unhardcode _site? Configuration { destinationDirectory = "_site"
   -- TODO I suspect that proper way to do it is for Item to hold String + list of extra files...
   -- for now just hack it
-  let iid = show $ itemIdentifier item
-  -- TODO unhardcode _site? Configuration { destinationDirectory = "_site"
-  res <- compileWithFilter "misc/compile-ipynb" ["--output-dir", "_site", "--item", iid] item
+  let args = ["--output-dir", "_site", "--item", show iid]
+  let extra_args = if allow_errors then ["--allow-errors"] else []
+  res <- compileWithFilter "misc/compile-ipynb" (args ++ extra_args) item
   return res
 
 ipynbCompile = stripPrivateTodos >=> ipynbRun
