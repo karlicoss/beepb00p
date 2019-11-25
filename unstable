@@ -29,7 +29,7 @@ def systemd(args):
     from kython.ksystemd import setup
     setup(
         unit_name='beepb00p.service',
-        exec_start=str(this),
+        exec_start=f'{this} run',
     )
 
 def install(args):
