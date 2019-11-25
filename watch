@@ -11,6 +11,7 @@ function cleanup {
 
 trap cleanup INT TERM EXIT
 
+site="${SITE_COMMAND:-stack exec site}"
 # eh, I'd prefer exec call here, but doesn't work with trap
 # https://stackoverflow.com/a/24112832/706389 that doesn't help either
-stack exec site --verbose watch -- "$@"
+$site --verbose watch "$@"

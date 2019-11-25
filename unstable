@@ -1,0 +1,69 @@
+#!/usr/bin/env python3
+import argparse
+import os
+from pathlib import Path
+from subprocess import check_call
+
+this = Path(__file__).absolute()
+
+site_bin = Path('/L/soft/beepb00p/site')
+
+def beepb00p(*args):
+    check_call([
+        str(site_bin),
+        *args,
+    ], cwd=this.parent)
+
+
+# run beepb00p watch --no-server (how to make sure it's not buffering output?)
+# if 'Cache corrupt' in output, warn somehow (e.g. ntfy to start with?)
+# every night, just restart and rebuild?
+# TODO move atomically once built?
+# TODO last update?
+
+# shit...
+# Removing _site...
+# beepb00p: _site: removeDirectoryRecursive: inappropriate type (not a directory)
+
+def systemd(args):
+    from kython.ksystemd import setup
+    setup(
+        unit_name='beepb00p.service',
+        exec_start=str(this),
+    )
+
+def install(args):
+    check_call([
+        'stack', 'install',
+        '--local-bin-path',
+        str(site_bin.parent),
+    ], cwd=this.parent)
+
+def run(args):
+    beepb00p('clean')
+    check_call([
+        str(this.parent / 'watch'),
+        '--no-server',
+    ], env={'SITE_COMMAND': str(site_bin), **os.environ})
+
+# TODO maybe restart via systemd instead?
+def main():
+    p = argparse.ArgumentParser()
+    sp = p.add_subparsers(dest='mode')
+
+    sdp = sp.add_parser('systemd')
+    sdp.set_defaults(func=systemd)
+
+    ip = sp.add_parser('install')
+    ip.set_defaults(func=install)
+
+    runp = sp.add_parser('run')
+    runp.set_defaults(func=run)
+
+    args = p.parse_args()
+    args.func(args)
+
+# TODO use asyncio?
+
+if __name__ == '__main__':
+    main()
