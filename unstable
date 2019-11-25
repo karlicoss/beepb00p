@@ -27,10 +27,12 @@ def beepb00p(*args):
 
 def systemd(args):
     from kython.ksystemd import setup
+    unit = 'beepb00p.service'
     setup(
-        unit_name='beepb00p.service',
+        unit_name=unit,
         exec_start=f'{this} run',
     )
+    # TODO exec jcu -f --unit beepb00p.service
 
 def install(args):
     check_call([
