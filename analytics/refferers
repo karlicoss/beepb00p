@@ -1,0 +1,40 @@
+#!/usr/bin/env python3
+"""
+Render referrers as a HTML table so I can see where my stuff is posted.
+"""
+from pathlib import Path
+
+import pandas as pd # type: ignore
+
+from process_logs import get_dataframe
+
+# -1 for infinite
+# TODO percentile??
+
+def run(access_log, output: Path):
+    pd.set_option('display.max_colwidth', 200)
+
+    df = get_dataframe(access_log)
+    df = df[~df['error'].notnull()]
+
+    # TODO filter reddit/hn somehow? or just sort to display in the bottom?
+    boring_ref = (df['refferer'] == '-') | df['refferer'].str.contains('beepb00p.xyz|127.0.0.1|192.168.0.1')
+    ref_table = df[~boring_ref].sort_values(by=['refferer'])[[
+        'dateandtime',
+        'refferer',
+        'url',
+    ]]
+    output.write_text(ref_table.to_html())
+
+
+def main():
+    import argparse
+    p = argparse.ArgumentParser()
+    p.add_argument('--access-log', type=Path, required=True)
+    p.add_argument('--output', type=Path, required=True)
+    args = p.parse_args()
+    run(**vars(args))
+
+
+if __name__ == '__main__':
+    main()
