@@ -35,7 +35,7 @@ def run(*, access_log, exclude):
     df = df[~df['error'].notnull()]
 
     # TODO filter reddit/hn somehow? or just sort to display in the bottom?
-    boring_ref = (df['refferer'] == '-') | df['refferer'].str.contains('|'.join(excluded))
+    boring_ref = (df['referrer'] == '-') | df['referrer'].str.contains('|'.join(excluded))
     # TODO dynamic sorting for pandas would be nice?
     rt = df[~boring_ref]
     rt = rt.sort_values(by=[
@@ -44,9 +44,9 @@ def run(*, access_log, exclude):
     ], ascending=False)[[
         'dt',
         'url',
-        'refferer',
+        'referrer',
     ]]
-    gc = rt.groupby(['url', 'refferer']).count()
+    gc = rt.groupby(['url', 'referrer']).count()
     gc = gc[gc['dt'] >= 5]
     gc = gc.sort_values(by=['dt'])
     return rt, gc
