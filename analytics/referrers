@@ -61,18 +61,39 @@ def main():
     args = p.parse_args()
     html = args.html
 
-    ref_table, gcount  = run(access_log=args.access_log, exclude=args.exclude)
+    rt, gcount  = run(access_log=args.access_log, exclude=args.exclude)
     if html is not None:
         with html.open('w') as fo:
             fo.write('<script src="https://cdn.jsdelivr.net/npm/sorttable@1.0.2/sorttable.min.js"></script>')
-            rt = ref_table.to_html().replace('class="dataframe"', 'class="dataframe sortable"')
-            fo.write(rt)
+
+            refs = rt['referrer'].value_counts()
+
+            # print(refs.quantile(axis='columns')) # 0.1))
+            q90 = refs.quantile(0.90)
+            print(f'q90: {q90}')
+            # TODO FIXME percentile??
+            def style(ser):
+                if ser.name != 'referrer':
+                    return ['' for _ in ser]
+                else:
+                    return ['font-weight:bold' if refs[val] < q90 else ''  for _, val in ser.items()]
+
+
+            rts = rt.style.apply(style).render()
+            # rts = rt.to_html()
+            # rts = rts.replace('class="dataframe"', 'class="dataframe sortable"')
+            rts = rts.replace('<table ', '<table border=1 class="dataframe sortable"')
+            fo.write(rts)
             gc = gcount.to_html().replace('class="dataframe"', 'class="dataframe sortable"')
             fo.write(gc)
+            rf = refs.to_frame()
+            rf = rf[rf.referrer > q90]
+            print(rf)
+            fo.write(rf.to_html())
     else:
-        print(ref_table)
+        print(rt)
         print(gcount)
-    print(f"Total lines: {len(ref_table)}")
+    print(f"Total lines: {len(rt)}")
 
 
 if __name__ == '__main__':
