@@ -11,29 +11,39 @@ from process_logs import get_dataframe
 # -1 for infinite
 # TODO percentile??
 
-def run(access_log, output: Path):
+def run(access_log):
     pd.set_option('display.max_colwidth', 200)
 
     df = get_dataframe(access_log)
     df = df[~df['error'].notnull()]
 
     # TODO filter reddit/hn somehow? or just sort to display in the bottom?
-    boring_ref = (df['refferer'] == '-') | df['refferer'].str.contains('beepb00p.xyz|127.0.0.1|192.168.0.1')
-    ref_table = df[~boring_ref].sort_values(by=['refferer'])[[
-        'dateandtime',
-        'refferer',
+    boring_ref = (df['refferer'] == '-') | df['refferer'].str.contains('beepb00p.xyz|127.0.0.1|192.168.0.2')
+    # TODO dynamic sorting for pandas would be nice?
+    ref_table = df[~boring_ref].sort_values(by=[
+        # 'refferer',
+        'dt',
+    ], ascending=False)[[
+        'dt',
         'url',
+        'refferer',
     ]]
-    output.write_text(ref_table.to_html())
+    return ref_table
 
 
 def main():
     import argparse
     p = argparse.ArgumentParser()
     p.add_argument('--access-log', type=Path, required=True)
-    p.add_argument('--output', type=Path, required=True)
+    p.add_argument('--html', type=Path)
     args = p.parse_args()
-    run(**vars(args))
+    html = args.html
+
+    ref_table = run(access_log=args.access_log)
+    if html is not None:
+        html.write_text(ref_table.to_html())
+    else:
+        print(ref_table)
 
 
 if __name__ == '__main__':
