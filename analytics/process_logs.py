@@ -25,8 +25,10 @@ def iter_log(access_log):
 
 def get_dataframe(access_log):
     import pandas as pd # type: ignore
-    from itertools import islice
+    from itertools import islice, chain
     it = iter_log(access_log)
     # it = islice(it, 5000)
+
+    it = chain(it, iter([{'error': None}])) # TODO ugh
     return pd.DataFrame(it)
     # TODO filter errors here?
