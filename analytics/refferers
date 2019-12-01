@@ -19,13 +19,15 @@ less_prio = {
 }
 
 def run(*, access_log, exclude):
-    if exclude is None:
-        exclude = set()
-    else:
+    excluded = set()
+    if exclude is not None:
         res = {}
         exec(exclude.read_text(), res)
-        exclude = res['EXCLUDE']
-
+        excl = res['EXCLUDE']
+        for e in excl:
+            lines = e.splitlines()
+            lines = (l.strip() for l in lines if len(l.strip()) > 0)
+            excluded.update(lines)
 
     pd.set_option('display.max_colwidth', 200)
 
@@ -33,18 +35,21 @@ def run(*, access_log, exclude):
     df = df[~df['error'].notnull()]
 
     # TODO filter reddit/hn somehow? or just sort to display in the bottom?
-    boring_ref = (df['refferer'] == '-') | df['refferer'].str.contains('|'.join(exclude))
+    boring_ref = (df['refferer'] == '-') | df['refferer'].str.contains('|'.join(excluded))
     # TODO dynamic sorting for pandas would be nice?
     rt = df[~boring_ref]
     rt = rt.sort_values(by=[
-        'refferer',
+        # 'refferer',
         'dt',
     ], ascending=False)[[
         'dt',
         'url',
         'refferer',
     ]]
-    return rt
+    gc = rt.groupby(['url', 'refferer']).count()
+    gc = gc[gc['dt'] >= 5]
+    gc = gc.sort_values(by=['dt'])
+    return rt, gc
 
 
 def main():
@@ -56,11 +61,18 @@ def main():
     args = p.parse_args()
     html = args.html
 
-    ref_table = run(access_log=args.access_log, exclude=args.exclude)
+    ref_table, gcount  = run(access_log=args.access_log, exclude=args.exclude)
     if html is not None:
-        html.write_text(ref_table.to_html())
+        with html.open('w') as fo:
+            fo.write('<script src="https://cdn.jsdelivr.net/npm/sorttable@1.0.2/sorttable.min.js"></script>')
+            rt = ref_table.to_html().replace('class="dataframe"', 'class="dataframe sortable"')
+            fo.write(rt)
+            gc = gcount.to_html().replace('class="dataframe"', 'class="dataframe sortable"')
+            fo.write(gc)
     else:
         print(ref_table)
+        print(gcount)
+    print(f"Total lines: {len(ref_table)}")
 
 
 if __name__ == '__main__':
