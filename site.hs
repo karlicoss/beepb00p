@@ -6,7 +6,7 @@ import           Hakyll
 
 import   Control.Applicative (empty, (<|>))
 import         Control.Monad ((>=>), filterM)
-import       Data.List.Split (splitOn)
+import       Data.List.Split (splitOn, wordsBy)
 import            Data.Maybe (fromJust, fromMaybe, catMaybes, isJust, isNothing)
 import           Data.Monoid (mappend)
 import    System.Environment (lookupEnv)
@@ -341,7 +341,7 @@ pingbackCtx = (field "title" $ \i -> return $ fst $ title_and_url i)
           <>  (field "url"   $ \i -> return $ snd $ title_and_url i) where
   title_and_url i = (title, url) where
     body = itemBody i
-    [title, url] = splitOn " " body
+    [title, url] = wordsBy (== ' ') body
 
 pingback = listFieldWith "pingback" pingbackCtx (getList "pingback")
 
