@@ -17,18 +17,26 @@ def parse_line(line: str):
     return dd
 
 
-def iter_log(access_log):
+def iter_log(access_log, columns=None):
+    """ 
+    Passing columns might help saving a bit on memory...
+    """
+    # constructing pandas frame directly wouldn't help much too: it's still quite a bit of memory anyway..
+    if columns is not None:
+        columns = set(['error', *columns])
     with Path(access_log).open() as fo:
         for line in fo:
-             yield parse_line(line)
+             pl = parse_line(line)
+             if columns is not None:
+                 pl = {c: pl[c] for c in columns if c in pl}
+             yield pl
 
 
-def get_dataframe(access_log):
+def get_dataframe(*args, **kwargs):
     import pandas as pd # type: ignore
     from itertools import islice, chain
-    it = iter_log(access_log)
-    # it = islice(it, 0, 50000) # * 2)
-
+    it = iter_log(*args, **kwargs)
+    # it = islice(it, 0, 200000) # * 2)
     # it = chain(it, iter([{'error': None}])) # TODO ugh
     return pd.DataFrame(it)
     # TODO filter errors here?

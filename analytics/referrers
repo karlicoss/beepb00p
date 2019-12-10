@@ -3,6 +3,7 @@
 Render referrers as a HTML table so I can see where my stuff is posted.
 """
 from pathlib import Path
+import sys
 
 import pandas as pd # type: ignore
 
@@ -10,6 +11,11 @@ from process_logs import get_dataframe
 
 # -1 for infinite
 # TODO percentile??
+
+import logging
+from kython.klogging import LazyLogger
+
+logger = LazyLogger('referrers', level=logging.DEBUG)
 
 
 less_prio = {
@@ -31,7 +37,9 @@ def run(*, access_log, exclude):
 
     pd.set_option('display.max_colwidth', 200)
 
-    df = get_dataframe(access_log)
+    logger.info('reading dataframe %s', access_log)
+    df = get_dataframe(access_log, columns=['dt', 'referrer', 'url'])
+    logger.info('read dataframe: %d lines', len(df))
     df = df[~df['error'].notnull()]
 
     # TODO filter reddit/hn somehow? or just sort to display in the bottom?
@@ -62,6 +70,7 @@ def main():
     html = args.html
 
     rt, gcount  = run(access_log=args.access_log, exclude=args.exclude)
+    logger.info('rendering...')
     if html is not None:
         with html.open('w') as fo:
             fo.write('<script src="https://cdn.jsdelivr.net/npm/sorttable@1.0.2/sorttable.min.js"></script>')
@@ -93,7 +102,7 @@ def main():
     else:
         print(rt)
         print(gcount)
-    print(f"Total lines: {len(rt)}")
+    logger.info('total lines: %d', len(rt))
 
 
 if __name__ == '__main__':
