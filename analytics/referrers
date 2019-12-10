@@ -3,11 +3,12 @@
 Render referrers as a HTML table so I can see where my stuff is posted.
 """
 from pathlib import Path
+import re
 import sys
 
 import pandas as pd # type: ignore
 
-from process_logs import get_dataframe
+from process_logs import get_dataframe, iter_log
 
 # -1 for infinite
 # TODO percentile??
@@ -37,15 +38,32 @@ def run(*, access_log, exclude):
 
     pd.set_option('display.max_colwidth', 200)
 
-    logger.info('reading dataframe %s', access_log)
-    df = get_dataframe(access_log, columns=['dt', 'referrer', 'url'])
-    logger.info('read dataframe: %d lines', len(df))
-    df = df[~df['error'].notnull()]
+    # meh
+    EXCLUDED_RE = re.compile('|'.join(e for e in excluded))
 
-    # TODO filter reddit/hn somehow? or just sort to display in the bottom?
-    boring_ref = (df['referrer'] == '-') | df['referrer'].str.contains('|'.join(excluded))
+    def is_boring(row):
+        # TODO filter reddit/hn somehow? or just sort to display in the bottom?
+        ref = row.get('referrer', None)
+        if ref is None:
+            return False
+        if ref == '-':
+            return True
+        if EXCLUDED_RE.search(ref):
+            return True
+        return False
+
+    it = (row for row in iter_log(access_log, columns=['dt', 'referrer', 'url']) if not is_boring(row))
+    # TODO log how many were filtered?
+
+    from itertools import islice
+    # it = islice(it, 0, 10000)
+
+    df = pd.DataFrame(it)
+    logger.info('read dataframe: %d lines', len(df))
+    rt = df[~df['error'].notnull()]
+    logger.info('after filtering errors: %d lines', len(df))
+
     # TODO dynamic sorting for pandas would be nice?
-    rt = df[~boring_ref]
     rt = rt.sort_values(by=[
         # 'refferer',
         'dt',
@@ -71,6 +89,7 @@ def main():
 
     rt, gcount  = run(access_log=args.access_log, exclude=args.exclude)
     logger.info('rendering...')
+    # TODO ugh. need some wort of iterative html rendering.. it takes 10% memeory as well
     if html is not None:
         with html.open('w') as fo:
             fo.write('<script src="https://cdn.jsdelivr.net/npm/sorttable@1.0.2/sorttable.min.js"></script>')
