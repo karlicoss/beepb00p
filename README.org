@@ -49,6 +49,12 @@ I'll write down about it properly at some point later!
 ** symlink support: see [[file:misc/poke-symlinks.py]] and [[file:preview]].
    
    Very useful when the target post (e.g. ipython notebook is in a different repository). Without this, detecting changes wouldn't work (see [[https://github.com/haskell-fswatch/hfsnotify/issues/87][issue]]).
+   
+** screenshot comparisons via [[https://github.com/ewanmellor/git-diff-image][git-diff-image]]
+   
+   Helpful for testing css changes.
+   
+   In addition I'm using [[https://github.com/yahoo/blink-diff][blink-diff]] since =compare= can't handle pages that are too long :(
 
 * Running & building
 I guess best place to start would be [[https://jaspervdj.be/hakyll/tutorials/02-basics.html][hakyll tutorial]].
