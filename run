@@ -1,0 +1,7 @@
+#!/bin/bash
+set -eu
+emacs --batch -q -l publish.el -f org-publish-all
+
+# TODO sanity check that there are noexport entries or some private tags (e.g. people mentioned)
+
+./check
