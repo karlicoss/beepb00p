@@ -154,19 +154,24 @@ footer {
   white-space: nowrap;
 }
 
+/* TODO move to a separate stylesheet? */
 .posts-list .post-tags {
-  float: right;
-  text-align: right;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 /* END posts list configuring */
 
+.post-tag + .post-tag {
+    margin-left: 0.5em;
+}
 
 .post-tag {
   font-size: 0.95em;
   color: #a51;
   font-family: "Lucida Console", Monaco, monospace;
-
 
   /* https://stackoverflow.com/a/12362315/706389
      somewhat hacky way to prevent breaking tags on hyphens...
