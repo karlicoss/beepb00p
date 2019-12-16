@@ -243,7 +243,15 @@ main = do
 
     -- https://jip.dev/posts/post-feed-in-hakyll/
     -- let feedPosts = loadAllSnapshots patterns "feed-body" -- TODO err.. what's up with that, why is it not used???
-    let feedPosts = publicPosts
+    let addToFeed x = do
+          nofeed <- getMetadataField (itemIdentifier x) "nofeed"
+          return $ isNothing nofeed
+
+    let feedPosts :: Compiler [Item String] = do
+          posts <- publicPosts
+          inFeed <- filterM addToFeed posts
+          return inFeed
+
     let feedCtx = postCtx <> bodyField "description"
 
     let createFeed file render = create [file] $ do
@@ -306,7 +314,7 @@ dateExtractor reader = do
 tagExtractor :: DependentField
 tagExtractor reader = do
   (StringField filetags) <- reader "filetags"
-  let tags = filter (\x -> x /= "") $ splitOn ":" filetags
+  let tags = filter (\x -> x /= "") $ splitOn ":" filetags -- TODO use wordsBy?
   return $ ListField baseCtx $ map toItem tags
 
 
