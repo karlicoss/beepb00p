@@ -33,9 +33,15 @@
 
 
 ; TODO give tags different colors depending on whether it actually exists or not?
-(defun org-blog-tag (path desc fmt)
-  (format "<a class='post-tag' href='/tags.html#%s'>#%s</a>" path path))
-(org-add-link-type "tag" nil 'org-blog-tag)
+;; (defun org-blog-tag-follow (path)) TODO ?
+
+(defun org-blog-tag-export (path desc fmt)
+  ;; TODO asssert fmt == html?
+  (let ((href  (format "/tags.html#%s" path))
+        (title (or desc (format "#%s" path)))
+        (class (if (not desc) "class='post-tag'" "")))
+       (format "<a %s href='%s'>%s</a>" class href title)))
+(org-add-link-type "tag" nil 'org-blog-tag-export)
 
 (defun org-blog-sidenote (path desc fmt)
   ;; TODO ugh. can't nest link inside the sidenote content??
