@@ -321,3 +321,27 @@ a code.inline {
 details summary {
     cursor: pointer;
 }
+
+
+/* compile-org sets these  */
+a.link-down:after {
+    content: "⤵";
+}
+
+a.link-up:after {
+    content: "⤴";
+}
+/* end */
+
+
+.debug-usage {
+    animation:debug 0.8s infinite;
+}
+
+@keyframes debug{
+    0%{     background: black; color: #f00;    }
+    49%{    background: black; color: transparent; }
+    50%{    background: black; color: transparent; }
+    99%{    background: black; color: transparent;  }
+    100%{   background: black; color: #f00;    }
+}
