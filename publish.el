@@ -15,15 +15,17 @@
 
       ;; README.md got some special handling, so we abuse that
       ;; https://rust-lang.github.io/mdBook/format/config.html?highlight=readme#configuring-preprocessors
-      (format "[[file:%sREADME.org][%s]]" (directory-file-name entry) (directory-file-name entry))
+      (format "[[file:%sREADME.org][%s]]" entry (directory-file-name entry))
       (org-publish-sitemap-default-entry entry style project)))
+
+; TODO disabkle ~ files
 
 (setq
  org-publish-project-alist
- '(("blog"
+ '(("exobrain"
     :base-directory "content"
     :base-extension "org"
-    :publishing-directory "public/blog"
+    :publishing-directory "markdown"
     :recursive t
     :publishing-function org-md-publish-to-md
 
@@ -37,8 +39,8 @@
     ; :index-filename "sitemap.org"
     ; :index-title "Sitemap"
 
-    :exclude "org.org")
-   ("website" :components ("blog")))) ; TODO????
+    :exclude "org.org")))
+    ; TODO????
 
 ; TODO shit. refuses to work.
 (setq org-html-postamble-format "")

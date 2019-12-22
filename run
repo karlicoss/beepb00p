@@ -1,24 +1,25 @@
 #!/bin/bash -eux
-
-
 cd "$(dirname "$0")"
 
+# TODO probably need my user config; similarly to blog
 emacs --batch -q -l publish.el -f org-publish-all
 
 # TODO sanity check that there are noexport entries or some private tags (e.g. people mentioned)
 
-./check
+# ./check
 
-
-# cargo install mdbook
+# cargo install mdbook && mdbook init
 
 # mdbook doesn't like summary format so we fix it
-# awk -i inplace '{gsub(/^-   /, ""); print}' src/SUMMARY.md
-awk -i inplace '!/\[README\]/'  src/SUMMARY.md
+awk -i inplace '!/\[README\]/'  markdown/SUMMARY.md
+
+# TODO clean first?
 mdbook build
 
 # TODO https://rust-lang.github.io/mdBook/format/config.html
 
 # https://github.com/rust-lang/mdBook/blob/master/book-example/book.toml
 # TODO editable?
+# TODO huh, that actually would be nice. I could fix stuff in-place and then apply to org-mode
+
 # TODO search settings?

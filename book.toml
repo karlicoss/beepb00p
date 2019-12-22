@@ -2,7 +2,10 @@
 authors = ["Dima Gerasimov"]
 language = "en"
 multilingual = false
-src = "src"
+src = "markdown"
 title = "exobrain"
+
+[build]
+build-dir = "output"
 
 [preprocessor.index]
