@@ -1,6 +1,10 @@
 #!/bin/bash -eux
 cd "$(dirname "$0")"
 
+
+# TODO ugh, need symlink watching tool here again...
+rm ~/.org-timestamps/exobrain.cache
+
 # TODO probably need my user config; similarly to blog
 emacs --batch -q -l publish.el -f org-publish-all
 
@@ -23,3 +27,7 @@ mdbook build
 # TODO huh, that actually would be nice. I could fix stuff in-place and then apply to org-mode
 
 # TODO search settings?
+
+# TODO wonder if I can integrate it with blog's header?
+
+# TODO export txt files as md as well?
