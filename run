@@ -13,7 +13,8 @@ emacs --batch -q -l publish.el -f org-publish-all
 # cargo install mdbook
 
 # mdbook doesn't like summary format so we fix it
-awk -i inplace '{gsub(/^-   /, ""); print}' src/SUMMARY.md
+# awk -i inplace '{gsub(/^-   /, ""); print}' src/SUMMARY.md
+awk -i inplace '!/\[README\]/'  src/SUMMARY.md
 mdbook build
 
 # TODO https://rust-lang.github.io/mdBook/format/config.html
