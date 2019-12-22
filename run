@@ -1,7 +1,23 @@
-#!/bin/bash
-set -eu
+#!/bin/bash -eux
+
+
+cd "$(dirname "$0")"
+
 emacs --batch -q -l publish.el -f org-publish-all
 
 # TODO sanity check that there are noexport entries or some private tags (e.g. people mentioned)
 
 ./check
+
+
+# cargo install mdbook
+
+# mdbook doesn't like summary format so we fix it
+awk -i inplace '{gsub(/^-   /, ""); print}' src/SUMMARY.md
+mdbook build
+
+# TODO https://rust-lang.github.io/mdBook/format/config.html
+
+# https://github.com/rust-lang/mdBook/blob/master/book-example/book.toml
+# TODO editable?
+# TODO search settings?

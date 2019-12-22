@@ -1,0 +1,6 @@
+[book]
+authors = ["Dima Gerasimov"]
+language = "en"
+multilingual = false
+src = "src"
+title = "wiki"
