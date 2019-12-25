@@ -87,15 +87,23 @@ def main():
     p.add_argument('--access-log', type=Path, required=True)
     p.add_argument('--html', type=Path)
     p.add_argument('--exclude', type=Path)
+    p.add_argument('--last', type=int) # TODO use date instead?
     args = p.parse_args()
     html = args.html
 
     rt, gcount  = run(access_log=args.access_log, exclude=args.exclude)
+
+    last = args.last
+    if last is not None:
+        rt = rt[:last]
+
     logger.info('rendering...')
     # TODO ugh. need some wort of iterative html rendering.. it takes 10% memeory as well
     if html is not None:
         with html.open('w') as fo:
             fo.write('<script src="https://cdn.jsdelivr.net/npm/sorttable@1.0.2/sorttable.min.js"></script>')
+
+            rt['referrer'] = rt['referrer'].map(lambda u: f'<a href="{u}">{u}</a>')
 
             refs = rt['referrer'].value_counts()
 
