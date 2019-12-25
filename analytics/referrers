@@ -5,6 +5,9 @@ Render referrers as a HTML table so I can see where my stuff is posted.
 from pathlib import Path
 import re
 import sys
+from time import sleep
+
+from typing import Set, Dict, Any
 
 import pandas as pd # type: ignore
 
@@ -26,9 +29,9 @@ less_prio = {
 }
 
 def run(*, access_log, exclude):
-    excluded = set()
+    excluded: Set[str] = set()
     if exclude is not None:
-        res = {}
+        res: Dict[str, Any] = {}
         exec(exclude.read_text(), res)
         excl = res['EXCLUDE']
         for e in excl:
