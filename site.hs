@@ -250,7 +250,8 @@ main = do
     let feedPosts :: Compiler [Item String] = do
           posts <- publicPosts
           inFeed <- filterM addToFeed posts
-          return inFeed
+          -- limit feed size
+          return $ take 10 inFeed -- TODO kinda arbitrary.. need to limit by 512Kb properly
 
     let feedCtx = postCtx <> bodyField "description"
 
