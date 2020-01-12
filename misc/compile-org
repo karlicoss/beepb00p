@@ -4,6 +4,7 @@ import sys
 import tempfile
 from subprocess import check_call, check_output
 from pathlib import Path
+from itertools import chain
 import shutil
 from typing import Tuple, List
 
@@ -22,7 +23,8 @@ def get_user_package_path(module: str) -> Path:
     version = emacs_version() # ugh
 
     pp = Path('~/.emacs.d/elpa/').expanduser()
-    matches = list(x for x in pp.glob(f'{version}/*/{module}-*/') if x.is_dir())
+    # TODO ugh. this is gonna break in the year 3000...
+    matches = list(x for x in pp.glob(f'{version}/*/{module}-2*/') if x.is_dir())
     assert len(matches) == 1, matches
     return matches[0]
 
@@ -74,12 +76,13 @@ def org_to_html(*, tdir: Path, org_data: str) -> Tuple[str, List[Path]]:
     {compile_org_el}
 )'''
 
+    modules = ['org-plus-contrib', 'htmlize', 'dash', 's']
+
     check_call([
         'emacs',
         '--kill',
         '--batch',
-        '--directory', str(get_user_package_path('org-plus-contrib')),
-        '--directory', str(get_user_package_path('htmlize')),
+        *chain.from_iterable(['--directory', str(get_user_package_path(module))] for module in modules),
         str(inp_org),
         '--eval', compile_command,
     ])

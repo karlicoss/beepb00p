@@ -5,6 +5,9 @@
 (require 'org)
 (require 'ox-html)
 
+(require 's)
+(require 'dash)
+
 ;; TODO ok, so maybe do not export CREATED property, but show it as a tooltip?
 ;; TODO hmm. find another way to configure these...
 ;; TODO use STRT?
