@@ -46,6 +46,14 @@
        (format "<a %s href='%s'>%s</a>" class href title)))
 (org-add-link-type "tag" nil 'org-blog-tag-export)
 
+(defun org-blog-github-export (path desc fmt)
+  (let* ((path  (if (s-contains? "/" path) path (format "karlicoss/%s" path)))
+         (href  (format "https://github.com/%s" path))
+         (title (or desc path)))
+        (format "<a href='%s'>%s</a>" href title)))
+(org-add-link-type "gh"  nil 'org-blog-github-export)
+
+
 (defun org-blog-sidenote (path desc fmt)
   ;; TODO ugh. can't nest link inside the sidenote content??
   ;; and writing that on elisp is gonna suck. really need python exporting backend...
