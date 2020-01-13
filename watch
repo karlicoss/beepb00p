@@ -1,8 +1,28 @@
 #!/bin/bash -eu
 cd "$(dirname "$0")"
 
-misc/poke-symlinks.py 'content' &
+# TODO ugh, there must be an easier way to do this in bash...
+function poke {
+    local par="$1"
+    # TODO release script separately
+    misc/poke-symlinks.py 'content' &
+    POKE_PID="$!"
+
+    # take down the whole script if parent is dead
+    # not sure, perhaps parent process should handle this instead..
+    while true; do
+        if ! kill -0 "$POKE_PID"; then
+            >&2 echo "poke-symlinks died!"
+            # take down whole process group
+            kill -- "-$par"
+        fi
+        sleep 1
+    done
+}
+
+poke "$$" &
 SH_PID="$!"
+
 
 function cleanup {
     echo "killing poke-symlinks $SH_PID"
