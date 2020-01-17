@@ -15,7 +15,6 @@ html {
     }
 }
 
-
 :root {
     --link-color: #0000EE;
     --visited-link-color: #551A8B;
@@ -86,83 +85,11 @@ footer {
 }
 
 
-/* BEGIN posts list configuring */
-.posts-list {
-  margin-top   : 1em;
-  margin-bottom: 1em;
-
-  table-layout: fixed; width: 100%;
-}
-
-
-/* .posts-list tr.sep td { */
-/*     border-top  : 0.5px dotted gray; */
-/* } */
-/* .posts-list .sep { */
-/*     padding-left: 2em; */
-/*     padding-right: 2em; */
-/* } */
-/* .posts-list tr:last-child td { */
-/*   border-bottom: 0.5px dotted gray; */
-/* } */
-
-
-.posts-list tr td {
-    border: 10px solid transparent
-}
-
-.posts-list {
-    border-collapse: collapse;
-}
-
-.posts-list tr:nth-child(4n+1) {
-    background: #EEE;
-}
-.posts-list tr:nth-child(4n+2) {
-    background: #EEE;
-}
-.posts-list tr:nth-child(4n+3) {
-    background: #FFF;
-}
-.posts-list tr:nth-child(4n) {
-    background: #FFF;
-}
-
-.posts-list .post {
-    vertical-align: top;
-}
-
-.posts-list .post a:link {
-    text-decoration: none;
-    font-weight: initial;
-}
-
-.posts-list .summary {
-  padding-left: 0.5em;
-  font-size: 0.9em;
-}
-
+/* TODO ?? */
 .date {
     font-family: "Lucida Console", Monaco, monospace;
 }
 
-.posts-list .date {
-  font-size: 0.8em;
-
-  float: right;
-
-  white-space: nowrap;
-}
-
-/* TODO move to a separate stylesheet? */
-.posts-list .post-tags {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
-/* END posts list configuring */
 
 .post-tag + .post-tag {
     margin-left: 0.5em;

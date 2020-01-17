@@ -1,20 +1,22 @@
-<table class="posts-list">
-    $for(posts)$
+<!-- TODO hmm, main should have container class on it? -->
+<div class="posts-list">
 
-    <tr class="post">
-        <td rowspan="2" width="70%">
-        <a href="$url$">
-            <div class="title">$if(draft)$🚧$endif$$title$$if(draft)$🚧$endif$</div>
-            <div class="summary">$if(summary)$ $summary$ $endif$</div>
+$for(posts)$
+    <div class="post">
+        <a href="$url$" class="post-link">
+            <div class="title">$if(draft)$🚧$endif$ $title$</div>
+            $if(summary)$<div class="summary">$summary$</div>$endif$
         </a>
-        </td>
-        <td class="date">$date$</td>
-    </tr>
-    <!-- TODO careful with colspan -->
-    <tr>
-        <td class="post-tags">$for(tags)$<a class="post-tag" href="/tags.html#$body$">$body$</a>$endfor$</td>
-    </tr>
 
-    $endfor$
+        $if(comment)$ TODO add machine readable datetime $endif$
+        $if(comment)$ TODO don't need "date" class; just use time tag? $endif$
+        <time class="date">$date$</time>
 
-</table>
+        <span class="post-tags">
+            $if(comment)$ space here is useful for tui browsers $endif$
+            $for(tags)$ <a class="post-tag" href="/tags.html#$body$">#$body$</a>$endfor$
+        </span>
+    </div>
+$endfor$
+
+</div>

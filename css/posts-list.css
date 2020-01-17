@@ -1,0 +1,68 @@
+.posts-list {
+    margin-top   : 1em;
+    margin-bottom: 1em;
+}
+
+.posts-list .post {
+    display: grid;
+    grid-template-columns: 70% 30%;
+
+    border: 10px solid transparent;
+}
+
+/* alternating colors */
+.posts-list .post:nth-child(2n+1) {
+    background: #eee;
+}
+.posts-list .post:nth-child(2n+2) {
+    background: #fff;
+}
+/* */
+
+
+.posts-list .post .post-link {
+    grid-column-start: 1;
+    grid-column-end: 2;
+    grid-row-start: span 2;
+
+}
+
+.posts-list .post a.post-link {
+    text-decoration: none;
+}
+
+.posts-list .post .summary {
+    padding-left: 0.5em;
+    font-size: 0.9em;
+}
+
+.posts-list .post time {
+    grid-column-start: 2;
+    grid-column-end: 3;
+
+    grid-row-start: span 2; /* TODO not sure about this one */
+
+    text-align: right;
+
+    font-size: 0.8em;
+
+    white-space: nowrap;
+}
+
+
+.posts-list .post .post-tags {
+    /* ok, that's def nice; that way it ened up taking less vertical space on phone */
+    grid-column-start: 1;
+    grid-column-end: 3;
+
+    justify-self: stretch;
+
+    text-align: right;
+}
+
+.posts-list .pos .post-tags {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
