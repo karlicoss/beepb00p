@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" prefix="og: http://ogp.me/ns#">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -27,8 +27,20 @@
         $if(has_math)$
         $partial("templates/mathjax.html")$
         $endif$
+
+        <link rel="canonical" href="https://beepb00p.xyz$url$" />
+
+        <!-- can test it with https://telegram.me/webpagebot -->
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://beepb00p.xyz$url$" /> <!-- TODO base? -->
+        <meta property="og:title" content="$title$ | beepb00p" />
+        <!-- TODO description? -->
+        <!-- ugh. why is image necessary??? -->
+        <meta property="og:image" content="notset" />
+
     </head>
     <body>
+        <!-- TODO make semantic -->
         <header>
             <nav>
                 <span class="nav-left">
@@ -60,6 +72,8 @@
         <!-- TODO [2019-09-21 14:04] would be nice to get rebuild time somehow in context -->
         <!-- TODO [2019-09-21 14:06] add a link to stable version of the same page -->
         $endif$
+
+        <!-- TODO make semantic -->
         <footer>
             <span style="float:left">
             <a href="https://twitter.com/karlicoss">🐦 me @twitter</a>
