@@ -7,12 +7,12 @@ import Control.Monad ((>=>))
 import Data.Char (toLower)
 import Data.List (intercalate)
 import Data.List.Split (splitOn)
-import Data.Maybe (fromJust, fromMaybe, catMaybes)
+import Data.Maybe (fromJust, fromMaybe, catMaybes, isJust)
 import Debug.Trace (trace)
 import System.FilePath (takeExtension, replaceExtension, (</>), makeRelative, isRelative, takeDirectory)
 
 
-import Hakyll (Item, Compiler, Context, Context(..), ContextField(StringField), loadSnapshot, itemBody, itemIdentifier, getResourceString, saveSnapshot)
+import Hakyll (Item, Compiler, Context, Context(..), ContextField(StringField), loadSnapshot, itemBody, itemIdentifier, getResourceString, saveSnapshot, getMetadataField)
 
 import Common (compileWithFilter, (|>), (|.))
 
@@ -23,9 +23,15 @@ orgCompile item  = do
   let iid = show $ itemIdentifier item
   let path = makeRelative "content/" iid
   _ <- if path == iid then fail "Expected path relative to content/" else return () -- meh. is that really the right way?
+
+  meta <- getMetadataField (itemIdentifier item) "check_ids"
+  let check_ids = isJust meta
+
   let spath = makeRelative "special/" path -- we flatten 'special hierarchy'
   let wdir = "_site" </> takeDirectory spath
-  compileWithFilter "misc/compile-org" ["--output-dir", wdir] item
+
+  let args = ["--output-dir", wdir] ++ (if check_ids then ["--check-ids"] else [])
+  compileWithFilter "misc/compile-org" args item
 
 raw_org_key = "raw_org"
 meta_start = "#+"

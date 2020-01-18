@@ -19,6 +19,8 @@ function poke {
         sleep 1
     done
 }
+# TODO ugh. it's not killing it properly
+# just rewrite to python...
 
 poke "$$" &
 SH_PID="$!"
