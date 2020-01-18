@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import re
 import sys
 import tempfile
 from subprocess import check_call, check_output
@@ -149,6 +150,11 @@ def post_process(html: str) -> str:
                 continue
 
             hid = hh.attrs['id']
+
+            DEFAULT_ORG_ID = r'org[\da-f]{7}'
+            if re.fullmatch(DEFAULT_ORG_ID, hid):
+                # TODO later exit..
+                raise RuntimeError(f"Please define custom ID for {hh}")
 
             newa = soup.new_tag('a', attrs={
                 'href' : '#' + hid,
