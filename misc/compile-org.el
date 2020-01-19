@@ -17,8 +17,13 @@
       '("[%Y-%m-%d]" . "[%Y-%m-%d %H:%M]"))
 (setq org-display-custom-times 't)
 
-(setq org-export-global-macros '(("aside"  . "@@html:<aside>@@$0@@html:</aside>@@")
-                                 ("anchor" . "@@html:<a name='$0'></a>@@")))
+
+;; TODO hmm, not sure if I should use INCLUDE for these instead?
+;; I guess that is friendlier if other people try to use this
+(setq org-export-global-macros '(("aside"    . "@@html:<aside>@@$0@@html:</aside>@@")
+                                 ("anchor"   . "@@html:<a name='$0'></a>@@")
+                                 ;; TODO use css instead?
+                                 ("question" . "@@html:<span style='color:darkorange'><strong>$0</strong></span>@@")))
 (setq org-export-with-author nil)
 
 
