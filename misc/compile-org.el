@@ -40,6 +40,18 @@
 (advice-add #'org-export-new-reference :override #'org-export-deterministic-reference)
 
 
+;;; for internal links (<<target>>), generate #target anchor instead of random numbers
+(defun org-export-get-reference-internal (orig-fun tg info &rest args)
+  ;; fucking hell. that's got to be easier? pcase didn't work though
+  ;; I can't believe that's the way to go in elisp. What if someone renames 'target', then it just breaks?
+  ;; in other dynamic languages there is at least linting
+  (if (string= "target" (symbol-name (car tg)))
+      (org-element-property :value tg) ;; TODO check that it doesn't contain spaces etc?
+      (apply orig-fun tg info args)))
+(advice-add #'org-export-get-reference :around #'org-export-get-reference-internal)
+;;;
+
+
 ; TODO give tags different colors depending on whether it actually exists or not?
 ;; (defun org-blog-tag-follow (path)) TODO ?
 
