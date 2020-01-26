@@ -45,12 +45,14 @@
   ;; fucking hell. that's got to be easier? pcase didn't work though
   ;; I can't believe that's the way to go in elisp. What if someone renames 'target', then it just breaks?
   ;; in other dynamic languages there is at least linting
-  (if (string= "target" (symbol-name (car tg)))
-      (org-element-property :value tg) ;; TODO check that it doesn't contain spaces etc?
-      (apply orig-fun tg info args)))
+  (let ((symb (symbol-name (car tg))))
+       (cond ((string= symb "target") (org-element-property :value tg))
+             ((string= symb "table")  (org-element-property :name tg))
+             (t (apply orig-fun tg info args)))))
 (advice-add #'org-export-get-reference :around #'org-export-get-reference-internal)
 ;;;
 
+;; https://emacs.stackexchange.com/questions/24960/org-mode-reference-remote-table-from-a-different-file
 
 ; TODO give tags different colors depending on whether it actually exists or not?
 ;; (defun org-blog-tag-follow (path)) TODO ?
