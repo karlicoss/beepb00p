@@ -31,12 +31,15 @@
         <link rel="canonical" href="https://beepb00p.xyz$url$" />
 
         <!-- can test it with https://telegram.me/webpagebot -->
+        <!-- or https://developers.facebook.com/tools/debug -->
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://beepb00p.xyz$url$" /> <!-- TODO base? -->
         <meta property="og:title" content="$title$ | beepb00p" />
         <meta property="og:description" content="$if(summary)$$summary$$endif$" />
-        <!-- ugh. why is image necessary??? -->
-        <meta property="og:image" content="notset" />
+        <!-- ugh. why is image necessary??? otherwise other parts aren't working or I get lots of 404s -->
+        <!-- ugh. Facebook really wants jpg? -->
+        <!-- also Facebook displays it with black background, but whatever, fuck it. -->
+        <meta property="og:image" content="https://beepb00p.xyz/robot-face.jpg" />
 
     </head>
     <body>
