@@ -2,12 +2,13 @@
 """
 Render referrers as a HTML table so I can see where my stuff is posted.
 """
+from datetime import timedelta
+from itertools import islice
 from pathlib import Path
 import re
 import sys
 from time import sleep
-
-from typing import Set, Dict, Any
+from typing import Set, Dict, Any, Optional
 
 import pandas as pd # type: ignore
 
@@ -16,19 +17,19 @@ from process_logs import get_dataframe, iter_log
 # -1 for infinite
 # TODO percentile??
 
-import logging
-from kython.klogging import LazyLogger
+from kython.klogging2 import LazyLogger
 
-logger = LazyLogger('referrers', level=logging.DEBUG)
+logger = LazyLogger('referrers', level='debug')
 
 
 less_prio = {
     'reddit.com',
     'lobste.rs',
     'news.ycombinator.com',
+    # TODO add other hn readers? or keep in external config
 }
 
-def run(*, access_log, exclude):
+def run(*, access_log: Path, exclude: Optional[Path]=None, delta: Optional[timedelta]=None):
     excluded: Set[str] = set()
     if exclude is not None:
         res: Dict[str, Any] = {}
@@ -45,6 +46,11 @@ def run(*, access_log, exclude):
     EXCLUDED_RE = re.compile('|'.join(e for e in excluded))
 
     def is_boring(row):
+        url = row.get('url', None)
+        if url is not None and url.startswith('/comments/'):
+            # isso; whatever...
+            return True
+
         # TODO filter reddit/hn somehow? or just sort to display in the bottom?
         ref = row.get('referrer', None)
         if ref is None:
@@ -55,19 +61,24 @@ def run(*, access_log, exclude):
             return True
         return False
 
-    it = (row for row in iter_log(access_log, columns=['dt', 'referrer', 'url']) if not is_boring(row))
-    # TODO log how many were filtered?
+    cols = ['dt', 'referrer', 'url']
 
-    from itertools import islice
-    # it = islice(it, 0, 10000)
 
-    df = pd.DataFrame(it)
-    logger.info('read dataframe: %d lines', len(df))
-    rt = df[~df['error'].notnull()]
+    total = 0
+    def it():
+        nonlocal total
+        for row in iter_log(access_log, columns=cols, delta=delta):
+            total += 1
+            if not is_boring(row):
+                yield row
+
+    df = pd.DataFrame(it(), columns=cols + ['error'])
+    logger.info('dataframe: %d non-boring lines (total %d)', len(df), total)
+    df = df[~df['error'].notemply()] # TODO not sure if makes more sense to filter straightaway...
     logger.info('after filtering errors: %d lines', len(df))
 
     # TODO dynamic sorting for pandas would be nice?
-    rt = rt.sort_values(by=[
+    df = df.sort_values(by=[
         # 'refferer',
         'dt',
     ], ascending=False)[[
@@ -75,10 +86,10 @@ def run(*, access_log, exclude):
         'url',
         'referrer',
     ]]
-    gc = rt.groupby(['url', 'referrer']).count()
+    gc = df.groupby(['url', 'referrer']).count()
     gc = gc[gc['dt'] >= 5]
     gc = gc.sort_values(by=['dt'])
-    return rt, gc
+    return df, gc
 
 
 def main():
@@ -87,15 +98,25 @@ def main():
     p.add_argument('--access-log', type=Path, required=True)
     p.add_argument('--html', type=Path)
     p.add_argument('--exclude', type=Path)
-    p.add_argument('--last', type=int) # TODO use date instead?
+    p.add_argument('--last', type=str, help='3d or 10h')
     args = p.parse_args()
     html = args.html
 
-    rt, gcount  = run(access_log=args.access_log, exclude=args.exclude)
+    # TODO fix last in crontabs
+    # TODO ugh I'm sure there was smth default for it??
 
-    last = args.last
-    if last is not None:
-        rt = rt[:last]
+    lasts = args.last
+    if lasts is None:
+        delta = None
+    else:
+        if lasts.endswith('d'):
+            delta = timedelta(days=int(lasts[:-1]))
+        elif lasts.endswith('h'):
+            delta = timedelta(hours=int(lasts[:-1]))
+        else:
+            raise RuntimeError(lasts)
+
+    rt, gcount  = run(access_log=args.access_log, exclude=args.exclude, delta=delta)
 
     logger.info('rendering...')
     # TODO ugh. need some wort of iterative html rendering.. it takes 10% memeory as well
