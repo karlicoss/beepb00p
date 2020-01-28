@@ -52,9 +52,14 @@ def run(*, access_log: Path, exclude: Optional[Path]=None, delta: Optional[timed
 
     def is_boring(row):
         url = row.get('url', None)
-        if url is not None and url.startswith('/comments/'):
+        if url is None:
+            return True
+        if url.startswith('/comments/'):
             # isso; whatever...
             return True
+        if url in {'/robot-face.jpg', '/robot-face.png'}:
+            return True
+
 
         # TODO filter reddit/hn somehow? or just sort to display in the bottom?
         ref = row.get('referrer', None)
