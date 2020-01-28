@@ -5,6 +5,7 @@ Render referrers as a HTML table so I can see where my stuff is posted.
 from datetime import timedelta
 from itertools import islice
 from pathlib import Path
+from pprint import pprint
 import re
 import sys
 from time import sleep
@@ -33,17 +34,21 @@ def run(*, access_log: Path, exclude: Optional[Path]=None, delta: Optional[timed
     excluded: Set[str] = set()
     if exclude is not None:
         res: Dict[str, Any] = {}
+        logger.info('loading excludes from: %s', exclude)
         exec(exclude.read_text(), res)
         excl = res['EXCLUDE']
         for e in excl:
             lines = e.splitlines()
             lines = (l.strip() for l in lines if len(l.strip()) > 0)
             excluded.update(lines)
+        # TODO maybe these excludes should be paired with URLS?
+        logger.info('loaded %d excludes', len(excluded))
+        pprint(list(sorted(excluded)), stream=sys.stderr)
 
     pd.set_option('display.max_colwidth', 200)
 
     # meh
-    EXCLUDED_RE = re.compile('|'.join(e for e in excluded))
+    EXCLUDED_RE = re.compile('|'.join(e for e in excluded)) if len(excluded) > 0 else None
 
     def is_boring(row):
         url = row.get('url', None)
@@ -57,7 +62,7 @@ def run(*, access_log: Path, exclude: Optional[Path]=None, delta: Optional[timed
             return False
         if ref == '-':
             return True
-        if EXCLUDED_RE.search(ref):
+        if EXCLUDED_RE is not None and EXCLUDED_RE.search(ref):
             return True
         return False
 
@@ -74,7 +79,7 @@ def run(*, access_log: Path, exclude: Optional[Path]=None, delta: Optional[timed
 
     df = pd.DataFrame(it(), columns=cols + ['error'])
     logger.info('dataframe: %d non-boring lines (total %d)', len(df), total)
-    df = df[~df['error'].notemply()] # TODO not sure if makes more sense to filter straightaway...
+    df = df[~df['error'].notnull()] # TODO not sure if makes more sense to filter straightaway...
     logger.info('after filtering errors: %d lines', len(df))
 
     # TODO dynamic sorting for pandas would be nice?
