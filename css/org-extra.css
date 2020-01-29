@@ -128,3 +128,20 @@ tbody tr td a {
 }
 
 /* end */
+
+
+
+/* fix overflowing source blocks on mobile (https://github.com/karlicoss/beepb00p/issues/1) */
+.org-src-container {
+    position: relative;
+}
+
+pre.src {
+    position: unset;
+    overflow: auto;
+}
+
+pre.src:before {
+    right: 30px;
+}
+/* end */
