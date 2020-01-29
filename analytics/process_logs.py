@@ -40,8 +40,7 @@ def iter_log(access_log: Path, columns=None, delta: Optional[timedelta]=None):
 
             dt = pl['dt']
 
-            if NOW - dt > delta:
-                print(NOW, dt)
+            if delta is not None and NOW - dt > delta:
                 return
 
             if columns is not None:
