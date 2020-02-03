@@ -91,7 +91,7 @@ main = do
         -- compile compressCssCompiler -- compressed css is pretty git unfriendly. I bet it doesn't matter in modern browsers
         compile copyFileCompiler
 
-    match ("content/**.jpg" .||. "content/**.png") $ do
+    match ("content/**.jpg" .||. "content/**.png" .||. "content/**.svg") $ do
       route   $ chopOffRoute "content/"
       compile copyFileCompiler
 
