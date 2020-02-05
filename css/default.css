@@ -5,9 +5,13 @@ html {
 
 @media (min-width: 80rem) {
     body {
-        width: 70rem; /* TODO how to choose good width?? */
-        margin: 0 auto;
-        padding: 0;
+        /* TODO how to choose good width?? */
+        width: 70rem;
+
+        /* auto margin centers the content. not sure if it's the right way to do it... */
+        margin-left:  auto;
+        margin-right: auto;
+        /* */
 
 
         /* debugging */
