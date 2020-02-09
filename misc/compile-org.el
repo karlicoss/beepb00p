@@ -57,8 +57,9 @@
 ; TODO give tags different colors depending on whether it actually exists or not?
 ;; (defun org-blog-tag-follow (path)) TODO ?
 
+;; TODO asssert fmt == html?
 (defun org-blog-tag-export (path desc fmt)
-  ;; TODO asssert fmt == html?
+  "Link to one of my tags"
   (let ((href  (format "/tags.html#%s" path))
         (title (or desc (format "#%s" path)))
         (class (if (not desc) "class='post-tag'" "")))
@@ -66,11 +67,20 @@
 (org-add-link-type "tag" nil 'org-blog-tag-export)
 
 (defun org-blog-github-export (path desc fmt)
+  "Link to a github repo"
   (let* ((path  (if (s-contains? "/" path) path (format "karlicoss/%s" path)))
          (href  (format "https://github.com/%s" path))
          (title (or desc path)))
         (format "<a href='%s'>%s</a>" href title)))
 (org-add-link-type "gh"  nil 'org-blog-github-export)
+
+(defun org-blog-github-topic-export (path desc fmt)
+  "Link to a github topic search"
+  (let* ((user  "karlicoss")
+         (href  (concat "https://github.com/search?type=Repositories&q=user%3A" user "+++topic%3A" path))
+         (title desc))
+    (format "<a href='%s'>%s</a>" href title)))
+(org-add-link-type "ght"  nil 'org-blog-github-topic-export)
 
 
 (defun org-blog-sidenote (path desc fmt)
