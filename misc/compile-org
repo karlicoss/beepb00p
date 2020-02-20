@@ -93,12 +93,10 @@ def org_to_html(*, tdir: Path, org_data: str) -> Tuple[str, List[Path]]:
     {compile_org_el}
 )'''
 
-    modules = ['htmlize', 'dash', 's']
-    # apparently, doom uses newer version of org, which already includes contrib?
-    if uses_doom():
-        modules.append('org-mode')
-    else:
-        modules.append('org-plus-contrib')
+    modules = [
+        'org-mode', # present for doom, but for spacemacs I've used a custom hack..
+        'htmlize', 'dash', 's',
+    ]
 
     check_call([
         'emacs',
