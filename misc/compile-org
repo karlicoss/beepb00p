@@ -21,12 +21,20 @@ def get_user_package_path(module: str) -> Path:
         head = check_output(['emacs', '--version']).decode('utf8').splitlines()[0]
         return head[len("GNU Emacs "):]
 
-    version = emacs_version() # ugh
+    ED = Path('~/.emacs.d').expanduser()
 
-    pp = Path('~/.emacs.d/elpa/').expanduser()
-    # TODO ugh. this is gonna break in the year 3000...
-    matches = list(x for x in pp.glob(f'{version}/*/{module}-2*/') if x.is_dir())
-    assert len(matches) == 1, matches
+    uses_doom = (ED / 'bin/doom').exists() # otherwise assumes spacemacs
+
+    if uses_doom:
+        m = ED / '.local/straight/build' / module
+        assert m.exists(), m
+        matches = [m]
+    else:
+        version = emacs_version() # ugh
+        pp = ED / 'elpa'
+        # TODO ugh. this is gonna break in the year 3000...
+        matches = list(x for x in pp.glob(f'{version}/*/{module}-2*/') if x.is_dir())
+    assert len(matches) == 1, (module, matches)
     return matches[0]
 
 
