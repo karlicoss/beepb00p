@@ -11,6 +11,13 @@ from typing import Tuple, List
 
 # TODO mm, might need to apt install emacs-goodies-el first for code hightlight... https://stackoverflow.com/a/24087061/706389
 
+
+ED = Path('~/.emacs.d').expanduser()
+
+def uses_doom():
+    return (ED / 'bin/doom').exists() # otherwise assumes spacemacs
+
+
 def get_user_package_path(module: str) -> Path:
     """
     Get the full path of emacs package specified by name
@@ -21,11 +28,7 @@ def get_user_package_path(module: str) -> Path:
         head = check_output(['emacs', '--version']).decode('utf8').splitlines()[0]
         return head[len("GNU Emacs "):]
 
-    ED = Path('~/.emacs.d').expanduser()
-
-    uses_doom = (ED / 'bin/doom').exists() # otherwise assumes spacemacs
-
-    if uses_doom:
+    if uses_doom():
         m = ED / '.local/straight/build' / module
         assert m.exists(), m
         matches = [m]
@@ -90,7 +93,12 @@ def org_to_html(*, tdir: Path, org_data: str) -> Tuple[str, List[Path]]:
     {compile_org_el}
 )'''
 
-    modules = ['org-plus-contrib', 'htmlize', 'dash', 's']
+    modules = ['htmlize', 'dash', 's']
+    # apparently, doom uses newer version of org, which already includes contrib?
+    if uses_doom():
+        modules.append('org-mode')
+    else:
+        modules.append('org-plus-contrib')
 
     check_call([
         'emacs',
