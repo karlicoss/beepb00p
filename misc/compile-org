@@ -86,7 +86,10 @@ def org_to_html(*, tdir: Path, org_data: str) -> Tuple[str, List[Path]]:
     out_html = tdir / 'output.html'
 
     compile_org_el = (Path(__file__).parent / 'compile-org.el').read_text()
-    compile_org_el = compile_org_el.format(out_html=out_html)
+    compile_org_el = compile_org_el.format(
+        throw_on_babel_errors='t',
+        out_html=out_html,
+    )
 
     compile_command = f'''
 (progn

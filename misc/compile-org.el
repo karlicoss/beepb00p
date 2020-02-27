@@ -8,6 +8,19 @@
 (require 's)
 (require 'dash)
 
+
+(defvar throw-on-babel-errors "{throw_on_babel_errors}")
+
+;; TODO would be nice to add what actually failed
+(defun --throw-babel-error (exit-code stderr)
+  (message stderr)
+  (error "failed to execute a code block!"))
+
+
+(if throw-on-babel-errors
+    (advice-add #'org-babel-eval-error-notify :before #'--throw-babel-error))
+
+
 ;; TODO ok, so maybe do not export CREATED property, but show it as a tooltip?
 ;; TODO hmm. find another way to configure these...
 ;; TODO use STRT?
@@ -182,3 +195,7 @@
 ;; NOTE: python format pattern
 ;; write output to the target file
 (write-file "{out_html}")
+
+
+;; (with-current-buffer " *Org-Babel Error*") ;; TODO fucking hell..
+;; (with-current-buffer org-babel-error-buffer-name
