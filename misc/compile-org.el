@@ -11,14 +11,21 @@
 
 (defvar throw-on-babel-errors "{throw_on_babel_errors}")
 
-;; TODO would be nice to add what actually failed
-(defun --throw-babel-error (exit-code stderr)
-  (message stderr)
-  (error "failed to execute a code block!"))
-
+;; TODO allow defensive behaviour when error is propagated up?
+(defun --throw-babel-error (oldfun &rest args)
+  (let* ((code (buffer-string))
+         (error-buffer (nth 3 args))
+         (exit-code (apply oldfun args)))
+    (if (or (not (numberp exit-code)) (> exit-code 0))
+        (progn
+          (message "************FAILED****************************")
+          (message "%s" code)
+          (message "%s" (with-current-buffer error-buffer (buffer-string)))
+          (message "**********************************************")
+          (error "failed to execute a code block!")))))
 
 (if throw-on-babel-errors
-    (advice-add #'org-babel-eval-error-notify :before #'--throw-babel-error))
+    (advice-add #'org-babel--shell-command-on-region :around #'--throw-babel-error))
 
 
 ;; TODO ok, so maybe do not export CREATED property, but show it as a tooltip?
