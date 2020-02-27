@@ -32,12 +32,16 @@ ipynbRun item = do
   maybe_allow_errors <- getMetadataField iid "allow_errors"
   let allow_errors = isJust maybe_allow_errors
 
+  maybe_with_data    <- getMetadataField iid "with_data"
+  let with_data    = isJust maybe_with_data
+
   -- TODO unhardcode _site? Configuration { destinationDirectory = "_site"
   -- TODO I suspect that proper way to do it is for Item to hold String + list of extra files...
   -- for now just hack it
-  let args = ["--output-dir", "_site", "--item", show iid]
+  let cmd = if with_data then "with_data" else "misc/compile-ipynb"
+  let args = (if with_data then ["misc/compile-ipynb"] else []) ++ ["--output-dir", "_site", "--item", show iid]
   let extra_args = if allow_errors then ["--allow-errors"] else []
-  res <- compileWithFilter "misc/compile-ipynb" (args ++ extra_args) item
+  res <- compileWithFilter cmd (args ++ extra_args) item
   return res
 
 ipynbCompile = stripPrivateTodos >=> ipynbRun
