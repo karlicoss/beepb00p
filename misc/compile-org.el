@@ -22,7 +22,8 @@
           (message "%s" code)
           (message "%s" (with-current-buffer error-buffer (buffer-string)))
           (message "**********************************************")
-          (error "failed to execute a code block!")))))
+          (error "failed to execute a code block!"))
+      exit-code)))
 
 (if throw-on-babel-errors
     (advice-add #'org-babel--shell-command-on-region :around #'--throw-babel-error))
