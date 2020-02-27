@@ -3,7 +3,7 @@ import argparse
 import re
 import sys
 import tempfile
-from subprocess import check_call, check_output
+from subprocess import check_call, check_output, run
 from pathlib import Path
 from itertools import chain
 import shutil
@@ -101,7 +101,7 @@ def org_to_html(*, tdir: Path, org_data: str) -> Tuple[str, List[Path]]:
         'htmlize', 'dash', 's',
     ]
 
-    check_call([
+    res = run([
         'emacs',
         '--kill',
         '--batch',
@@ -109,6 +109,9 @@ def org_to_html(*, tdir: Path, org_data: str) -> Tuple[str, List[Path]]:
         str(inp_org),
         '--eval', compile_command,
     ])
+    # using run/returncode instead of check_call to avoid lots of visual spam from the exception
+    if res.returncode > 0:
+        raise RuntimeError(f"Emacs failed to compile {inp_org}")
 
     files = list(sorted(tdir.iterdir()))
     files.remove(inp_org)
