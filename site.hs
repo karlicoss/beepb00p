@@ -28,7 +28,7 @@ baseUrl = "https://beepb00p.xyz"
 
 myFeedConfiguration :: FeedConfiguration
 myFeedConfiguration = FeedConfiguration
-    { feedTitle       = "Mildly entertaining"
+    { feedTitle       = "beepb00p"
     , feedAuthorName  = "karlicoss"
     , feedAuthorEmail = "karlicoss@gmail.com"
     , feedDescription = "feed" -- TODO ?
@@ -251,7 +251,7 @@ main = do
           posts <- publicPosts
           inFeed <- filterM addToFeed posts
           -- limit feed size
-          return $ take 10 inFeed -- TODO kinda arbitrary.. need to limit by 512Kb properly
+          return $ take 9 inFeed -- TODO kinda arbitrary.. need to limit by 512Kb properly
 
     let feedCtx = postCtx <> bodyField "description"
 
