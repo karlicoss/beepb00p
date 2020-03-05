@@ -280,4 +280,21 @@ def test_aside(tmp_path):
     )
     # TODO ?? href?? need to fix outdir?
     expected = '<aside class="sidenote">see <a class="post-tag" href="/tags.html#extendedmind">#extendedmind</a></aside>'
-    assert expected in html.replace('\n', '')
+    assert expected in html
+
+
+def test_section_links(tmp_path):
+    src = get_src()
+
+    # precondition
+    assert '* intrapage link to' in src
+
+    html = process(
+        org_data=src,
+        outdir=tmp_path,
+        check_ids=False,
+    )
+
+    # TODO use regex?
+    expected = '<h2 id="past"><a class="headerlink" href="#past">¶</a>intrapage link to a <a class="link-down" href="#something">future</a> heading</h2>'
+    assert expected in html
