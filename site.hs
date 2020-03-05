@@ -102,9 +102,9 @@ main = do
     -- TODO ugh. use mapM/map (value $) or something?
     let source pat = match pat $ compile getResourceBody
 
-    source "misc/compile-org"
+    source "misc/compile_org.py"
     source "misc/compile-org.el"
-    compileOrgBin   <- makePatternDependency $ "misc/compile-org" .||. "misc/compile-org.el"
+    compileOrgBin   <- makePatternDependency $ "misc/compile_org.py" .||. "misc/compile-org.el"
 
     source "misc/compile-ipynb"
     source "misc/mybasic.tpl"

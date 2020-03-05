@@ -22,9 +22,9 @@ I'll write down about it properly at some point later!
 ** Org-mode
  See my [[https://beepb00p.xyz/sandbox/test.html][org-mode sandbox]].
 
- Org related stuff is in ~Org.hs~ and ~misc/compile-org~.
- To compile Org into HTML, I'm invoking Emacs in batch mode in ~compile-org~ script. 
- Your can try it with ~misc/compile-org --test misc/test.org~.
+ Org related stuff is in ~Org.hs~ and ~misc/compile_org.py~.
+ To compile Org into HTML, I'm invoking Emacs in batch mode in ~compile_org.py~ script.
+ Your can try it with ~misc/compile_org.py --test misc/test.org~.
 
  Reason I'm not using Pandoc for rendering is that it only supports a subset of Org-mode.
  If you are a heavy user of Org-mode features, e.g. doesn't support literate programming via org-babel.

@@ -31,7 +31,7 @@ orgCompile item  = do
   let wdir = "_site" </> takeDirectory spath
 
   let args = ["--output-dir", wdir] ++ (if check_ids then ["--check-ids"] else [])
-  compileWithFilter "misc/compile-org" args item
+  compileWithFilter "misc/compile_org.py" args item
 
 raw_org_key = "raw_org"
 meta_start = "#+"
