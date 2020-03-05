@@ -136,7 +136,7 @@ def org_to_html(*, tdir: Path, org_data: str) -> Tuple[str, List[Path]]:
     return out_html.read_text(), files
 
 def post_process(html: str, *, check_ids: bool) -> str:
-    from bs4 import BeautifulSoup
+    from bs4 import BeautifulSoup # type: ignore
     soup = BeautifulSoup(html, 'lxml')
 
     #### somewhat hacky support for {{{aside}}} macro for sidenotes
@@ -244,6 +244,18 @@ def post_process(html: str, *, check_ids: bool) -> str:
         tag['class'] = tag.get('class', []) + [arrow]
     ###
 
+
+    ### remove id="outline-container-*
+    ### these are simply useless and just clutter the HTML and diffs
+    ### <hN> tags already have ids
+    for div in soup.find_all('div'):
+        id_ = div.get('id')
+        if id_ is None:
+            continue
+        if re.match('outline-container-', id_):
+            del div.attrs['id']
+    ###
+
     # TODO some whitespace in tags???
 
     # extract body because that's what hakyll expects
@@ -283,6 +295,7 @@ def test_aside(tmp_path):
     assert expected in html
 
 
+# TODO also tests intrapage links by accident, but ok for now..
 def test_section_links(tmp_path):
     src = get_src()
 
@@ -298,3 +311,20 @@ def test_section_links(tmp_path):
     # TODO use regex?
     expected = '<h2 id="past"><a class="headerlink" href="#past">¶</a>intrapage link to a <a class="link-down" href="#something">future</a> heading</h2>'
     assert expected in html
+
+
+def test_removes_outline_container_id(tmp_path):
+    src = get_src()
+
+    # precondition
+    assert '* regular heading' in src
+
+    html = process(
+        org_data=src,
+        outdir=tmp_path,
+        check_ids=False,
+    )
+
+    assert re.search('<h2.*regular heading</h2>', html)  # precondition
+
+    assert not re.search(r'outline-container-.*', html)
