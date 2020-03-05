@@ -7,7 +7,7 @@ from subprocess import check_call, check_output, run
 from pathlib import Path
 from itertools import chain
 import shutil
-from typing import Tuple, List
+from typing import Tuple, List, Optional
 
 # TODO mm, might need to apt install emacs-goodies-el first for code hightlight... https://stackoverflow.com/a/24087061/706389
 
@@ -58,7 +58,23 @@ def main():
         org_data = args.test.read_text()
     else:
         org_data = sys.stdin.read()
+    html = process(
+        org_data=org_data,
+        outdir=args.output_dir,
+        check_ids=args.check_ids,
+    )
+    sys.stdout.write(html)
 
+
+HTML = str
+
+
+def process(
+        *,
+        org_data: str,
+        outdir: Optional[Path]=None,
+        check_ids: bool=True,
+) -> HTML:
     org_data = filter_private(org_data)
 
     # evaluate in temporary directory for deterministic runs
@@ -67,16 +83,17 @@ def main():
         html, files = org_to_html(tdir=tdir, org_data=org_data)
         body = post_process(
             html,
-            check_ids=args.check_ids,
+            check_ids=check_ids,
         )
-        sys.stdout.write(body)
 
+        # TODO test for that as well
         if len(files) > 0:
-            outdir = args.output_dir
             assert outdir is not None
             outdir.mkdir(exist_ok=True, parents=True)
             for f in files:
                 shutil.move(str(f), str(outdir / f.name))
+
+        return body
 
 
 def org_to_html(*, tdir: Path, org_data: str) -> Tuple[str, List[Path]]:
@@ -239,5 +256,28 @@ def post_process(html: str, *, check_ids: bool) -> str:
     body = body[6: -7]
     return body
 
+
 if __name__ == '__main__':
     main()
+
+
+def get_src() -> str:
+    path = Path(__file__).absolute().parent.parent / 'content/special/sandbox/test.org'
+    return path.read_text()
+
+
+# TODO literate test docs
+def test_aside(tmp_path):
+    src = get_src()
+
+    # precondition
+    assert 'on the right {{{aside(see' in src
+
+    html = process(
+        org_data=src,
+        outdir=tmp_path,
+        check_ids=False,
+    )
+    # TODO ?? href?? need to fix outdir?
+    expected = '<aside class="sidenote">see <a class="post-tag" href="/tags.html#extendedmind">#extendedmind</a></aside>'
+    assert expected in html.replace('\n', '')
