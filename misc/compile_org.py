@@ -255,6 +255,8 @@ def post_process(html: str, *, check_ids: bool) -> str:
         if re.match('(outline-container-|text-org00)', id_):
             del div.attrs['id']
     ###
+    # TODO to be fair, paragraph ids make sense, but if they are unstable, they do more harm
+    # TODO some of them do not follow text-org, e.g. text-1
 
     # TODO some whitespace in tags???
 
