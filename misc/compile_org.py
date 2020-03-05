@@ -252,7 +252,7 @@ def post_process(html: str, *, check_ids: bool) -> str:
         id_ = div.get('id')
         if id_ is None:
             continue
-        if re.match('outline-container-', id_):
+        if re.match('(outline-container-|text-org00)', id_):
             del div.attrs['id']
     ###
 
@@ -313,7 +313,7 @@ def test_section_links(tmp_path):
     assert expected in html
 
 
-def test_removes_outline_container_id(tmp_path):
+def test_removes_useless_ids(tmp_path):
     src = get_src()
 
     # precondition
@@ -327,4 +327,5 @@ def test_removes_outline_container_id(tmp_path):
 
     assert re.search('<h2.*regular heading</h2>', html)  # precondition
 
-    assert not re.search(r'outline-container-.*', html)
+    assert not re.search(r'id="outline-container-', html)
+    assert not re.search(r'id="text-org00', html)
