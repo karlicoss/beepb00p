@@ -1,0 +1,25 @@
+#!/usr/bin/env python3
+from subprocess import run
+
+
+# TODO !! implement a test for this (all of params)
+def search(what: str):
+    res = run([
+        'rg',
+        '--follow',
+        '-i',
+        '--word-regexp',
+        what,
+        'content',
+    ])
+    if res.returncode == 1:
+        return # ok, nothin is found
+    else:
+        raise RuntimeError(res)
+
+
+from checks import CHECKS
+
+for x in CHECKS:
+    print(f"checking {x}")
+    search(x)
