@@ -4,6 +4,13 @@
 ; TODO fucking hell, it doesn't seem capable of resolving symlinks
 
 
+;; disable ~ files
+(setq make-backup-files nil)
+
+;; TODO share with compile-org?
+(setq org-export-with-author nil)
+
+
 ;; examples of sitemap formatting
 ;; https://github.com/nanjj/nanjj.github.io/blob/4338fa60b07788885d3d4c8b2c684360a67e8098/org-publish.org
 
@@ -18,16 +25,15 @@
       (format "[[file:%sREADME.org][%s]]" entry (directory-file-name entry))
       (org-publish-sitemap-default-entry entry style project)))
 
-; TODO disabkle ~ files
-
 (setq
  org-publish-project-alist
  '(("exobrain"
     :base-directory "content"
     :base-extension "org"
-    :publishing-directory "markdown"
+    :publishing-directory "intermediate"
     :recursive t
-    :publishing-function org-md-publish-to-md
+    :publishing-function org-org-publish-to-org
+    ;; TODO org-md-publish-to-md
 
     :auto-sitemap t
     :sitemap-format-entry my/org-publish-sitemap-entry
@@ -47,3 +53,6 @@
 
 
 ; TODO https://orgmode.org/worg/org-tutorials/org-publish-html-tutorial.html
+
+
+;; TODO after intermediate, run santity check
