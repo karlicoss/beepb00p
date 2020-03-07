@@ -3,6 +3,7 @@
 
 ; TODO fucking hell, it doesn't seem capable of resolving symlinks
 
+(setq   exobrain/srcdir           default-directory)
 (defvar exobrain/intermediate-dir nil)
 (defvar exobrain/source-dir       nil)
 (defvar exobrain/output-dir       nil)
@@ -43,8 +44,6 @@
  '(
    (timestamp . my-timestamp)))
 
-(message "%s" (org-export-get-backend 'my-org))
-
 
 (defun org-org-publish-to-my-org (plist filename pub-dir)
   (org-publish-org-to 'my-org filename ".org" plist pub-dir))
@@ -53,6 +52,13 @@
 ;; https://orgmode.org/manual/Publishing-options.html#Publishing-options
 ;; TODO exclude-tags
 ;; with-author? with-timestamps? with-date?
+
+(defun exobrain/extra-filter (output backend info)
+  (check-output
+   '("python3" "filter_org.py")
+   :input output
+   :cwd exobrain/srcdir))
+
 
 ;; TODO FIXME need to rm intermediate first
 (setq
@@ -74,6 +80,11 @@
 
     :with-date nil
     :with-properties nil
+
+    ;; TODO not sure if should use final-output??
+    :filter-body ,(cons #'exobrain/extra-filter org-export-filter-body-functions)
+    ;; :filter-final-output ,(cons #'filt org-export-filter-final-output-functions)
+    ;; TODO body??
 
     ;; :makeindex
     ;; :auto-index t

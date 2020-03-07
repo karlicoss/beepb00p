@@ -56,6 +56,7 @@ def main():
             (setq exobrain/source-dir       "{source_dir}")
             (setq exobrain/output-dir       "{output_dir}")
         )''',
+        '--load', 'subprocess.el', # TODO
         '--load', 'publish.el',
         '-f', 'org-publish-all',
     )
