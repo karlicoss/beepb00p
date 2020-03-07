@@ -25,14 +25,20 @@
       (format "[[file:%sREADME.org][%s]]" entry (directory-file-name entry))
       (org-publish-sitemap-default-entry entry style project)))
 
+
+;; TODO ugh. not all timestamps are detected correctly??
+;; TODO instead, map to dates only? check as well
+(defun my-timestamp (timestamp _contents _info)
+  ;; (message "TIMESTAMP!!! %s" timestamp)
+  "TS!!")
+
 (require 'ox)
 (require 'ox-org)
 (org-export-define-derived-backend
  'my-org 'org
  :translate-alist
  '(
-   ;; TODO instead, map to dates only? check as well
-   (timestamp . nil)))
+   (timestamp . my-timestamp)))
 
 (message "%s" (org-export-get-backend 'my-org))
 
@@ -49,7 +55,6 @@
     :publishing-directory "intermediate"
     :recursive t
     :publishing-function org-org-publish-to-my-org
-    ;; TODO org-md-publish-to-md
 
     :auto-sitemap t
     :sitemap-format-entry my/org-publish-sitemap-entry
@@ -61,7 +66,14 @@
     ; :index-filename "sitemap.org"
     ; :index-title "Sitemap"
 
-    :exclude "org.org")))
+    :exclude "org.org")
+   ("exobrain2"
+    :base-directory "intermediate"
+    :base-extension "org"
+    :publishing-directory "markdown"
+    :recursive t
+    :publishing-function org-md-publish-to-md)))
+
     ; TODO????
 
 ; TODO shit. refuses to work.
