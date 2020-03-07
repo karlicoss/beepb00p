@@ -43,9 +43,11 @@ def clean():
     for c in cachedir.glob('*.cache'):
         c.unlink()
 
-    # TODO FIXME it might be under vcs??
-    clean_dir(public_dir)
     clean_dir(output_dir)
+
+    # TODO what about empty dirs?
+    for f in public_dir.glob('**/*.org'):
+        f.unlink()
 
 
 def main():
@@ -67,9 +69,13 @@ def main():
 
     # TODO use output_dir
     # mdbook doesn't like summary format so we fix it
+    # TODO reorder index?
     check_call(r"awk -i inplace !/\[README\]/  markdown/SUMMARY.md".split())
     # TODO clean first?
     check_call(['mdbook', 'build'])
+
+    # TODO think about commit/push/deploy logic?
+    check_call(['git', 'status'], cwd=public_dir)
 
 
 if __name__ == '__main__':
