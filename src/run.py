@@ -8,6 +8,7 @@ from subprocess import check_call
 
 # cargo install mdbook && mdbook init
 
+
 # TODO https://rust-lang.github.io/mdBook/format/config.html
 
 # https://github.com/rust-lang/mdBook/blob/master/book-example/book.toml
@@ -21,9 +22,9 @@ from compile_org import emacs
 
 
 root_dir = Path(__file__).absolute().parent.parent
-source_dir       = root_dir / 'content'
-intermediate_dir = root_dir / 'intermediate'
-output_dir       = root_dir / 'markdown'  # TODO FIXME
+input_dir  = root_dir / 'input'
+public_dir = root_dir / 'public'
+output_dir = root_dir / 'markdown'  # TODO FIXME
 
 
 def clean_dir(path: Path):
@@ -43,7 +44,7 @@ def clean():
         c.unlink()
 
     # TODO FIXME it might be under vcs??
-    clean_dir(intermediate_dir)
+    clean_dir(public_dir)
     clean_dir(output_dir)
 
 
@@ -52,23 +53,23 @@ def main():
 
     emacs(
         '--eval', f'''(progn
-            (setq exobrain/intermediate-dir "{intermediate_dir}")
-            (setq exobrain/source-dir       "{source_dir}")
-            (setq exobrain/output-dir       "{output_dir}")
+            (setq exobrain/input-dir  "{input_dir}")
+            (setq exobrain/public-dir "{public_dir}")
+            (setq exobrain/output-dir "{output_dir}")
         )''',
         '--load', root_dir / 'subprocess.el', # TODO
         '--load', root_dir / 'src/publish.el',
         '-f', 'org-publish-all',
     )
 
+    from check import check_org
+    check_org(public_dir)
+
     # TODO use output_dir
     # mdbook doesn't like summary format so we fix it
     check_call(r"awk -i inplace !/\[README\]/  markdown/SUMMARY.md".split())
     # TODO clean first?
     check_call(['mdbook', 'build'])
-
-    from check import check_org
-    check_org(intermediate_dir)
 
 
 if __name__ == '__main__':

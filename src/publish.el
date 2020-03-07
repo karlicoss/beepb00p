@@ -3,10 +3,10 @@
 
 ; TODO fucking hell, it doesn't seem capable of resolving symlinks
 
-(setq   exobrain/rootdir          default-directory)
-(defvar exobrain/intermediate-dir nil)
-(defvar exobrain/source-dir       nil)
-(defvar exobrain/output-dir       nil)
+(setq   exobrain/rootdir    default-directory)
+(defvar exobrain/input-dir  nil)
+(defvar exobrain/public-dir nil)
+(defvar exobrain/output-dir nil)
 
 
 ;; disable ~ files
@@ -60,13 +60,12 @@
    :cwd exobrain/rootdir))
 
 
-;; TODO FIXME need to rm intermediate first
 (setq
  org-publish-project-alist
- `(("exobrain-intermediate"
-    :base-directory ,exobrain/source-dir
+ `(("exobrain-inputs-public"
+    :base-directory ,exobrain/input-dir
     :base-extension "org"
-    :publishing-directory ,exobrain/intermediate-dir
+    :publishing-directory ,exobrain/public-dir
     :recursive t
     :publishing-function org-org-publish-to-my-org
 
@@ -93,7 +92,7 @@
 
     :exclude "org.org") ;; TODO ??
    ("exobrain"
-    :base-directory ,exobrain/intermediate-dir
+    :base-directory ,exobrain/public-dir
     :base-extension "org"
     :publishing-directory ,exobrain/output-dir
     :recursive t
