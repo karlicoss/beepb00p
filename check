@@ -1,16 +1,19 @@
 #!/usr/bin/env python3
+from pathlib import Path
 from subprocess import run
 
 
+# TODO FIXME cooperate with main script for less duplication
+intermediate = Path('intermediate')
+
+
 # TODO !! implement a test for this (all of params)
-def search(what: str):
+def search(*args):
     res = run([
         'rg',
         '--follow',
         '-i',
-        '--word-regexp',
-        what,
-        'content',
+        *args,
     ])
     if res.returncode == 1:
         return # ok, nothin is found
@@ -18,8 +21,21 @@ def search(what: str):
         raise RuntimeError(res)
 
 
-from checks import CHECKS
+from checks import WORD_CHECKS
+def check(path: Path):
+    print(f"checking {path}")
+    for x in WORD_CHECKS:
+        search(
+            '--word-regexp',
+            x,
+            path,
+        )
 
-for x in CHECKS:
-    print(f"checking {x}")
-    search(x)
+def main():
+    # TODO not sure about org?
+    for f in intermediate.glob('**/*.org'):
+        check(f)
+
+
+if __name__ == '__main__':
+    main()
