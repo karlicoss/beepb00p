@@ -31,6 +31,12 @@ def check(path: Path):
             path,
         )
 
+    import orgparse
+    ts = orgparse.date.TIMESTAMP_RE
+    for line in path.read_text().splitlines():
+        assert not ts.search(line), line
+
+
 def main():
     # TODO not sure about org?
     for f in intermediate.glob('**/*.org'):
