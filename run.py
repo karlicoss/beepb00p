@@ -67,6 +67,8 @@ def main():
     # TODO clean first?
     check_call(['mdbook', 'build'])
 
+    check_call(['./check'])
+
 
 if __name__ == '__main__':
     main()
