@@ -20,10 +20,10 @@ from subprocess import check_call
 from compile_org import emacs
 
 
-this_dir = Path(__file__).absolute().parent
-source_dir       = this_dir / 'content/apps'  # TODO FIXME
-intermediate_dir = this_dir / 'intermediate'
-output_dir       = this_dir / 'markdown'  # TODO FIXME
+root_dir = Path(__file__).absolute().parent.parent
+source_dir       = root_dir / 'content/apps'  # TODO FIXME
+intermediate_dir = root_dir / 'intermediate'
+output_dir       = root_dir / 'markdown'  # TODO FIXME
 
 
 def clean_dir(path: Path):
@@ -56,8 +56,8 @@ def main():
             (setq exobrain/source-dir       "{source_dir}")
             (setq exobrain/output-dir       "{output_dir}")
         )''',
-        '--load', 'subprocess.el', # TODO
-        '--load', 'publish.el',
+        '--load', root_dir / 'subprocess.el', # TODO
+        '--load', root_dir / 'src/publish.el',
         '-f', 'org-publish-all',
     )
 
@@ -67,7 +67,8 @@ def main():
     # TODO clean first?
     check_call(['mdbook', 'build'])
 
-    check_call(['./check'])
+    from check import check_org
+    check_org(intermediate_dir)
 
 
 if __name__ == '__main__':

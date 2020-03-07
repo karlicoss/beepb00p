@@ -3,7 +3,7 @@
 
 ; TODO fucking hell, it doesn't seem capable of resolving symlinks
 
-(setq   exobrain/srcdir           default-directory)
+(setq   exobrain/rootdir          default-directory)
 (defvar exobrain/intermediate-dir nil)
 (defvar exobrain/source-dir       nil)
 (defvar exobrain/output-dir       nil)
@@ -55,9 +55,9 @@
 
 (defun exobrain/extra-filter (output backend info)
   (check-output
-   '("python3" "filter_org.py")
+   '("python3" "src/filter_org.py")
    :input output
-   :cwd exobrain/srcdir))
+   :cwd exobrain/rootdir))
 
 
 ;; TODO FIXME need to rm intermediate first
