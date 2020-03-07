@@ -68,7 +68,12 @@
     :sitemap-format-entry my/org-publish-sitemap-entry
     :sitemap-filename "SUMMARY.org"
 
-    ;; :with-priority nil
+    ;; shit. only isolated timestamps work...
+    ;; https://github.com/bzg/org-mode/blob/817c0c81e8f6d1dc387956c8c5b026ced62c157c/lisp/ox.el#L1896
+    ;; :with-timestamps nil
+
+    :with-date nil
+    :with-properties nil
 
     ;; :makeindex
     ;; :auto-index t

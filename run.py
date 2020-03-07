@@ -60,6 +60,7 @@ def main():
         '-f', 'org-publish-all',
     )
 
+    # TODO use output_dir
     # mdbook doesn't like summary format so we fix it
     check_call(r"awk -i inplace !/\[README\]/  markdown/SUMMARY.md".split())
     # TODO clean first?
