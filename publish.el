@@ -25,6 +25,22 @@
       (format "[[file:%sREADME.org][%s]]" entry (directory-file-name entry))
       (org-publish-sitemap-default-entry entry style project)))
 
+(require 'ox)
+(require 'ox-org)
+(org-export-define-derived-backend
+ 'my-org 'org
+ :translate-alist
+ '(
+   ;; TODO instead, map to dates only? check as well
+   (timestamp . nil)))
+
+(message "%s" (org-export-get-backend 'my-org))
+
+
+(defun org-org-publish-to-my-org (plist filename pub-dir)
+  (org-publish-org-to 'my-org filename ".org" plist pub-dir))
+
+
 (setq
  org-publish-project-alist
  '(("exobrain"
@@ -32,7 +48,7 @@
     :base-extension "org"
     :publishing-directory "intermediate"
     :recursive t
-    :publishing-function org-org-publish-to-org
+    :publishing-function org-org-publish-to-my-org
     ;; TODO org-md-publish-to-md
 
     :auto-sitemap t

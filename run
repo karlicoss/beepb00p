@@ -3,7 +3,7 @@ cd "$(dirname "$0")"
 
 
 # TODO ugh, need symlink watching tool here again...
-rm ~/.org-timestamps/exobrain.cache
+rm -f ~/.org-timestamps/exobrain.cache
 
 # TODO probably need my user config; similarly to blog
 emacs --batch -q -l publish.el -f org-publish-all
