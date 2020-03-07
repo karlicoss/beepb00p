@@ -9,7 +9,8 @@
 (require 'dash)
 
 
-(defvar throw-on-babel-errors "{throw_on_babel_errors}")
+(defvar compileorg/throw-on-babel-errors t)
+(defvar compileorg/output-file nil)
 
 ;; TODO allow defensive behaviour when error is propagated up?
 (defun --throw-babel-error (oldfun &rest args)
@@ -25,7 +26,7 @@
           (error "failed to execute a code block!"))
       exit-code)))
 
-(if throw-on-babel-errors
+(if compileorg/throw-on-babel-errors
     (advice-add #'org-babel--shell-command-on-region :around #'--throw-babel-error))
 
 
@@ -202,7 +203,7 @@
 
 ;; NOTE: python format pattern
 ;; write output to the target file
-(write-file "{out_html}")
+(write-file compileorg/output-file)
 
 
 ;; (with-current-buffer " *Org-Babel Error*") ;; TODO fucking hell..

@@ -96,39 +96,40 @@ def process(
         return body
 
 
+def emacs(*args, **kwargs):
+    modules = [
+        'org-mode', # present for doom, but for spacemacs I've used a custom hack..
+        'htmlize', 'dash', 's',
+    ]
+
+    check_call([
+        'emacs',
+        '--kill',
+        '--batch',
+        *chain.from_iterable(['--directory', str(get_user_package_path(module))] for module in modules),
+        *args,
+    ], **kwargs)
+
+
 def org_to_html(*, tdir: Path, org_data: str) -> Tuple[str, List[Path]]:
     inp_org  = tdir / 'input.org'
     inp_org.write_text(org_data)
 
     out_html = tdir / 'output.html'
 
-    compile_org_el = (Path(__file__).parent / 'compile-org.el').read_text()
-    compile_org_el = compile_org_el.format(
-        throw_on_babel_errors='t',
-        out_html=out_html,
-    )
+    compile_org_el = Path(__file__).absolute().parent / 'compile-org.el'
 
     compile_command = f'''
 (progn
-    {compile_org_el}
+    (setq compileorg/throw-on-babel-errors t)
+    (setq compileorg/output-file           "{out_html}")
 )'''
 
-    modules = [
-        'org-mode', # present for doom, but for spacemacs I've used a custom hack..
-        'htmlize', 'dash', 's',
-    ]
-
-    res = run([
-        'emacs',
-        '--kill',
-        '--batch',
-        *chain.from_iterable(['--directory', str(get_user_package_path(module))] for module in modules),
+    emacs(
         str(inp_org),
         '--eval', compile_command,
-    ])
-    # using run/returncode instead of check_call to avoid lots of visual spam from the exception
-    if res.returncode > 0:
-        raise RuntimeError(f"Emacs failed to compile {inp_org}")
+        '--load', compile_org_el,
+    )
 
     files = list(sorted(tdir.iterdir()))
     files.remove(inp_org)
