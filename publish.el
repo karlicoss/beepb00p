@@ -3,6 +3,10 @@
 
 ; TODO fucking hell, it doesn't seem capable of resolving symlinks
 
+(defvar exobrain/intermediate-dir nil)
+(defvar exobrain/source-dir       nil)
+(defvar exobrain/output-dir       nil)
+
 
 ;; disable ~ files
 (setq make-backup-files nil)
@@ -29,7 +33,6 @@
 ;; TODO ugh. not all timestamps are detected correctly??
 ;; TODO instead, map to dates only? check as well
 (defun my-timestamp (timestamp _contents _info)
-  ;; (message "TIMESTAMP!!! %s" timestamp)
   "TS!!")
 
 (require 'ox)
@@ -47,12 +50,17 @@
   (org-publish-org-to 'my-org filename ".org" plist pub-dir))
 
 
+;; https://orgmode.org/manual/Publishing-options.html#Publishing-options
+;; TODO exclude-tags
+;; with-author? with-timestamps? with-date?
+
+;; TODO FIXME need to rm intermediate first
 (setq
  org-publish-project-alist
- '(("exobrain"
-    :base-directory "content"
+ `(("exobrain-intermediate"
+    :base-directory ,exobrain/source-dir
     :base-extension "org"
-    :publishing-directory "intermediate"
+    :publishing-directory ,exobrain/intermediate-dir
     :recursive t
     :publishing-function org-org-publish-to-my-org
 
@@ -60,17 +68,18 @@
     :sitemap-format-entry my/org-publish-sitemap-entry
     :sitemap-filename "SUMMARY.org"
 
+    ;; :with-priority nil
 
     ;; :makeindex
     ;; :auto-index t
     ; :index-filename "sitemap.org"
     ; :index-title "Sitemap"
 
-    :exclude "org.org")
-   ("exobrain2"
-    :base-directory "intermediate"
+    :exclude "org.org") ;; TODO ??
+   ("exobrain"
+    :base-directory ,exobrain/intermediate-dir
     :base-extension "org"
-    :publishing-directory "markdown"
+    :publishing-directory ,exobrain/output-dir
     :recursive t
     :publishing-function org-md-publish-to-md)))
 

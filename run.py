@@ -17,15 +17,48 @@ from subprocess import check_call
 # TODO wonder if I can integrate it with blog's header?
 # TODO export txt files as md as well?
 
-def main():
+from compile_org import emacs
+
+
+this_dir = Path(__file__).absolute().parent
+source_dir       = this_dir / 'content/apps'  # TODO FIXME
+intermediate_dir = this_dir / 'intermediate'
+output_dir       = this_dir / 'markdown'  # TODO FIXME
+
+
+def clean_dir(path: Path):
+    assert path.is_dir(), path
+    for x in path.iterdir():
+        if x.is_file():
+            x.unlink
+        else: # dir
+            rmtree(x)
+
+
+def clean():
     # todo ugh, need symlink watching tool here again...
     cachedir = Path('~/.org-timestamps').expanduser()
     # TODO not sure about removing all of it...
     for c in cachedir.glob('*.cache'):
         c.unlink()
 
-    # TODO probably need my user config; similarly to blog
-    check_call('emacs --batch -q -l publish.el -f org-publish-all'.split())
+    # TODO FIXME it might be under vcs??
+    clean_dir(intermediate_dir)
+    clean_dir(output_dir)
+
+
+def main():
+    clean()
+
+    emacs(
+        '--eval', f'''(progn
+            (setq exobrain/intermediate-dir "{intermediate_dir}")
+            (setq exobrain/source-dir       "{source_dir}")
+            (setq exobrain/output-dir       "{output_dir}")
+        )''',
+        '--load', 'publish.el',
+        '-f', 'org-publish-all',
+    )
 
     # mdbook doesn't like summary format so we fix it
     check_call(r"awk -i inplace !/\[README\]/  markdown/SUMMARY.md".split())
