@@ -21,7 +21,7 @@ from compile_org import emacs
 
 
 root_dir = Path(__file__).absolute().parent.parent
-source_dir       = root_dir / 'content/apps'  # TODO FIXME
+source_dir       = root_dir / 'content'
 intermediate_dir = root_dir / 'intermediate'
 output_dir       = root_dir / 'markdown'  # TODO FIXME
 
@@ -30,7 +30,7 @@ def clean_dir(path: Path):
     assert path.is_dir(), path
     for x in path.iterdir():
         if x.is_file():
-            x.unlink
+            x.unlink()
         else: # dir
             rmtree(x)
 
