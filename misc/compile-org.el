@@ -43,7 +43,10 @@
 
 ;; TODO hmm, not sure if I should use INCLUDE for these instead?
 ;; I guess that is friendlier if other people try to use this
-(setq org-export-global-macros '(("aside"    . "@@html:<aside>@@$0@@html:</aside>@@")
+(setq org-export-global-macros `(("aside"    . ,(pcase compileorg/output-format
+                                                  ("html" "@@html:<aside>@@$0@@html:</aside>@@")
+                                                  ("org"  "($0)")
+                                                  (_      (error "ERROR"))))
                                  ("anchor"   . "@@html:<a name='$0'></a>@@")
                                  ;; TODO use css instead?
                                  ("question" . "@@html:<span style='color:darkorange'><strong>$0</strong></span>@@")))
@@ -92,8 +95,6 @@
       ;; TODO class??
       ('org  (format "[[https://beepb00p.xyz%s][%s]]" href title))
       (_     (error "%s" fmt)))))
-
-
 (org-add-link-type "tag" nil 'org-blog-tag-export)
 
 ;; TODO hmm. can I format to org only and then rely on default html export?
@@ -102,7 +103,10 @@
   (let* ((path  (if (s-contains? "/" path) path (format "karlicoss/%s" path)))
          (href  (format "https://github.com/%s" path))
          (title (or desc path)))
-    (format "<a href='%s'>%s</a>" href title)))
+    (pcase fmt
+      ('html (format "<a href='%s'>%s</a>" href title))
+      ('org  (error "TODO"))
+      (_     (error "%s" fmt)))))
 (org-add-link-type "gh"  nil 'org-blog-github-export)
 
 (defun org-blog-github-topic-export (path desc fmt)
@@ -118,7 +122,10 @@
   ;; TODO ugh. can't nest link inside the sidenote content??
   ;; and writing that on elisp is gonna suck. really need python exporting backend...
   ;; (message (format "HELLOO  =================== %s" desc))
-  (format "<aside class='sidenote'>%s</aside>" desc))
+  (pcase fmt
+    ('html (format "<aside class='sidenote'>%s</aside>" desc))
+    ('org  (error "TODO"))
+    (_     (error "%s" fmt))))
 (org-add-link-type "sidenote" nil 'org-blog-sidenote)
 
 
