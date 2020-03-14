@@ -105,7 +105,7 @@
          (title (or desc path)))
     (pcase fmt
       ('html (format "<a href='%s'>%s</a>" href title))
-      ('org  (error "TODO"))
+      ('org  (format "[[%s][%s]]" href title))
       (_     (error "%s" fmt)))))
 (org-add-link-type "gh"  nil 'org-blog-github-export)
 
@@ -124,7 +124,7 @@
   ;; (message (format "HELLOO  =================== %s" desc))
   (pcase fmt
     ('html (format "<aside class='sidenote'>%s</aside>" desc))
-    ('org  (error "TODO"))
+    ('org  (format "(%s)" desc))
     (_     (error "%s" fmt))))
 (org-add-link-type "sidenote" nil 'org-blog-sidenote)
 
