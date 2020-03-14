@@ -98,6 +98,11 @@ def process(
                 output,
                 check_ids=check_ids,
             )
+        elif format == 'org':
+            # eh, not sure what's up with empty drawer exports...
+            output = output.replace('nil:END:', ':END:')
+        else:
+            raise RuntimeError(format)
 
         # TODO test for that as well
         if len(files) > 0:
