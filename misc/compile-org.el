@@ -80,21 +80,29 @@
 ; TODO give tags different colors depending on whether it actually exists or not?
 ;; (defun org-blog-tag-follow (path)) TODO ?
 
-;; TODO asssert fmt == html?
 (defun org-blog-tag-export (path desc fmt)
   "Link to one of my tags"
   (let ((href  (format "/tags.html#%s" path))
         (title (or desc (format "#%s" path)))
         (class (if (not desc) "class='post-tag'" "")))
-       (format "<a %s href='%s'>%s</a>" class href title)))
+    (pcase fmt
+      ('html (format "<a %s href='%s'>%s</a>" class href title))
+      ;; TODO internal link?
+      ;; TODO use proper relative link
+      ;; TODO class??
+      ('org  (format "[[https://beepb00p.xyz%s][%s]]" href title))
+      (_     (error "%s" fmt)))))
+
+
 (org-add-link-type "tag" nil 'org-blog-tag-export)
 
+;; TODO hmm. can I format to org only and then rely on default html export?
 (defun org-blog-github-export (path desc fmt)
   "Link to a github repo"
   (let* ((path  (if (s-contains? "/" path) path (format "karlicoss/%s" path)))
          (href  (format "https://github.com/%s" path))
          (title (or desc path)))
-        (format "<a href='%s'>%s</a>" href title)))
+    (format "<a href='%s'>%s</a>" href title)))
 (org-add-link-type "gh"  nil 'org-blog-github-export)
 
 (defun org-blog-github-topic-export (path desc fmt)
