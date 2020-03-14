@@ -11,6 +11,7 @@
 
 (defvar compileorg/throw-on-babel-errors t)
 (defvar compileorg/output-file nil)
+(defvar compileorg/output-format "html")
 
 ;; TODO allow defensive behaviour when error is propagated up?
 (defun --throw-babel-error (oldfun &rest args)
@@ -199,7 +200,9 @@
 
 ;; t is for BODY-ONLY
 ;; finally, export (it dumps output to the current buffer)
-(org-html-export-as-html nil nil nil t)
+(pcase compileorg/output-format
+  ("html" (org-html-export-as-html nil nil nil t))
+  ("org"  (org-org-export-as-org   nil nil nil t)))
 
 ;; NOTE: python format pattern
 ;; write output to the target file
