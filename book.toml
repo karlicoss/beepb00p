@@ -9,3 +9,9 @@ title = "exobrain"
 build-dir = "output"
 
 [preprocessor.index]
+
+[output.html]
+# see here for more settings
+# https://github.com/rust-lang/mdBook/blob/1f505c2b2eecac73751b57496ee6dc33c91ffa6b/book-example/src/format/config.md
+additional-css = ["src/custom.css"]
+# additional-js  = ["custom.js"]
