@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import sys
 from shutil import rmtree
 from subprocess import check_call
 
@@ -8,6 +9,10 @@ from subprocess import check_call
 
 # cargo install mdbook && mdbook init
 
+
+def ccall(*args, **kwargs):
+    print(args, file=sys.stderr)
+    return check_call(*args, **kwargs)
 
 # TODO https://rust-lang.github.io/mdBook/format/config.html
 
@@ -70,12 +75,12 @@ def main():
     # TODO use output_dir
     # mdbook doesn't like summary format so we fix it
     # TODO reorder index?
-    check_call(r"awk -i inplace !/\[README\]/  markdown/SUMMARY.md".split())
+    ccall(r"awk -i inplace !/\[README\]/  markdown/SUMMARY.md".split())
     # TODO clean first?
-    check_call(['mdbook', 'build'])
+    ccall(['mdbook', 'build'])
 
     # TODO think about commit/push/deploy logic?
-    check_call(['git', 'status'], cwd=public_dir)
+    ccall(['git', 'status'], cwd=public_dir)
 
 
 if __name__ == '__main__':
