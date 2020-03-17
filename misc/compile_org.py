@@ -98,7 +98,13 @@ def post_process_org(output: str) -> str:
             hname = hname.replace('.org', '.html')
             hname = hname.replace('::#', '#')
             assert '::' not in hname, line
+
+            # jeez... necessary because of absolute org-mode includes..
+            # will probably remove after I add blog/content to path or smth??
+            hname = hname.replace('../../blog/content/', '')
+
             hname = 'https://beepb00p.xyz/' + hname
+
             line = line.replace('file:' + oname, hname)
 
         # just in case..
