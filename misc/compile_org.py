@@ -74,6 +74,33 @@ def main():
 HTML = str
 
 
+def post_process_org(output: str) -> str:
+    # eh, not sure what's up with empty drawer exports...
+    output = output.replace('nil:END:', ':END:')
+
+
+    lines = []
+    # TODO use something more robust..
+    # TODO control this behaviour? only need it for 'external' org-mode..
+    for line in output.splitlines(): # TODO careful about whitespace?
+        # TODO shit. so sometimes we do need the identifier and can't just pipe
+        # ok, for now just assume it's not referring to parent and always in root...
+        # TODO need to find all...
+        fre = re.escape('[[file:') + r'(.+?)' + re.escape(']')
+        m = re.search(fre, line)
+        if m is not None:
+            oname = m.group(1)
+            # uhoh
+            hname = 'https://beepb00p.xyz/' + oname.replace('.org', '.html')
+            line = line.replace('file:' + oname, hname)
+
+        # just in case..
+        assert '[[file:' not in line, line
+        lines.append(line)
+
+    return '\n'.join(lines)
+
+
 def process(
         *,
         org_data: str,
@@ -99,8 +126,7 @@ def process(
                 check_ids=check_ids,
             )
         elif format == 'org':
-            # eh, not sure what's up with empty drawer exports...
-            output = output.replace('nil:END:', ':END:')
+            output = post_process_org(output)
         else:
             raise RuntimeError(format)
 
