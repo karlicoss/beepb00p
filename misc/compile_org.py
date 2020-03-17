@@ -78,6 +78,8 @@ def post_process_org(output: str) -> str:
     # eh, not sure what's up with empty drawer exports...
     output = output.replace('nil:END:', ':END:')
 
+    # ugh. seems that org-ruby can't handle it...
+    output = output.replace('#+results:', '')
 
     lines = []
     # TODO use something more robust..
