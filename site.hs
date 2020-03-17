@@ -65,6 +65,7 @@ special = constField "type_special" "x"
 
 
 -- TODO shit this is problematic for all simple web servers, they think it's octet-stream :(
+-- TODO need to assert??
 chopOffRoute thing = gsubRoute thing (const "" )
 
 -- TODO fucking hell it's annoying. couldn't force github pages or preview server to support that
@@ -119,7 +120,8 @@ main = do
 
     let doSpecial pat ectx comp deps = rulesExtraDependencies deps $ match pat $ do
           let ctx = special <> ectx
-          route   $ chopOffRoute "content/special/" |- html
+          -- TODO ugh. chopping off "content/" for sandbox...
+          route   $ chopOffRoute "content/special/" |- chopOffRoute "content/" |- html
           compile $ comp
               >>= postCompiler ctx
 
@@ -128,6 +130,7 @@ main = do
           compile $ comp
              >>= postCompiler ctx
 
+    -- TODO FIXME determine special based on attributes?...
     let doPost pat ctx comp deps = rulesExtraDependencies deps $ match pat $ do
           route   $ chopOffRoute "content/" |- html
           compile $ comp
@@ -148,6 +151,7 @@ main = do
 
     doAll doMeta      "content/meta/**"
     doAll doSpecial   "content/special/**"
+    doAll doSpecial   "content/sandbox/**" -- meh
     doAll doPost      "content/*"
     doAll doDraft     "content/drafts/*"
     doAll doGenerated "content/generated/*"
