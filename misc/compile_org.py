@@ -297,14 +297,14 @@ if __name__ == '__main__':
     main()
 
 
-def get_src() -> str:
-    path = Path(__file__).absolute().parent.parent / 'content/special/sandbox/test.org'
+def get_test_src() -> str:
+    path = Path(__file__).absolute().parent.parent / 'content/sandbox/test.org'
     return path.read_text()
 
 
 # TODO literate test docs
 def test_aside(tmp_path):
-    src = get_src()
+    src = get_test_src()
 
     # precondition
     assert 'on the right {{{aside(see' in src
@@ -321,7 +321,7 @@ def test_aside(tmp_path):
 
 # TODO also tests intrapage links by accident, but ok for now..
 def test_section_links(tmp_path):
-    src = get_src()
+    src = get_test_src()
 
     # precondition
     assert '* intrapage link to' in src
@@ -338,7 +338,7 @@ def test_section_links(tmp_path):
 
 
 def test_removes_useless_ids(tmp_path):
-    src = get_src()
+    src = get_test_src()
 
     # precondition
     assert '* regular heading' in src
