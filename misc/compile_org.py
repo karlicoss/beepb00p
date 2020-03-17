@@ -87,8 +87,11 @@ def post_process_org(output: str) -> str:
         # ok, for now just assume it's not referring to parent and always in root...
         # TODO need to find all...
         fre = re.escape('[[file:') + r'(.+?)' + re.escape(']')
-        m = re.search(fre, line)
-        if m is not None:
+        while True:
+            # well it's a bit shit, but whatever..
+            m = re.search(fre, line)
+            if m is None:
+                break
             oname = m.group(1)
             # uhoh
             hname = 'https://beepb00p.xyz/' + oname.replace('.org', '.html')
