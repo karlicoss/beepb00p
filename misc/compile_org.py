@@ -94,7 +94,11 @@ def post_process_org(output: str) -> str:
                 break
             oname = m.group(1)
             # uhoh
-            hname = 'https://beepb00p.xyz/' + oname.replace('.org', '.html')
+            hname = oname
+            hname = hname.replace('.org', '.html')
+            hname = hname.replace('::#', '#')
+            assert '::' not in hname, line
+            hname = 'https://beepb00p.xyz/' + hname
             line = line.replace('file:' + oname, hname)
 
         # just in case..
