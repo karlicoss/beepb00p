@@ -6,6 +6,7 @@ import           Hakyll
 
 import   Control.Applicative (empty, (<|>))
 import         Control.Monad ((>=>), filterM)
+import          Data.Functor ((<&>))
 import       Data.List.Split (splitOn, wordsBy)
 import            Data.Maybe (fromJust, fromMaybe, catMaybes, isJust, isNothing)
 import           Data.Monoid (mappend)
@@ -133,8 +134,13 @@ main = do
     -- TODO FIXME determine special based on attributes?...
     let doPost pat ctx comp deps = rulesExtraDependencies deps $ match pat $ do
           route   $ chopOffRoute "content/" |- html
-          compile $ comp
-             >>= postCompiler ctx
+          compile $ do
+             iid <- getResourceString <&> itemIdentifier
+             uuu <- getMetadataField iid "special"
+             let is_special = fromMaybe "" uuu == "true"
+             let pctx = (if is_special then special else mempty) <> ctx
+             comp >>= postCompiler pctx
+
 
     let draftCtx = constField "date" "[2019-09-20]" -- arbitrary
                 <> constField "upid" "whaat"
@@ -215,8 +221,14 @@ main = do
           return posts :: Compiler [Item String]
 
     let publicPosts  = getPosts $ \x -> do
-          draft <- getMetadataField (itemIdentifier  x) "draft"
-          return $ isNothing draft
+          let iid = (itemIdentifier x)
+          draft   <- getMetadataField iid "draft"
+          special <- getMetadataField iid "special"
+          let is_not_draft   = isNothing draft
+          let is_not_special = isNothing special
+          return $ is_not_draft && is_not_special
+
+
     let publicDrafts = getPosts $ \x -> do
           draft <- getMetadataField (itemIdentifier  x) "draft"
           return $ fromMaybe "" draft == "public"
