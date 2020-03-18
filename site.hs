@@ -119,13 +119,6 @@ main = do
           compile $ comp
             >>= postCompiler ctx
 
-    let doSpecial pat ectx comp deps = rulesExtraDependencies deps $ match pat $ do
-          let ctx = special <> ectx
-          -- TODO ugh. chopping off "content/" for sandbox...
-          route   $ chopOffRoute "content/special/" |- chopOffRoute "content/" |- html
-          compile $ comp
-              >>= postCompiler ctx
-
     let doGenerated pat ctx comp deps = rulesExtraDependencies deps $ match pat $ do
           route   $ chopOffRoute "content/generated/" |- html
           compile $ comp
@@ -155,11 +148,13 @@ main = do
 
     -- TODO publish: doAll is good for handling different formats
 
+    -- TODO just move these in?
     doAll doMeta      "content/meta/**"
-    doAll doSpecial   "content/special/**"
-    doAll doSpecial   "content/sandbox/**" -- meh
     doAll doPost      "content/*"
+    doAll doPost      "content/sandbox/*"
+    -- TODO this should be merged together with posts?
     doAll doDraft     "content/drafts/*"
+    -- TODO just determine generated or not based on path?
     doAll doGenerated "content/generated/*"
 
 
