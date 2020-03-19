@@ -113,11 +113,6 @@ main = do
     source "misc/ipynbconfig.py"
     compileIpynbBin <- makePatternDependency $ "misc/compile-ipynb" .||. "misc/mybasic.tpl" .||. "misc/ipynbconfig.py"
 
-    let doGenerated pat ctx comp deps = rulesExtraDependencies deps $ match pat $ do
-          route   $ chopOffRoute "content/generated/" |- html
-          compile $ comp
-             >>= postCompiler ctx
-
     let doPost pat ctx comp deps = rulesExtraDependencies deps $ match pat $ do
           route   $ metadataRoute $ \md ->
               case lookupString "html_path" md of
@@ -144,14 +139,12 @@ main = do
 
     -- TODO publish: doAll is good for handling different formats
 
-    doAll doPost      "content/meta/**"
     doAll doPost      "content/*"
+    doAll doPost      "content/meta/**"
     doAll doPost      "content/sandbox/*"
+    doAll doPost      "content/generated/*"
     -- TODO this should be merged together with posts?
     doAll doDraft     "content/drafts/*"
-    -- TODO just determine generated or not based on path?
-    -- TODO also migrate to using html_path?
-    doAll doGenerated "content/generated/*"
 
 
 -- TODO in org mode files, date should be present
