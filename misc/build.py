@@ -108,10 +108,22 @@ def hakyll_to_jinja(body: str) -> str:
     return body
 
 
+from jinja2 import Environment, BaseLoader, Template # type: ignore
+# TODO ugh. can't be multithreaded?
+env = Environment(loader=BaseLoader())
+
+
 def compile_template(*, path: Path):
-    from jinja2 import Template # type: ignore
+    print(f'compiling {path}')
     body = hakyll_to_jinja(path.read_text())
-    t = Template(body)
+
+
+    # globals = self.make_globals(globals)
+    # TODO copy pasted from env.from_string
+    cls = env.template_class
+    compiled = env.compile(body, name=str(path))
+    t = Template.from_code(env, compiled, globals(), None)
+    # t = env.from_string(body)
     # TODO strict mode? fail if some params are missing?
     print(t.render())
 
@@ -136,17 +148,22 @@ def compile_post(path: Path):
         raise RuntimeError(path)
 
 
-
+def compile_templates():
+    for p in [
+            'templates/isso.html',
+            'templates/post.html',
+    ]:
+        compile_template(path=Path(p))
 
 INPUTS = list(sorted({
-    Path('templates/post.html'),
-    # *content.glob('scheduler.org'),
-    # *content.glob('*.org'),
-    # *content.glob('*.ipynb'),
+    *content.glob('*.org'),
+    *content.glob('*.ipynb'),
 }))
 
 
 def compile_all(max_workers=None):
+    # compile_templates()
+   
     from concurrent.futures import ThreadPoolExecutor
     print(INPUTS) # TODO log?
     with ThreadPoolExecutor(max_workers=max_workers) as pool:
