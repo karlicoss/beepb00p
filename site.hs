@@ -166,7 +166,7 @@ main = do
           .||. "content/*.ipynb"
           .||. "content/*.org"
 
-    tags <- buildTags patterns (fromCapture "tags/*.html")
+    -- tags <- buildTags patterns (fromCapture "tags/*.html")
     -- TODO ok, so tags are in here
     -- TODO how to refer to them on tags page?
     -- TODO that would require some elaborate matching with CUSTOM_ID...
