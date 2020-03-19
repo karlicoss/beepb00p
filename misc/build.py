@@ -42,8 +42,28 @@ def compile_org(*, compile_script: Path, path: Path):
 content = Path('content')
 
 
+from typing import Dict
+Meta = Dict[str, str]
+
+
+
+# pip install ruamel.yaml -- temporary...
+# just use json later?
+def metadata(path: Path) -> Meta:
+    meta = path.with_suffix(path.suffix + '.metadata')
+    if not meta.exists():
+        return {}
+    from ruamel.yaml import YAML # type: ignore
+    yaml = YAML(typ='safe')
+    return yaml.load(meta)
+
+
 # TODO allow-errors?
 def compile_ipynb(*, compile_script: Path, path: Path):
+    meta = metadata(path)
+
+    allow_errors = meta.get('allow_errors', False)
+
     # meh
     itemid = path.absolute().relative_to(content.absolute().parent)
     with TemporaryDirectory() as tdir:
@@ -53,6 +73,7 @@ def compile_ipynb(*, compile_script: Path, path: Path):
                 compile_script,
                 '--output-dir', tdir,
                 '--item', str(itemid),
+                *(['--allow-errors'] if allow_errors else []),
             ],
             input=path.read_bytes(),
             stdout=PIPE,
@@ -91,7 +112,7 @@ INPUTS = list(sorted({
 
 def compile_all(max_workers=None):
     from concurrent.futures import ThreadPoolExecutor
-    print(INPUTS)
+    print(INPUTS) # TODO log?
     with ThreadPoolExecutor(max_workers=max_workers) as pool:
         for res in pool.map(compile_post, INPUTS):
             # need to force the iterator
