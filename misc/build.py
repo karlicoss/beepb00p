@@ -15,9 +15,7 @@ from tempfile import TemporaryDirectory
 output = Path('site2')
 # TODO not sure if should create it first?
 
-COMPILE_ORG = Path('misc/compile_org.py')
-
-
+# TODO needs to depend on compile_script and path
 def compile_org(*, compile_script: Path, path: Path):
     # TODO add COMPILE_ORG to dependency?
     with TemporaryDirectory() as tdir:
@@ -34,6 +32,8 @@ def compile_org(*, compile_script: Path, path: Path):
         )
     out = res.stdout
     # TODO how to clean stale stuff that's not needed in output dir?
+    # TODO output determined externally?
+    # TODO some inputs
     outpath = output / (path.stem + '.org')
     outpath.write_bytes(res.stdout)
 
@@ -45,12 +45,27 @@ def compile_post(path: Path):
         path=path,
     )
 
+content = Path('content')
+
+INPUTS = [
+    content / 'python-configs.org',
+    content / 'scheduler.org',
+    content / 'contemp-art.org',
+]
+
+
+def compile_all(max_workers=None):
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=max_workers) as pool:
+        pool.map(compile_post, INPUTS)
+
 
 def main():
-    posts = [Path('content/python-configs.org')]
-    for post in posts:
-        compile_post(post)
+    compile_all()
 
 
 if __name__ == '__main__':
     main()
+
+
+# TODO self check with mypy/pylint??
