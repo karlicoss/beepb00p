@@ -15,6 +15,7 @@ from tempfile import TemporaryDirectory
 output = Path('site2')
 # TODO not sure if should create it first?
 
+# TODO make emacs a bit quieter; do not display all the 'Loading' stuff
 # TODO needs to depend on compile_script and path
 def compile_org(*, compile_script: Path, path: Path):
     # TODO add COMPILE_ORG to dependency?
@@ -38,26 +39,63 @@ def compile_org(*, compile_script: Path, path: Path):
     outpath.write_bytes(res.stdout)
 
 
-def compile_post(path: Path):
-    assert path.suffix == '.org'
-    compile_org(
-        compile_script=Path('misc/compile_org.py'),
-        path=path,
-    )
-
 content = Path('content')
 
-INPUTS = [
-    content / 'python-configs.org',
-    content / 'scheduler.org',
-    content / 'contemp-art.org',
-]
+
+# TODO allow-errors?
+def compile_ipynb(*, compile_script: Path, path: Path):
+    # meh
+    itemid = path.absolute().relative_to(content.absolute().parent)
+    with TemporaryDirectory() as tdir:
+        tpath = Path(tdir)
+        res = run(
+            [
+                compile_script,
+                '--output-dir', tdir,
+                '--item', str(itemid),
+            ],
+            input=path.read_bytes(),
+            stdout=PIPE,
+            check=True,
+        )
+    # TODO remove duplicats
+    out = res.stdout
+    outpath = output / (path.stem + '.html')
+    outpath.write_bytes(res.stdout)
+
+
+def compile_post(path: Path):
+    suffix = path.suffix
+
+    if suffix == '.org':
+        compile_org(
+            compile_script=Path('misc/compile_org.py'),
+            path=path,
+        )
+    elif suffix == '.ipynb':
+        compile_ipynb(
+            compile_script=Path('misc/compile-ipynb'),
+            path=path,
+        )
+    else:
+        raise RuntimeError(path)
+
+
+
+
+INPUTS = list(sorted({
+    *content.glob('*.org'),
+    *content.glob('*.ipynb'),
+}))
 
 
 def compile_all(max_workers=None):
     from concurrent.futures import ThreadPoolExecutor
+    print(INPUTS)
     with ThreadPoolExecutor(max_workers=max_workers) as pool:
-        pool.map(compile_post, INPUTS)
+        for res in pool.map(compile_post, INPUTS):
+            # need to force the iterator
+            pass
 
 
 def main():
