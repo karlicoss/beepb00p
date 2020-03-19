@@ -113,20 +113,16 @@ main = do
     source "misc/ipynbconfig.py"
     compileIpynbBin <- makePatternDependency $ "misc/compile-ipynb" .||. "misc/mybasic.tpl" .||. "misc/ipynbconfig.py"
 
-    let doMeta pat ectx comp deps = rulesExtraDependencies deps $ match pat $ do
-          let ctx = special <> ectx
-          route   $ chopOffRoute "content/meta/" |- html
-          compile $ comp
-            >>= postCompiler ctx
-
     let doGenerated pat ctx comp deps = rulesExtraDependencies deps $ match pat $ do
           route   $ chopOffRoute "content/generated/" |- html
           compile $ comp
              >>= postCompiler ctx
 
-    -- TODO FIXME determine special based on attributes?...
     let doPost pat ctx comp deps = rulesExtraDependencies deps $ match pat $ do
-          route   $ chopOffRoute "content/" |- html
+          route   $ metadataRoute $ \md ->
+              case lookupString "html_path" md of
+                Just x  -> constRoute x
+                Nothing -> chopOffRoute "content/" |- html
           compile $ do
              iid <- getResourceString <&> itemIdentifier
              uuu <- getMetadataField iid "special"
@@ -148,13 +144,13 @@ main = do
 
     -- TODO publish: doAll is good for handling different formats
 
-    -- TODO just move these in?
-    doAll doMeta      "content/meta/**"
+    doAll doPost      "content/meta/**"
     doAll doPost      "content/*"
     doAll doPost      "content/sandbox/*"
     -- TODO this should be merged together with posts?
     doAll doDraft     "content/drafts/*"
     -- TODO just determine generated or not based on path?
+    -- TODO also migrate to using html_path?
     doAll doGenerated "content/generated/*"
 
 
