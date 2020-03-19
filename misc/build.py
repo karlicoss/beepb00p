@@ -25,7 +25,7 @@ def compile_org(*, compile_script: Path, path: Path):
             [
                 compile_script,
                 '--output-dir', tdir,
-                '--org',  # TODO
+                # '--org',  # TODO
             ],
             input=path.read_bytes(),
             stdout=PIPE,
@@ -62,6 +62,7 @@ def metadata(path: Path) -> Meta:
 def compile_ipynb(*, compile_script: Path, path: Path):
     meta = metadata(path)
 
+    # TODO make this an attribute of the notebook somehow? e.g. tag
     allow_errors = meta.get('allow_errors', False)
 
     # meh
@@ -85,6 +86,36 @@ def compile_ipynb(*, compile_script: Path, path: Path):
     outpath.write_bytes(res.stdout)
 
 
+# TODO move out?
+import re
+# eh, I'm not sure why hakyll chose a different template format...
+# considering I adapted it with string replacement..
+def hakyll_to_jinja(body: str) -> str:
+    replacements = [
+        ('$if('     , '{% if '         ),
+        ('$endif$'  , '{% endif %}'    ),
+        ('$for('    , '{% for item in '),
+        ('$endfor$' , '{% endfor %}'   ),
+        ('$partial(', '{% include '    ),
+        (')$'       , ' %}'            ),
+    ]
+    for f, t in replacements:
+        body = body.replace(f, t)
+    body = re.sub(r'\$(\w+)\$', r'{{ \1 }}', body)
+
+    for line in body.splitlines():
+        assert '$' not in line, line
+    return body
+
+
+def compile_template(*, path: Path):
+    from jinja2 import Template # type: ignore
+    body = hakyll_to_jinja(path.read_text())
+    t = Template(body)
+    # TODO strict mode? fail if some params are missing?
+    print(t.render())
+
+
 def compile_post(path: Path):
     suffix = path.suffix
 
@@ -94,10 +125,13 @@ def compile_post(path: Path):
             path=path,
         )
     elif suffix == '.ipynb':
+        # TODO make a mode to export to python?
         compile_ipynb(
             compile_script=Path('misc/compile-ipynb'),
             path=path,
         )
+    elif path.parts[-2] == 'templates':
+        compile_template(path=path)
     else:
         raise RuntimeError(path)
 
@@ -105,8 +139,10 @@ def compile_post(path: Path):
 
 
 INPUTS = list(sorted({
-    *content.glob('*.org'),
-    *content.glob('*.ipynb'),
+    Path('templates/post.html'),
+    # *content.glob('scheduler.org'),
+    # *content.glob('*.org'),
+    # *content.glob('*.ipynb'),
 }))
 
 
@@ -128,3 +164,6 @@ if __name__ == '__main__':
 
 
 # TODO self check with mypy/pylint??
+
+
+# TODO make sure to port todo stripping
