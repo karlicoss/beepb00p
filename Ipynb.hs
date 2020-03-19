@@ -47,25 +47,4 @@ ipynbRun item = do
 ipynbCompile = stripPrivateTodos >=> ipynbRun
 ipynbCompiler = getResourceString >>= ipynbCompile
 
--- renameItem :: (String -> String) -> Item a -> Item a
--- renameItem f i =  i { itemIdentifier = new_id } where
---   old_id = itemIdentifier i
---   old_version = identifierVersion old_id
---   new_id = setVersion old_version $ (fromFilePath $ f $ toFilePath old_id)
-
--- TODO ugh itemIdentifier is not exported???
--- renameItem f x = x { itemIdentifier = new_id } where
---   old_id = itemIdentifier x -- TODO do I need lens?..
---   old_path = identifierPath old_id
---   new_path = f old_path
---   new_id = old_id { identifierPath = new_path }
-
-  -- ipy <- ipynbRun i  -- x <&> (renameItem (\f -> replaceExtension f ".md")) -- ipynbFilterOutput >> ipynbRun
-  -- let ipy_md = renameItem (\f -> replaceExtension f ".md") ipy -- change the extension to trick pandoc...
-  -- pandoc <- readPandoc ipy_md
-  -- let html = writePandoc pandoc
-  -- let res = renameItem (\f -> replaceExtension f ".ipynb") html 
-  -- return ipy
-
 -- TODO release ipython stuff in a separate file so it's easy to share
-

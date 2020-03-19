@@ -171,20 +171,6 @@ main = do
 -- https://github.com/turboMaCk/turboMaCk.github.io/blob/develop/site.hs#L61 ??
 -- TODO reference to how to read my posts?? e.g. what todo states mean etc
 
-    -- create ["archive.html"] $ do
-    --     route idRoute
-    --     compile $ do
-    --         posts <- recentFirst =<< loadAll "posts/*"
-    --         let archiveCtx =
-    --                 listField "posts" postCtx (return posts) `mappend`
-    --                 constField "title" "Archives"            `mappend`
-    --                 defaultContext
-
-    --         makeItem ""
-    --             >>= loadAndApplyTemplate "templates/archive.html" archiveCtx
-    --             >>= loadAndApplyTemplate "templates/default.html" archiveCtx
-    --             >>= relativizeUrls
-
     let patterns =
                "content/*.md"
           .||. "content/generated/*.md"
@@ -196,18 +182,6 @@ main = do
     -- TODO how to refer to them on tags page?
     -- TODO that would require some elaborate matching with CUSTOM_ID...
 
-    -- tagsRules tags $ \tag pattern -> do
-    --   let title = "Posts tagged \"" ++ tag ++ "\""
-    --   route idRoute
-    --   compile $ do
-    --       posts <- recentFirst =<< loadAll pattern
-    --       let ctx = constField "title" title
-    --                 `mappend` listField "posts" postCtx (return posts)
-    --                 `mappend` defaultContext
-
-    --       makeItem ""
-    --           >>= loadAndApplyTemplate "templates/tag.html" ctx
-    --           >>= relativizeUrls
 
     -- let getPosts :: Compiler [Item String] = do
     let getPosts pred = do
