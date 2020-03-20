@@ -27,7 +27,6 @@ cache = lambda f: lru_cache(1)(f)
 
 TMP_DIR: Path = cast(Path, None)
 
-output = Path('site2')
 # TODO not sure if should create it first?
 
 # TODO make emacs a bit quieter; do not display all the 'Loading' stuff
@@ -212,6 +211,8 @@ def template(name: str) -> Template:
     return ts.get_template(name)
 
 
+output = Path('site2')
+
 @cache
 def templates():
     dbg('reloading all templates')
@@ -238,10 +239,26 @@ INPUTS = list(sorted({
 
 
 def compile_all(max_workers=None):
+
+    import shutil
+
+    def move(from_: Path, ext: str):
+        for f in from_.rglob('*.' + ext):
+            dbg('merging %s', f)
+            rel = f.relative_to(from_)
+            to = output / rel
+            assert not to.exists(), to
+
+            shutil.move(f, to)
+
     from concurrent.futures import ThreadPoolExecutor
     with ThreadPoolExecutor(max_workers=max_workers) as pool:
         for res in pool.map(compile_post, INPUTS):
-            dbg('compiled %s: %s', res, list(sorted(res.iterdir())))
+            move(res, 'html')
+            move(res, 'png')
+            remaining = list(res.iterdir())
+            if len(remaining) > 0:
+                raise RuntimeError(f'remaining files: {remaining}')
             # need to force the iterator
             pass
 
