@@ -29,14 +29,22 @@ cache = lambda f: lru_cache(1)(f)
 
 TMP_DIR: Path = cast(Path, None)
 
+RPath = Path
+
+# TODO better name?..
+def sanitize(path: RPath) -> str:
+    pp = str(path)
+    pp = pp.replace('/', '_')
+    return pp
+
 # TODO not sure if should create it first?
 
 # TODO make emacs a bit quieter; do not display all the 'Loading' stuff
 # TODO needs to depend on compile_script and path
 # TODO add COMPILE_ORG to dependency?
 def compile_org(*, compile_script: Path, path: Path) -> Path:
-    name = path.name
-    d = TMP_DIR / name
+    dname = sanitize(path)
+    d = TMP_DIR / dname
     d.mkdir()
 
     res = run(
@@ -247,8 +255,13 @@ def templates():
 
 
 INPUTS = list(sorted({
-    *content.glob('*.org'),
-    *content.glob('*.ipynb'),
+    # content / 'contemp-art.org',
+    # content / 'myinfra.org',
+    # *content.glob('*.org'),
+    # content / 'wave.ipynb',
+    # content / 'contemp-art.org',
+    Path('sandbox/test.org'),
+    # *content.glob('*.ipynb'),
 }))
 
 
