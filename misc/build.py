@@ -4,6 +4,9 @@ from functools import lru_cache, wraps
 from subprocess import check_call, run, check_output, PIPE
 from tempfile import TemporaryDirectory
 
+from kython.klogging2 import LazyLogger
+
+log = LazyLogger('build', level='debug')
 
 # TODO use wraps??
 cache = lambda f: lru_cache(1)(f)
@@ -144,12 +147,15 @@ from jinja2 import Template, Environment, FileSystemLoader # type: ignore
 
 @cache
 def template(name: str) -> Template:
+    log.debug('reloading template %s', name)
     ts = templates()
     return ts.get_template(name)
 
 
 @cache
 def templates():
+    log.debug('reloading all templates')
+
     inputs = Path('templates')
     outputs = output / 'templates'
     outputs.mkdir(exist_ok=True)
@@ -173,7 +179,6 @@ INPUTS = list(sorted({
 
 def compile_all(max_workers=None):
     from concurrent.futures import ThreadPoolExecutor
-    print(INPUTS) # TODO log?
     with ThreadPoolExecutor(max_workers=max_workers) as pool:
         for res in pool.map(compile_post, INPUTS):
             # need to force the iterator
