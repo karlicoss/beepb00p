@@ -39,6 +39,10 @@ def compile_org(*, compile_script: Path, path: Path) -> str:
             stdout=PIPE,
             check=True,
         )
+    # TODO filter out
+    # Can't guess python-indent-offset
+    # Code block evaluaation complete
+    # Loading ...
     out = res.stdout
     # TODO how to clean stale stuff that's not needed in output dir?
     # TODO output determined externally?
@@ -125,11 +129,15 @@ def compile_post(path: Path):
             compile_script=Path('misc/compile_org.py'),
             path=path,
         )
-        t = template('templates/post.html')
-        rendered = t.render(
+        post_t = template('templates/post.html')
+        post = post_t.render(
             body=body,
         )
-        print(rendered)
+        full_t = template('templates/default.html')
+        full = full_t.render(
+            body=body,
+        )
+        # print(rendered)
     elif suffix == '.ipynb':
         # TODO make a mode to export to python?
         compile_ipynb(
@@ -145,16 +153,25 @@ from jinja2 import Template, Environment, FileSystemLoader # type: ignore
 
 # TODO should use Path with mtime etc
 
+
+import threading
+# right, separate threads might load twice
+
+def dbg(fmt: str, *args, **kwargs):
+    log.debug('%s: ' + fmt, threading.current_thread().name, *args, **kwargs)
+
+
+
 @cache
 def template(name: str) -> Template:
-    log.debug('reloading template %s', name)
+    dbg('reloading template %s', name, )
     ts = templates()
     return ts.get_template(name)
 
 
 @cache
 def templates():
-    log.debug('reloading all templates')
+    dbg('reloading all templates')
 
     inputs = Path('templates')
     outputs = output / 'templates'
