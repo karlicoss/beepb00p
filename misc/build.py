@@ -99,8 +99,10 @@ def metadata(path: Path) -> Meta:
     return yaml.load(meta)
 
 
-# TODO allow-errors?
-def compile_ipynb(*, compile_script: Path, path: Path):
+def compile_ipynb(*, compile_script: Path, path: Path) -> Path:
+    d = TMP_DIR / path.name
+    d.mkdir()
+
     meta = metadata(path)
 
     # TODO make this an attribute of the notebook somehow? e.g. tag
@@ -108,23 +110,22 @@ def compile_ipynb(*, compile_script: Path, path: Path):
 
     # meh
     itemid = path.absolute().relative_to(content.absolute().parent)
-    with TemporaryDirectory() as tdir:
-        tpath = Path(tdir)
-        res = run(
-            [
-                compile_script,
-                '--output-dir', tdir,
-                '--item', str(itemid),
-                *(['--allow-errors'] if allow_errors else []),
-            ],
-            input=path.read_bytes(),
-            stdout=PIPE,
-            check=True,
-        )
+    res = run(
+        [
+            compile_script,
+            '--output-dir', d,
+            '--item', str(itemid),
+            *(['--allow-errors'] if allow_errors else []),
+        ],
+        input=path.read_bytes(),
+        stdout=PIPE,
+        check=True,
+    )
     # TODO remove duplicats
-    out = res.stdout
-    outpath = output / (path.stem + '.html')
-    outpath.write_bytes(res.stdout)
+    out = res.stdout.decode('utf8')
+    (d / 'body').write_text(out)
+
+    return d
 
 
 # TODO move out?
@@ -162,7 +163,7 @@ def compile_post(path: Path) -> Path:
         )
     elif suffix == '.ipynb':
         # TODO make a mode to export to python?
-        compile_ipynb(
+        outs = compile_ipynb(
             compile_script=Path('misc/compile-ipynb'),
             path=path,
         )
