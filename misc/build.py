@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
 from pathlib import Path
+from functools import lru_cache, wraps
 from subprocess import check_call, run, check_output, PIPE
 from tempfile import TemporaryDirectory
+
+
+# TODO use wraps??
+cache = lambda f: lru_cache(1)(f)
 
 # TODO use injector??
 # https://github.com/alecthomas/injector
@@ -17,7 +22,7 @@ output = Path('site2')
 
 # TODO make emacs a bit quieter; do not display all the 'Loading' stuff
 # TODO needs to depend on compile_script and path
-def compile_org(*, compile_script: Path, path: Path):
+def compile_org(*, compile_script: Path, path: Path) -> str:
     # TODO add COMPILE_ORG to dependency?
     with TemporaryDirectory() as tdir:
         tpath = Path(tdir)
@@ -35,8 +40,7 @@ def compile_org(*, compile_script: Path, path: Path):
     # TODO how to clean stale stuff that's not needed in output dir?
     # TODO output determined externally?
     # TODO some inputs
-    outpath = output / (path.stem + '.org')
-    outpath.write_bytes(res.stdout)
+    return out.decode('utf8')
 
 
 content = Path('content')
@@ -104,18 +108,25 @@ def hakyll_to_jinja(body: str) -> str:
     body = re.sub(r'\$(\w+)\$', r'{{ \1 }}', body)
 
     for line in body.splitlines():
-        assert '$' not in line, line
+        pass
+        # assert '$' not in line, line
     return body
 
 
 def compile_post(path: Path):
     suffix = path.suffix
 
+    # TODO FIMXE compile_org should return a temporary directory with 'stuff'?
     if suffix == '.org':
-        compile_org(
+        body = compile_org(
             compile_script=Path('misc/compile_org.py'),
             path=path,
         )
+        t = template('templates/post.html')
+        rendered = t.render(
+            body=body,
+        )
+        print(rendered)
     elif suffix == '.ipynb':
         # TODO make a mode to export to python?
         compile_ipynb(
@@ -125,28 +136,20 @@ def compile_post(path: Path):
     else:
         raise RuntimeError(path)
 
-from jinja2 import Environment, BaseLoader, Template # type: ignore
-# TODO ugh. can't be multithreaded?
-env = Environment(loader=BaseLoader())
+
+from jinja2 import Template, Environment, FileSystemLoader # type: ignore
 
 
-def compile_template(*, path: Path):
-    print(f'compiling {path}')
-    body = hakyll_to_jinja(path.read_text())
+# TODO should use Path with mtime etc
+
+@cache
+def template(name: str) -> Template:
+    ts = templates()
+    return ts.get_template(name)
 
 
-    # globals = self.make_globals(globals)
-    # TODO copy pasted from env.from_string
-    cls = env.template_class
-    compiled = env.compile(body, name=str(path))
-    t = Template.from_code(env, compiled, globals(), None)
-    # t = env.from_string(body)
-    # TODO strict mode? fail if some params are missing?
-    print(t.render())
-
-
-
-def compile_templates():
+@cache
+def templates():
     inputs = Path('templates')
     outputs = output / 'templates'
     outputs.mkdir(exist_ok=True)
@@ -156,10 +159,10 @@ def compile_templates():
         body = hakyll_to_jinja(t.read_text())
         out.write_text(body)
 
-
-    from jinja2 import FileSystemLoader # type: ignore
-    loader = FileSystemLoader(str(outputs))
-    print(loader)
+    env = Environment(
+        loader=FileSystemLoader(str(output)),
+    )
+    return env
 
 
 INPUTS = list(sorted({
@@ -169,8 +172,6 @@ INPUTS = list(sorted({
 
 
 def compile_all(max_workers=None):
-    # compile_templates()
-   
     from concurrent.futures import ThreadPoolExecutor
     print(INPUTS) # TODO log?
     with ThreadPoolExecutor(max_workers=max_workers) as pool:
