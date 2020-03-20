@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 from pathlib import Path
 from functools import lru_cache, wraps
+import os
 from subprocess import check_call, run, check_output, PIPE
+import shutil
 import sys
 from tempfile import TemporaryDirectory
 from typing import cast
@@ -149,25 +151,34 @@ def hakyll_to_jinja(body: str) -> str:
         # assert '$' not in line, line
     return body
 
+# TODO not sure how metadata should be handled... does every post really have
+# TODO if we use templates in python (as f-strings), they can be statically checked..
 
 def compile_post(path: Path) -> Path:
+    assert not path.is_absolute(), path
+    apath = content / path
+
     suffix = path.suffix
+
+    ctx = {}
 
     # TODO FIMXE compile_org should return a temporary directory with 'stuff'?
     outs: Path
     if suffix == '.org':
         outs = compile_org(
             compile_script=Path('misc/compile_org.py'),
-            path=path,
+            path=apath,
         )
+        ctx['style_org'] = True
     elif suffix == '.ipynb':
         # TODO make a mode to export to python?
         outs = compile_ipynb(
             compile_script=Path('misc/compile-ipynb'),
-            path=path,
+            path=apath,
         )
+        ctx['style_ipynb'] = True
     else:
-        raise RuntimeError(path)
+        raise RuntimeError(apath)
 
     body_file = outs / 'body'
     body = (outs / 'body').read_text()
@@ -179,13 +190,16 @@ def compile_post(path: Path) -> Path:
     post_t = template('templates/post.html')
     post = post_t.render(
         body=body,
+        **ctx,
     )
     full_t = template('templates/default.html')
     full = full_t.render(
-        body=body,
+        body=post,
     )
 
-    (outs / 'body.html').write_text(body)
+    opath = outs / path.with_suffix('.html')
+    opath.parent.mkdir(exist_ok=True)
+    opath.write_text(full)
 
     return outs
 
@@ -240,7 +254,6 @@ INPUTS = list(sorted({
 
 def compile_all(max_workers=None):
 
-    import shutil
 
     def move(from_: Path, ext: str):
         for f in from_.rglob('*.' + ext):
@@ -249,6 +262,8 @@ def compile_all(max_workers=None):
             to = output / rel
             assert not to.exists(), to
 
+
+            to.parent.mkdir(exist_ok=True) # meh
             shutil.move(f, to)
 
     from concurrent.futures import ThreadPoolExecutor
@@ -256,6 +271,12 @@ def compile_all(max_workers=None):
         for res in pool.map(compile_post, INPUTS):
             move(res, 'html')
             move(res, 'png')
+
+            # TODO remove all empty dirs???
+            for root, dirs, files in os.walk(res, topdown=False):
+                if len(dirs) + len(files) == 0:
+                    Path(root).rmdir()
+
             remaining = list(res.iterdir())
             if len(remaining) > 0:
                 raise RuntimeError(f'remaining files: {remaining}')
@@ -288,3 +309,4 @@ if __name__ == '__main__':
 
 
 # TODO make sure to port todo stripping
+# TODO make urls relative?..
