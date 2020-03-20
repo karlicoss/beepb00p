@@ -246,7 +246,17 @@ def compile_all(max_workers=None):
             pass
 
 
+def clean():
+    import shutil
+    for f in output.iterdir():
+        if f.is_dir():
+            shutil.rmtree(f)
+        else:
+            f.unlink()
+
+
 def main():
+    clean()
     global TMP_DIR
     with TemporaryDirectory() as tdir:
         TMP_DIR = Path(tdir)
