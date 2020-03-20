@@ -2,6 +2,7 @@
 from pathlib import Path
 from functools import lru_cache, wraps
 from subprocess import check_call, run, check_output, PIPE
+import sys
 from tempfile import TemporaryDirectory
 
 from kython.klogging2 import LazyLogger
@@ -37,13 +38,32 @@ def compile_org(*, compile_script: Path, path: Path) -> str:
             ],
             input=path.read_bytes(),
             stdout=PIPE,
+            stderr=PIPE,
             check=True,
         )
-    # TODO filter out
-    # Can't guess python-indent-offset
-    # Code block evaluaation complete
-    # Loading ...
     out = res.stdout
+    err = res.stderr
+
+    # TODO filter this in emacs/compile-org?
+    filtered = []
+    for line in err.decode('utf8').splitlines():
+        if any(re.match(p, line) for p in [
+                "Created .* link",
+                r"Loading .*\.\.\.$",
+                "Can.t guess python.indent.offset",
+                "executing.*code block",
+                "Code block evaluation complete",
+                "Setting up indent",
+                "Indentation variables are",
+                "Indentation setup for shell",
+        ]):
+            continue
+        filtered.append(line)
+    if len(filtered) > 0:
+        err = '\n'.join(filtered)
+        print(err, file=sys.stderr)
+
+
     # TODO how to clean stale stuff that's not needed in output dir?
     # TODO output determined externally?
     # TODO some inputs
@@ -129,6 +149,7 @@ def compile_post(path: Path):
             compile_script=Path('misc/compile_org.py'),
             path=path,
         )
+        # TODO for org-mode, need to be able to stop here and emit whatever we compiled?
         post_t = template('templates/post.html')
         post = post_t.render(
             body=body,
