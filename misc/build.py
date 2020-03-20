@@ -108,6 +108,23 @@ def hakyll_to_jinja(body: str) -> str:
     return body
 
 
+def compile_post(path: Path):
+    suffix = path.suffix
+
+    if suffix == '.org':
+        compile_org(
+            compile_script=Path('misc/compile_org.py'),
+            path=path,
+        )
+    elif suffix == '.ipynb':
+        # TODO make a mode to export to python?
+        compile_ipynb(
+            compile_script=Path('misc/compile-ipynb'),
+            path=path,
+        )
+    else:
+        raise RuntimeError(path)
+
 from jinja2 import Environment, BaseLoader, Template # type: ignore
 # TODO ugh. can't be multithreaded?
 env = Environment(loader=BaseLoader())
@@ -128,32 +145,22 @@ def compile_template(*, path: Path):
     print(t.render())
 
 
-def compile_post(path: Path):
-    suffix = path.suffix
-
-    if suffix == '.org':
-        compile_org(
-            compile_script=Path('misc/compile_org.py'),
-            path=path,
-        )
-    elif suffix == '.ipynb':
-        # TODO make a mode to export to python?
-        compile_ipynb(
-            compile_script=Path('misc/compile-ipynb'),
-            path=path,
-        )
-    elif path.parts[-2] == 'templates':
-        compile_template(path=path)
-    else:
-        raise RuntimeError(path)
-
 
 def compile_templates():
-    for p in [
-            'templates/isso.html',
-            'templates/post.html',
-    ]:
-        compile_template(path=Path(p))
+    inputs = Path('templates')
+    outputs = output / 'templates'
+    outputs.mkdir(exist_ok=True)
+
+    for t in inputs.glob('*.html'):
+        out = outputs / t.name
+        body = hakyll_to_jinja(t.read_text())
+        out.write_text(body)
+
+
+    from jinja2 import FileSystemLoader # type: ignore
+    loader = FileSystemLoader(str(outputs))
+    print(loader)
+
 
 INPUTS = list(sorted({
     *content.glob('*.org'),
