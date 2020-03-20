@@ -4,6 +4,7 @@ from functools import lru_cache, wraps
 from subprocess import check_call, run, check_output, PIPE
 import sys
 from tempfile import TemporaryDirectory
+from typing import cast
 
 from kython.klogging2 import LazyLogger
 
@@ -20,33 +21,42 @@ cache = lambda f: lru_cache(1)(f)
 # TODO use threads? most of it is going to be io bound anyway
 
 
+# ok, functions are 'kinda pure'
+# not completely because of filesystem use, but mostly pure
+
+
+TMP_DIR: Path = cast(Path, None)
 
 output = Path('site2')
 # TODO not sure if should create it first?
 
 # TODO make emacs a bit quieter; do not display all the 'Loading' stuff
 # TODO needs to depend on compile_script and path
-def compile_org(*, compile_script: Path, path: Path) -> str:
-    # TODO add COMPILE_ORG to dependency?
-    with TemporaryDirectory() as tdir:
-        tpath = Path(tdir)
-        res = run(
-            [
-                compile_script,
-                '--output-dir', tdir,
-                # '--org',  # TODO
-            ],
-            input=path.read_bytes(),
-            stdout=PIPE,
-            stderr=PIPE,
-            check=True,
-        )
-    out = res.stdout
-    err = res.stderr
+# TODO add COMPILE_ORG to dependency?
+def compile_org(*, compile_script: Path, path: Path) -> Path:
+    name = path.name
+    d = TMP_DIR / name
+    d.mkdir()
+
+    res = run(
+        [
+            compile_script,
+            '--output-dir', d,
+            # '--org',  # TODO
+        ],
+        input=path.read_bytes(),
+        stdout=PIPE,
+        stderr=PIPE,
+        check=True,
+    )
+    out = res.stdout.decode('utf8')
+    (d / 'body').write_text(out)
+
+    err = res.stderr.decode('utf8')
 
     # TODO filter this in emacs/compile-org?
     filtered = []
-    for line in err.decode('utf8').splitlines():
+    for line in err.splitlines():
         if any(re.match(p, line) for p in [
                 "Created .* link",
                 r"Loading .*\.\.\.$",
@@ -67,7 +77,7 @@ def compile_org(*, compile_script: Path, path: Path) -> str:
     # TODO how to clean stale stuff that's not needed in output dir?
     # TODO output determined externally?
     # TODO some inputs
-    return out.decode('utf8')
+    return d
 
 
 content = Path('content')
@@ -140,25 +150,16 @@ def hakyll_to_jinja(body: str) -> str:
     return body
 
 
-def compile_post(path: Path):
+def compile_post(path: Path) -> Path:
     suffix = path.suffix
 
     # TODO FIMXE compile_org should return a temporary directory with 'stuff'?
+    outs: Path
     if suffix == '.org':
-        body = compile_org(
+        outs = compile_org(
             compile_script=Path('misc/compile_org.py'),
             path=path,
         )
-        # TODO for org-mode, need to be able to stop here and emit whatever we compiled?
-        post_t = template('templates/post.html')
-        post = post_t.render(
-            body=body,
-        )
-        full_t = template('templates/default.html')
-        full = full_t.render(
-            body=body,
-        )
-        # print(rendered)
     elif suffix == '.ipynb':
         # TODO make a mode to export to python?
         compile_ipynb(
@@ -167,6 +168,26 @@ def compile_post(path: Path):
         )
     else:
         raise RuntimeError(path)
+
+    body_file = outs / 'body'
+    body = (outs / 'body').read_text()
+
+    body_file.unlink()
+
+
+    # TODO for org-mode, need to be able to stop here and emit whatever we compiled?
+    post_t = template('templates/post.html')
+    post = post_t.render(
+        body=body,
+    )
+    full_t = template('templates/default.html')
+    full = full_t.render(
+        body=body,
+    )
+
+    (outs / 'body.html').write_text(body)
+
+    return outs
 
 
 from jinja2 import Template, Environment, FileSystemLoader # type: ignore
@@ -219,12 +240,16 @@ def compile_all(max_workers=None):
     from concurrent.futures import ThreadPoolExecutor
     with ThreadPoolExecutor(max_workers=max_workers) as pool:
         for res in pool.map(compile_post, INPUTS):
+            dbg('compiled %s: %s', res, list(sorted(res.iterdir())))
             # need to force the iterator
             pass
 
 
 def main():
-    compile_all()
+    global TMP_DIR
+    with TemporaryDirectory() as tdir:
+        TMP_DIR = Path(tdir)
+        compile_all()
 
 
 if __name__ == '__main__':
