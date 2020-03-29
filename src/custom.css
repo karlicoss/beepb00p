@@ -7,3 +7,13 @@ h1, h2 {
 :root {
     --content-max-width: 1200px;
 }
+
+/* TODO share style with blog?? */
+.timestamp {
+    color: grey;
+    font-family: monospace;
+    font-size: medium;
+
+    /* TODO not sure about block display... */
+    /* display: block; */
+}
