@@ -1,5 +1,7 @@
 (require 'org)
 (require 'subr-x)
+(require 's)
+(require 'dash)
 
 ; TODO fucking hell, it doesn't seem capable of resolving symlinks
 
@@ -61,9 +63,11 @@
    :input output
    :cwd exobrain/rootdir))
 
-
 (defun exobrain/md-org-make-tag-string (tags)
-  "WHATEVER!!")
+  (apply #'s-concat
+   (-map
+    (lambda (tag) (s-wrap tag "<span class='tag'>" "</span>"))
+    tags)))
 
 (defun exobrain/org-md-publish-to-md (orig-fun plist filename pub-dir)
   ;; fucking hell. I just hate elisp so much

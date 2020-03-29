@@ -17,3 +17,13 @@ h1, h2 {
     /* TODO not sure about block display... */
     /* display: block; */
 }
+
+
+
+.tag {
+    background-color: #eee;
+    font-family: monospace;
+    padding: 2px;
+    font-size: 80%;
+    font-weight: normal;
+}
