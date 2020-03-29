@@ -69,6 +69,17 @@
     (lambda (tag) (s-wrap tag "<span class='tag'>" "</span>"))
     tags)))
 
+
+;; fucking hell, it's defsubst https://www.gnu.org/software/emacs/manual/html_node/elisp/Inline-Functions.html
+;; that's why advice doesn't work
+;; I hate elisp.
+;; (advice-add #' org-element-property :around #'exobrain/md-org-element-property)
+
+; (defun exobrain/org-md-headline (orig headline contents info)
+;   (cl-letf (((symbol-function 'org-element-property) 'exobrain/md-org-element-property))
+;     (funcall orig headline contents info)))
+
+
 (defun exobrain/org-md-publish-to-md (orig-fun plist filename pub-dir)
   ;; fucking hell. I just hate elisp so much
   (cl-letf (((symbol-function 'org-make-tag-string) 'exobrain/md-org-make-tag-string))
