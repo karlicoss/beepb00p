@@ -80,7 +80,11 @@
 ;     (funcall orig headline contents info)))
 
 ;; TODO share with rest of the system..
-(setq exobrain/todo-keywords '("TODO" "START"))
+(setq exobrain/state-keywords
+      '(("TODO"   . "todo")
+        ("START"  . "todo") ;; TODO start??
+        ("DONE"   . "done")
+        ("CANCEL" . "cancel")))
 
 
 ;; TODO done keywords should be marked separately..
@@ -89,7 +93,10 @@
   (let* ((spl (s-split-up-to " " title 1))
          (fst (car spl))
          (snd (cadr spl))
-         (kwd (if (-contains? exobrain/todo-keywords fst) (s-wrap fst "<span class='todo'>" "</span>") fst))
+         (kwd (let ((cls (cdr (assoc fst exobrain/state-keywords))))
+                (if cls
+                    (format "<span class='state %s'>%s</span>" cls fst)
+                  fst)))
          (title (concat kwd " " snd)))
     (funcall orig style level title anchor tags)))
 

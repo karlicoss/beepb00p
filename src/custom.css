@@ -58,9 +58,20 @@ h1, h2 {
 }
 
 
-.todo {
+.state {
     display: inline-block;
-    width: 5ch;
+    width: 6ch;
     font-family: monospace;
+}
+
+.todo {
     color: red;
+}
+
+.done {
+    color: green;
+}
+
+.cancel {
+    color: purple;
 }
