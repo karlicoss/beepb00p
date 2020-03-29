@@ -38,6 +38,8 @@
 
 (require 'ox)
 (require 'ox-org)
+(require 'ox-md)
+
 (org-export-define-derived-backend
  'my-org 'org
  :translate-alist
@@ -58,6 +60,17 @@
    '("python3" "src/filter_org.py")
    :input output
    :cwd exobrain/rootdir))
+
+
+(defun exobrain/md-org-make-tag-string (tags)
+  "WHATEVER!!")
+
+(defun exobrain/org-md-publish-to-md (orig-fun plist filename pub-dir)
+  ;; fucking hell. I just hate elisp so much
+  (cl-letf (((symbol-function 'org-make-tag-string) 'exobrain/md-org-make-tag-string))
+    (funcall orig-fun plist filename pub-dir)))
+
+(advice-add #'org-md-publish-to-md :around #'exobrain/org-md-publish-to-md)
 
 
 (setq
@@ -97,7 +110,11 @@
     :base-extension "org"
     :publishing-directory ,exobrain/output-dir
     :recursive t
-    :publishing-function org-md-publish-to-md)))
+    :publishing-function org-md-publish-to-md
+
+    :with-tags          t
+    :with-todo-keywords t
+    :with-priority      t)))
 
     ; TODO????
 
