@@ -79,6 +79,21 @@
 ;   (cl-letf (((symbol-function 'org-element-property) 'exobrain/md-org-element-property))
 ;     (funcall orig headline contents info)))
 
+;; TODO share with rest of the system..
+(setq exobrain/todo-keywords '("TODO" "START"))
+
+
+;; TODO done keywords should be marked separately..
+(defun exobrain/org-md--headline-title (orig style level title &optional anchor tags)
+  ;; TODO todo keywords are at the very beginning? so should work?
+  (let* ((spl (s-split-up-to " " title 1))
+         (fst (car spl))
+         (snd (cadr spl))
+         (kwd (if (-contains? exobrain/todo-keywords fst) (s-wrap fst "<span class='todo'>" "</span>") fst))
+         (title (concat kwd " " snd)))
+    (funcall orig style level title anchor tags)))
+
+(advice-add #'org-md--headline-title :around #'exobrain/org-md--headline-title)
 
 (defun exobrain/org-md-publish-to-md (orig-fun plist filename pub-dir)
   ;; fucking hell. I just hate elisp so much

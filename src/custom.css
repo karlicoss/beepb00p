@@ -27,3 +27,11 @@ h1, h2 {
     font-size: 80%;
     font-weight: normal;
 }
+
+
+.todo {
+    display: inline-block;
+    width: 5ch;
+    font-family: monospace;
+    color: red;
+}
