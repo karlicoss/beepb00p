@@ -79,6 +79,7 @@
 
     :with-date nil
     :with-properties nil
+    :time-stamp-file nil
 
     ;; TODO not sure if should use final-output??
     :filter-body ,(cons #'exobrain/extra-filter org-export-filter-body-functions)

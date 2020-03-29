@@ -162,3 +162,6 @@ dmypy.json
 
 # JS/HTML outputs
 output
+
+# intermediate
+markdown
