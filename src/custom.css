@@ -21,6 +21,10 @@ html {
     font-family: "Source Serif Pro", serif;
 }
 
+:root {
+    --content-max-width: 1200px;
+}
+
 
 h1, h2 {
     padding: 0;
@@ -28,9 +32,10 @@ h1, h2 {
     font-weight: normal;
 }
 
-:root {
-    --content-max-width: 1200px;
-}
+/* Right, it's pretty annoying, mdbook outputs everything linearly*/
+/* e.g. <h2>, <p>, <ol> <h3> are all sharing same level in the hierarchy*/
+/* I'm gonna need some beautifulsoup to fixe that..
+ */
 
 /* TODO share style with blog?? */
 .timestamp {

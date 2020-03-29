@@ -156,3 +156,5 @@
 
 
 ;; TODO after intermediate, run santity check
+;;
+;;TODO for exobrain, makes sense to generate all ids automatically? just warn they aren't really stable
