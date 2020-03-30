@@ -56,6 +56,11 @@ def clean():
 
 
 def main():
+    import argparse
+    p = argparse.ArgumentParser()
+    p.add_argument('--iadd', action='store_true')
+    args = p.parse_args()
+
     clean()
 
     emacs(
@@ -81,6 +86,10 @@ def main():
 
     # TODO think about commit/push/deploy logic?
     ccall(['git', 'status'], cwd=public_dir)
+
+    if args.iadd:
+        ccall(['git', 'add', '-A', '--intent-to-add'], cwd=public_dir)
+        ccall(['git', 'add', '-p'], cwd=public_dir)
 
 
 if __name__ == '__main__':
