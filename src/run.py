@@ -58,7 +58,7 @@ def clean():
 def main():
     import argparse
     p = argparse.ArgumentParser()
-    p.add_argument('--iadd', action='store_true')
+    p.add_argument('--no-add', action='store_true')
     args = p.parse_args()
 
     clean()
@@ -77,6 +77,16 @@ def main():
     from check import check_org
     check_org(public_dir)
 
+    # TODO think about commit/push/deploy logic?
+    ccall(['git', 'status'], cwd=public_dir)
+
+    iadd = not args.no_add
+    if iadd:
+        ccall(['git', 'add', '-A', '--intent-to-add'], cwd=public_dir)
+        ccall(['git', 'add', '-p'], cwd=public_dir)
+
+        # TODO suggest to commit/push?
+
     # TODO use output_dir
     # mdbook doesn't like summary format so we fix it
     # TODO reorder index?
@@ -84,12 +94,6 @@ def main():
     # TODO clean first?
     ccall(['mdbook', 'build'])
 
-    # TODO think about commit/push/deploy logic?
-    ccall(['git', 'status'], cwd=public_dir)
-
-    if args.iadd:
-        ccall(['git', 'add', '-A', '--intent-to-add'], cwd=public_dir)
-        ccall(['git', 'add', '-p'], cwd=public_dir)
 
 
 if __name__ == '__main__':
