@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from pathlib import Path
 from subprocess import run
-from typing import Iterator
+from typing import Iterator, List
 
 
 class Failed(RuntimeError):
@@ -58,11 +58,21 @@ def check(path: Path) -> Iterator[Failed]:
             yield Failed((path, n.heading, found))
 
 
+def check_aux(path: Path) -> List[str]:
+    # helper for multiprocessing..
+    return list(map(str, check(path)))
+
+
 def check_org(path: Path):
     # TODO not sure about org?
-    for p in path.glob('**/*.org'):
-        for f in check(p):
-            raise f
+    org_files = list(sorted(path.glob('**/*.org')))
+
+    from concurrent.futures import ProcessPoolExecutor as Pool
+    with Pool() as pool:
+        for res in pool.map(check_aux, org_files):
+            for f in res:
+                # TODO collect errors, report once?
+                raise Failed(f)
 
 
 def main():
