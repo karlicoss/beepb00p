@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 from pathlib import Path
 from subprocess import run
+from typing import Iterator
+
+
+class Failed(RuntimeError):
+    pass
 
 
 # TODO !! implement a test for this (all of params)
@@ -14,17 +19,18 @@ def search(*args):
     if res.returncode == 1:
         return # ok, nothin is found
     else:
-        raise RuntimeError(res)
+        yield Failed(res)
 
 
-import orgparse
+import orgparse # type: ignore
 
-from checks import WORD_CHECKS
+from checks import WORD_CHECKS, TAG_CHECKS
 
-def check(path: Path):
+
+def check(path: Path) -> Iterator[Failed]:
     print(f"checking {path}")
     for x in WORD_CHECKS:
-        search(
+        yield from search(
             '--word-regexp',
             x,
             path,
@@ -42,13 +48,21 @@ def check(path: Path):
             'inactive_day',
         }
         d = {k: v for k, v in m.groupdict().items() if v is not None and k not in allowed}
-        assert len(d) == 0, (d, line)
+        if len(d) != 0:
+            yield Failed((d, line))
+
+    o = orgparse.loads(path.read_text())
+    for n in o:
+        found = n.tags.intersection(TAG_CHECKS)
+        if len(found) > 0:
+            yield Failed((path, n.heading, found))
 
 
 def check_org(path: Path):
     # TODO not sure about org?
-    for f in path.glob('**/*.org'):
-        check(f)
+    for p in path.glob('**/*.org'):
+        for f in check(p):
+            raise f
 
 
 def main():

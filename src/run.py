@@ -95,6 +95,7 @@ def main():
     ccall(['mdbook', 'build'])
 
 
-
 if __name__ == '__main__':
+    # TODO allow skipping?
+    check_call(['mypy', '--check-untyped', __file__])
     main()
