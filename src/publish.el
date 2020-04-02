@@ -82,7 +82,8 @@
 ;; TODO share with rest of the system..
 (setq exobrain/state-keywords
       '(("TODO"   . "todo")
-        ("START"  . "todo") ;; TODO start??
+        ("START"  . "todo") ;; TODO start?
+        ("STRT"   . "todo") ;; TODO start?
         ("DONE"   . "done")
         ("CANCEL" . "cancel")))
 
