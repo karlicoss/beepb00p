@@ -12,6 +12,11 @@ def test():
 :CREATED: [2019-12-22 Sun 19:03]
 :END:
 
+* xxx
+** TODO [#B] [2019-09-02 Mon 12:41] [[https://reddit.com/r/scifi/comments/cvy78o/searching_stories_with_super_intelligence_in/eyldzyb/][Searching stories with super intelligence in humans theme]] /r/scifi :read:
+  Love and recommend "Brainchild" just for this. Explores multiple different angles of what we call intelligence.
+
+  https://www.amazon.com/Brain-Child-Novel-George-Turner/dp/0688105955
     '''
     res = process(text)
 
@@ -23,30 +28,45 @@ def test():
 :CREATED: [2019-12-22 Sun 19:03]
 :END:
 
-    '''
+* xxx
+** TODO [#B] [2019-09-02 Mon 12:41] [[https://reddit.com/r/scifi/comments/cvy78o/searching_stories_with_super_intelligence_in/eyldzyb/][Searching stories with super intelligence in humans theme]] /r/scifi :read:
+  Love and recommend "Brainchild" just for this. Explores multiple different angles of what we call intelligence.
 
+  https://www.amazon.com/Brain-Child-Novel-George-Turner/dp/0688105955
+    '''
+    # print(repr(exp))
+    # print(repr(res))
+
+    # for x, y in zip(exp, res):
+    #     if x != y:
+    #         print(x, y)
     assert res == exp
 
 
+import orgparse
+tre = orgparse.date.gene_timestamp_regex('inactive')
+
 def process(text: str) -> str:
-    # breakpoint()
-    # TODO start with entries that contain date only?
     replacements = []
     pos = 0
     while True:
-        # TODO go to the next line??
-        hre = r'] (?P<heading>[^\]]*?)\s*(:(\w+:)+)?\s*'
-        lre = r'\w*(?P<url>http[^\s]+)'
-        m = re.search(hre + lre, text[pos:], re.MULTILINE)
-        if m is None:
+        # eh. will handle rest of them later somehow..
+        hre = tre + r'\s(?P<heading>[^\]]*?)\s*(:(\w+:)+)?\s*\n'
+        lre = r'\s*(?P<url>http[^\s]+)'
+        rrr = re.compile(hre + lre, re.VERBOSE)
+        hm = rrr.search(text[pos:])  #, re.MULTILINE)
+        if hm is None:
             break
-        # gd = m.groupdict()
-        h, hs, he = m.group('heading'), m.start('heading'), m.end('heading')
-        u, us, ue = m.group('url')    , m.start('url')    , m.end('url')
+
+        um = hm
+
+        h, hs, he = hm.group('heading'), hm.start('heading'), hm.end('heading')
+        u, us, ue = um.group('url')    , um.start('url')    , um.end('url')
 
         replacements.append((pos + hs, pos + he, f'[[{u}][{h}]]'))
         replacements.append((pos + us, pos + ue, ''))
-        pos += m.end()
+        pos += hm.end()
+
     delta = 0
     for s, e, r in replacements:
         # TODO ugh. a bit horrible..
@@ -74,7 +94,7 @@ def main():
         patched = tdir / 'res.org'
         patched.write_text(res)
         from subprocess import run, check_call
-        check_call(['vimdiff', path, patched])
+        run(['git', 'diff', path, patched])
 
         from kython.tui import yesno_or_fail
         yesno_or_fail('patch?')
