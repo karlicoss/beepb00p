@@ -17,6 +17,22 @@ def test():
   Love and recommend "Brainchild" just for this. Explores multiple different angles of what we call intelligence.
 
   https://www.amazon.com/Brain-Child-Novel-George-Turner/dp/0688105955
+
+** TODO [#C] xxx :me:blog:exobrain:
+:PROPERTIES:
+:CREATED: [2018-11-23 Fri 09:29]
+:END:
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2018-11-24 Sat 15:50]
+:END:
+https://github.com/karlicoss/my-awesome-list
+
+* TODO [#B] [2020-02-14 Fri 09:25] Building a Second Brain in Roam...And Why You Might Want To : RoamResearch :blog:exobrain:
+:PROPERTIES:
+:ID:       600e2919-7ba5-4dbe-85d5-4e4c642b3cc1
+:END:
+https://www.reddit.com/r/RoamResearch/comments/eho7de/building_a_second_brain_in_roamand_why_you_might
+
     '''
     res = process(text)
 
@@ -33,9 +49,26 @@ def test():
   Love and recommend "Brainchild" just for this. Explores multiple different angles of what we call intelligence.
 
   https://www.amazon.com/Brain-Child-Novel-George-Turner/dp/0688105955
+
+** TODO [#C] xxx :me:blog:exobrain:
+:PROPERTIES:
+:CREATED: [2018-11-23 Fri 09:29]
+:END:
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2018-11-24 Sat 15:50]
+:END:
+https://github.com/karlicoss/my-awesome-list
+
+* TODO [#B] [2020-02-14 Fri 09:25] Building a Second Brain in Roam...And Why You Might Want To : RoamResearch :blog:exobrain:
+:PROPERTIES:
+:ID:       600e2919-7ba5-4dbe-85d5-4e4c642b3cc1
+:END:
+https://www.reddit.com/r/RoamResearch/comments/eho7de/building_a_second_brain_in_roamand_why_you_might
+
     '''
-    # print(repr(exp))
-    # print(repr(res))
+    print(res)
+    print(repr(exp))
+    print(repr(res))
 
     # for x, y in zip(exp, res):
     #     if x != y:
@@ -51,7 +84,9 @@ def process(text: str) -> str:
     pos = 0
     while True:
         # eh. will handle rest of them later somehow..
-        hre = tre + r'\s(?P<heading>[^\]]*?)\s*(:(\w+:)+)?\s*\n'
+        # VERBOSE because of orgparse regex
+        # whitespace in character class because of VERBOSE
+        hre = r'\*.*' + tre + r'[ ](?P<heading>[^\]\n]*?)[ ]*(:(\w+:)+)?[ ]*\n'
         lre = r'\s*(?P<url>http[^\s]+)'
         rrr = re.compile(hre + lre, re.VERBOSE)
         hm = rrr.search(text[pos:])  #, re.MULTILINE)
@@ -59,6 +94,7 @@ def process(text: str) -> str:
             break
 
         um = hm
+        print(um.groupdict())
 
         h, hs, he = hm.group('heading'), hm.start('heading'), hm.end('heading')
         u, us, ue = um.group('url')    , um.start('url')    , um.end('url')
@@ -97,10 +133,9 @@ def main():
         run(['git', 'diff', path, patched])
 
         from kython.tui import yesno_or_fail
-        yesno_or_fail('patch?')
-
-        import shutil
-        shutil.copy(patched, path)
+        if yesno_or_fail('patch?'):
+            import shutil
+            shutil.copy(patched, path)
 
 
 
