@@ -142,6 +142,13 @@
     ; :index-filename "sitemap.org"
     ; :index-title "Sitemap"
 
+    :with-todo-keywords t
+    :with-tags          t
+
+    ;; TODO want to exclude certain tags from displaying in export
+    ;; not sure if that's possible without patching org-mode functions :(
+    ;; :exclude-tags       ("gr" "graspw")
+
     :exclude "org.org") ;; TODO ??
    ("exobrain"
     :base-directory ,exobrain/public-dir
