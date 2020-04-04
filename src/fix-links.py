@@ -67,7 +67,21 @@ def main():
     path = args.file
     text = path.read_text()
     res = process(text)
-    print(res)
+    import tempfile
+
+    with tempfile.TemporaryDirectory() as td:
+        tdir = Path(td)
+        patched = tdir / 'res.org'
+        patched.write_text(res)
+        from subprocess import run, check_call
+        check_call(['vimdiff', path, patched])
+
+        from kython.tui import yesno_or_fail
+        yesno_or_fail('patch?')
+
+        import shutil
+        shutil.copy(patched, path)
+
 
 
 if __name__ == '__main__':
