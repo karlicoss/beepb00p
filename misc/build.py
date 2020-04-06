@@ -182,6 +182,8 @@ def compile_post(path: Path) -> Path:
 
     suffix = path.suffix
 
+    meta = metadata(apath)
+
     ctx: Dict[str, Any] = {}
     #
     # TODO where to extract URL from
@@ -218,9 +220,12 @@ def compile_post(path: Path) -> Path:
         if upids is not None:
             ctx['issoid'] = 'isso_' + the(upids)
 
-        dates = fprops.get('DATE')
-        if dates is not None:
-            ctx['date'] = the(dates)
+        # dates = fprops.get('DATE')
+        # if dates is not None:
+        #     ctx['date'] = the(dates)
+        from datetime import datetime
+        date = datetime.strptime(meta['date'], '%b %d, %Y').strftime('%d %b %Y')
+        ctx['date'] = date
 
         # TODO filetags?
 
