@@ -6,7 +6,7 @@ from subprocess import check_call, run, check_output, PIPE
 import shutil
 import sys
 from tempfile import TemporaryDirectory
-from typing import cast, Dict, Any
+from typing import cast, Dict, Any, List
 
 from kython.klogging2 import LazyLogger
 
@@ -93,7 +93,7 @@ content = Path('content')
 
 
 from typing import Dict
-Meta = Dict[str, str]
+Meta = Dict[str, Any]
 
 
 
@@ -153,6 +153,9 @@ def hakyll_to_jinja(body: str) -> str:
         ('$body$">#$body$</a>$sep$ ',
          '{{ item.body }}">#{{ item.body }}</a> {{ item.sep }}'),
 
+        ('$url$">$title$',
+         '{{ item.url }}">{{ item.title }}'),
+
         ('$endfor$' , '{% endfor %}'   ),
         ('$partial(', '{% include '    ),
         (')$'       , ' %}'            ),
@@ -188,7 +191,18 @@ def compile_post(path: Path) -> Path:
     #
     # TODO where to extract URL from
     ctx['url'] = '/' + str(path.with_suffix('.html'))
-    ctx['tags'] = [{'body': 'art', 'sep': ''}]
+
+    # TODO FIXME check_ids??
+    pb: List[str] = meta.get('pingback', [])
+    # TODO meh
+    pingback = [{
+        'title': x.split()[0],
+        'url'  : x.split()[1],
+    } for x in pb]
+
+    # TODO need to be raw??
+    ctx['pingback'] = pingback
+
 
     # TODO FIMXE compile_org should return a temporary directory with 'stuff'?
     outs: Path
@@ -224,10 +238,15 @@ def compile_post(path: Path) -> Path:
         # if dates is not None:
         #     ctx['date'] = the(dates)
         from datetime import datetime
-        date = datetime.strptime(meta['date'], '%b %d, %Y').strftime('%d %b %Y')
+        dates = meta['date']
+        date = datetime.strptime(dates, '%B %d, %Y').strftime('%d %B %Y')
         ctx['date'] = date
 
-        # TODO filetags?
+        ftagss = fprops.get('FILETAGS')
+        if ftagss is not None:
+            ftags = the(ftagss)
+            tags = list(x for x in ftags.split(':') if len(x) > 0)
+            ctx['tags'] = [{'body': tag, 'sep': '' if i == len(tags) - 1 else ' '} for i, tag in enumerate(tags)]
 
     elif suffix == '.ipynb':
         # TODO make a mode to export to python?
@@ -239,7 +258,8 @@ def compile_post(path: Path) -> Path:
     else:
         raise RuntimeError(apath)
 
-    assert ctx['title'] is not None
+    assert ctx['title'] is not None, ctx
+    assert ctx['date']  is not None, ctx
 
     body_file = outs / 'body'
     body = (outs / 'body').read_text()
@@ -325,7 +345,8 @@ def templates():
 
 
 INPUTS = list(sorted({
-    Path('contemp-art.org'),
+    # Path('configs-suck.org'),
+    Path('annotating.org'),
     # content / 'myinfra.org',
     # *content.glob('*.org'),
     # content / 'wave.ipynb',
