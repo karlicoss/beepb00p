@@ -162,6 +162,13 @@ def hakyll_to_jinja(body: str) -> str:
 # TODO not sure how metadata should be handled... does every post really have
 # TODO if we use templates in python (as f-strings), they can be statically checked..
 
+def the(things):
+    ss = set(things)
+    assert len(ss) == 1, ss
+    [x] = ss
+    return x
+
+
 def compile_post(path: Path) -> Path:
     assert not path.is_absolute(), path
     apath = content / path
@@ -169,6 +176,10 @@ def compile_post(path: Path) -> Path:
     suffix = path.suffix
 
     ctx: Dict[str, Any] = {}
+    #
+    # TODO where to extract URL from
+    ctx['url'] = '/' + str(path.with_suffix('.html'))
+    # ctx['tags'] = [{'body': 'art', 'sep': ''}]
 
     # TODO FIMXE compile_org should return a temporary directory with 'stuff'?
     outs: Path
@@ -178,6 +189,28 @@ def compile_post(path: Path) -> Path:
             path=apath,
         )
         ctx['style_org'] = True
+
+        import orgparse # type: ignore
+        o = orgparse.loads(apath.read_text())
+        # TODO need to make public?? also can remove from porg then..
+        fprops = o._special_comments
+
+        print(fprops)
+
+        ttls = fprops.get('TITLE')
+        if ttls is not None:
+            ctx['title'] = the(ttls)
+
+        summs = fprops.get('SUMMARY')
+        if summs is not None:
+            ctx['summary'] = the(summs)
+
+        upids = fprops.get('UPID')
+        if upids is not None:
+            ctx['issoid'] = 'isso_' + the(upids)
+
+        # TODO filetags?
+
     elif suffix == '.ipynb':
         # TODO make a mode to export to python?
         outs = compile_ipynb(
@@ -188,11 +221,7 @@ def compile_post(path: Path) -> Path:
     else:
         raise RuntimeError(apath)
 
-    ctx['title'] = 'Org-mode sandbox'
-    # TODO where to extract URL from
-    ctx['url'] = '/sandbox/test.html'
-    ctx['issoid'] = 'isso_org-sandbox'
-    # ctx['tags'] = [{'body': '', 'sep': ''}]
+    assert ctx['title'] is not None
 
     body_file = outs / 'body'
     body = (outs / 'body').read_text()
@@ -212,9 +241,8 @@ def compile_post(path: Path) -> Path:
     )
 
     # relativize urls
-    # rel =
     depth = len(path.parts)
-    rel = '' if depth == 1 else '.' * depth
+    rel = '.' * depth
     from bs4 import BeautifulSoup as bs # type: ignore
     soup = bs(full, 'html5lib')  # TODO lxml parser?
     from itertools import chain
@@ -284,12 +312,12 @@ def templates():
 
 
 INPUTS = list(sorted({
-    # content / 'contemp-art.org',
+    Path('contemp-art.org'),
     # content / 'myinfra.org',
     # *content.glob('*.org'),
     # content / 'wave.ipynb',
     # content / 'contemp-art.org',
-    Path('sandbox/test.org'),
+    # Path('sandbox/test.org'),
     # *content.glob('*.ipynb'),
 }))
 
@@ -317,11 +345,10 @@ def compile_all(max_workers=None):
                 if len(dirs) + len(files) == 0:
                     Path(root).rmdir()
 
-            remaining = list(res.iterdir())
-            if len(remaining) > 0:
-                raise RuntimeError(f'remaining files: {remaining}')
-            # need to force the iterator
-            pass
+            if res.exists():
+                remaining = list(res.iterdir())
+                if len(remaining) > 0:
+                    raise RuntimeError(f'remaining files: {remaining}')
 
 
 def clean():
