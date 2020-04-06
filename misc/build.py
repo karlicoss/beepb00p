@@ -6,7 +6,7 @@ from subprocess import check_call, run, check_output, PIPE
 import shutil
 import sys
 from tempfile import TemporaryDirectory
-from typing import cast
+from typing import cast, Dict, Any
 
 from kython.klogging2 import LazyLogger
 
@@ -168,7 +168,7 @@ def compile_post(path: Path) -> Path:
 
     suffix = path.suffix
 
-    ctx = {}
+    ctx: Dict[str, Any] = {}
 
     # TODO FIMXE compile_org should return a temporary directory with 'stuff'?
     outs: Path
@@ -188,11 +188,16 @@ def compile_post(path: Path) -> Path:
     else:
         raise RuntimeError(apath)
 
+    ctx['title'] = 'Org-mode sandbox'
+    # TODO where to extract URL from
+    ctx['url'] = '/sandbox/test.html'
+    ctx['issoid'] = 'isso_org-sandbox'
+    # ctx['tags'] = [{'body': '', 'sep': ''}]
+
     body_file = outs / 'body'
     body = (outs / 'body').read_text()
 
     body_file.unlink()
-
 
     # TODO for org-mode, need to be able to stop here and emit whatever we compiled?
     post_t = template('templates/post.html')
@@ -203,7 +208,31 @@ def compile_post(path: Path) -> Path:
     full_t = template('templates/default.html')
     full = full_t.render(
         body=post,
+        **ctx,
     )
+
+    # relativize urls
+    # rel =
+    depth = len(path.parts)
+    rel = '' if depth == 1 else '.' * depth
+    from bs4 import BeautifulSoup as bs # type: ignore
+    soup = bs(full, 'html5lib')  # TODO lxml parser?
+    from itertools import chain
+    # a bit meh..
+    for a in chain(soup.findAll('a'), soup.findAll('link')):
+        href = a.get('href', None)
+        if href is None:
+            continue
+        if href.startswith('/'):
+            a['href'] = rel + href
+    full = soup.prettify()
+    #
+
+    loc = '<meta content="English" name="language"/>'
+    kwd = '<meta content="" name="keywords">'
+    assert loc in full, full
+    full = full.replace(loc, loc + kwd) # meh!
+
 
     opath = outs / path.with_suffix('.html')
     opath.parent.mkdir(exist_ok=True)
@@ -266,8 +295,6 @@ INPUTS = list(sorted({
 
 
 def compile_all(max_workers=None):
-
-
     def move(from_: Path, ext: str):
         for f in from_.rglob('*.' + ext):
             dbg('merging %s', f)
