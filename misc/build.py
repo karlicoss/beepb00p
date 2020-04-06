@@ -156,6 +156,9 @@ def hakyll_to_jinja(body: str) -> str:
         ('$url$">$title$',
          '{{ item.url }}">{{ item.title }}'),
 
+        ("inlineMath: [ ['$$','$$']",
+         "inlineMath: [ ['$','$']"),
+
         ('$endfor$' , '{% endfor %}'   ),
         ('$partial(', '{% include '    ),
         (')$'       , ' %}'            ),
@@ -218,12 +221,28 @@ def compile_post(path: Path) -> Path:
             return
         ctx['tags'] = [{'body': tag, 'sep': '' if i == len(tags) - 1 else ' '} for i, tag in enumerate(tags)]
 
+    def set_title(title: Optional[str]):
+        if title is None:
+            return
+        ctx['title'] = title
 
+    from datetime import datetime
+    def set_date(dates: Optional[str]):
+        if dates is None:
+            return
+        date = datetime.strptime(dates, '%B %d, %Y').strftime('%d %B %Y')
+        ctx['date'] = date
+
+
+    set_title  (meta.get('title'))
     set_issoid (meta.get('upid'))
     set_summary(meta.get('summary'))
     set_tags   (meta.get('tags'))
+    set_date   (meta.get('date'))
 
     ctx['type_special'] = meta.get('special', False)
+    ctx['is_stable'] = True
+    ctx['draft'] = meta.get('draft')
 
     # TODO FIMXE compile_org should return a temporary directory with 'stuff'?
     outs: Path
@@ -233,7 +252,6 @@ def compile_post(path: Path) -> Path:
             path=apath,
         )
         ctx['style_org'] = True
-        ctx['is_stable'] = True
 
         import orgparse # type: ignore
         o = orgparse.loads(apath.read_text())
@@ -244,7 +262,7 @@ def compile_post(path: Path) -> Path:
 
         ttls = fprops.get('TITLE')
         if ttls is not None:
-            ctx['title'] = the(ttls)
+            set_title(the(ttls))
 
         summs = fprops.get('SUMMARY')
         if summs is not None:
@@ -253,14 +271,6 @@ def compile_post(path: Path) -> Path:
         upids = fprops.get('UPID')
         if upids is not None:
             set_issoid(the(upids))
-
-        # dates = fprops.get('DATE')
-        # if dates is not None:
-        #     ctx['date'] = the(dates)
-        from datetime import datetime
-        dates = meta['date']
-        date = datetime.strptime(dates, '%B %d, %Y').strftime('%d %B %Y')
-        ctx['date'] = date
 
         ftagss = fprops.get('FILETAGS')
         if ftagss is not None:
@@ -275,11 +285,13 @@ def compile_post(path: Path) -> Path:
             path=apath,
         )
         ctx['style_ipynb'] = True
+
+        ctx['has_math']     = meta.get('has_math'    , False)
+        ctx['allow_errors'] = meta.get('allow_errors', False)
     else:
         raise RuntimeError(apath)
 
     assert ctx['title'] is not None, ctx
-    assert ctx['date']  is not None, ctx
 
     body_file = outs / 'body'
     body = (outs / 'body').read_text()
@@ -368,12 +380,13 @@ INPUTS = list(sorted({
     # Path('configs-suck.org'),
     # Path('exports.org'),
     # Path('scrapyroo.org'),
-    Path('tags.org'),
+    # Path('tags.org'),
     # content / 'myinfra.org',
     # *content.glob('*.org'),
-    # content / 'wave.ipynb',
+    Path('wave.ipynb'),
     # content / 'contemp-art.org',
     # Path('sandbox/test.org'),
+    # Path('sandbox/testipython.ipynb'),
     # *content.glob('*.ipynb'),
 }))
 
@@ -398,11 +411,13 @@ def compile_all(max_workers=None):
 
             # TODO remove all empty dirs???
             for root, dirs, files in os.walk(res, topdown=False):
-                if len(dirs) + len(files) == 0:
-                    Path(root).rmdir()
+                if len(files) == 0:
+                    for d in dirs:
+                        dd = (Path(root) / d)
+                        dd.rmdir()
 
             if res.exists():
-                remaining = list(res.iterdir())
+                remaining = list(res.rglob('*'))
                 if len(remaining) > 0:
                     raise RuntimeError(f'remaining files: {remaining}')
 
