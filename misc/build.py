@@ -144,8 +144,15 @@ import re
 def hakyll_to_jinja(body: str) -> str:
     replacements = [
         ('$if('     , '{% if '         ),
+        ('$else$'   , '{% else %}'     ),
         ('$endif$'  , '{% endif %}'    ),
         ('$for('    , '{% for item in '),
+        # meh.
+        ('$body$$sep$ '    ,
+         '{{ item.body }}{{ item.sep }}'),
+        ('$body$">#$body$</a>$sep$ ',
+         '{{ item.body }}">#{{ item.body }}</a> {{ item.sep }}'),
+
         ('$endfor$' , '{% endfor %}'   ),
         ('$partial(', '{% include '    ),
         (')$'       , ' %}'            ),
@@ -179,7 +186,7 @@ def compile_post(path: Path) -> Path:
     #
     # TODO where to extract URL from
     ctx['url'] = '/' + str(path.with_suffix('.html'))
-    # ctx['tags'] = [{'body': 'art', 'sep': ''}]
+    ctx['tags'] = [{'body': 'art', 'sep': ''}]
 
     # TODO FIMXE compile_org should return a temporary directory with 'stuff'?
     outs: Path
@@ -189,13 +196,15 @@ def compile_post(path: Path) -> Path:
             path=apath,
         )
         ctx['style_org'] = True
+        ctx['type_special'] = False
+        ctx['is_stable'] = True
 
         import orgparse # type: ignore
         o = orgparse.loads(apath.read_text())
         # TODO need to make public?? also can remove from porg then..
         fprops = o._special_comments
 
-        print(fprops)
+        # print(fprops)
 
         ttls = fprops.get('TITLE')
         if ttls is not None:
@@ -208,6 +217,10 @@ def compile_post(path: Path) -> Path:
         upids = fprops.get('UPID')
         if upids is not None:
             ctx['issoid'] = 'isso_' + the(upids)
+
+        dates = fprops.get('DATE')
+        if dates is not None:
+            ctx['date'] = the(dates)
 
         # TODO filetags?
 
@@ -255,11 +268,6 @@ def compile_post(path: Path) -> Path:
             a['href'] = rel + href
     full = soup.prettify()
     #
-
-    loc = '<meta content="English" name="language"/>'
-    kwd = '<meta content="" name="keywords">'
-    assert loc in full, full
-    full = full.replace(loc, loc + kwd) # meh!
 
 
     opath = outs / path.with_suffix('.html')
