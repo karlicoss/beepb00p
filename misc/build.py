@@ -6,7 +6,7 @@ from subprocess import check_call, run, check_output, PIPE
 import shutil
 import sys
 from tempfile import TemporaryDirectory
-from typing import cast, Dict, Any, List
+from typing import cast, Dict, Any, List, Optional
 
 from kython.klogging2 import LazyLogger
 
@@ -203,6 +203,25 @@ def compile_post(path: Path) -> Path:
     # TODO need to be raw??
     ctx['pingback'] = pingback
 
+    def set_issoid(upid: Optional[str]):
+        if upid is None:
+            return
+        ctx['issoid'] = f'isso_{upid}'
+
+    def set_summary(summ: Optional[str]):
+        if summ is None:
+            return
+        ctx['summary'] = summ
+
+    def set_tags(tags: Optional[List[str]]):
+        if tags is None:
+            return
+        ctx['tags'] = [{'body': tag, 'sep': '' if i == len(tags) - 1 else ' '} for i, tag in enumerate(tags)]
+
+
+    set_issoid (meta.get('upid'))
+    set_summary(meta.get('summary'))
+    set_tags   (meta.get('tags'))
 
     # TODO FIMXE compile_org should return a temporary directory with 'stuff'?
     outs: Path
@@ -228,11 +247,11 @@ def compile_post(path: Path) -> Path:
 
         summs = fprops.get('SUMMARY')
         if summs is not None:
-            ctx['summary'] = the(summs)
+            set_summary(the(summs))
 
         upids = fprops.get('UPID')
         if upids is not None:
-            ctx['issoid'] = 'isso_' + the(upids)
+            set_issoid(the(upids))
 
         # dates = fprops.get('DATE')
         # if dates is not None:
@@ -246,7 +265,7 @@ def compile_post(path: Path) -> Path:
         if ftagss is not None:
             ftags = the(ftagss)
             tags = list(x for x in ftags.split(':') if len(x) > 0)
-            ctx['tags'] = [{'body': tag, 'sep': '' if i == len(tags) - 1 else ' '} for i, tag in enumerate(tags)]
+            set_tags(tags)
 
     elif suffix == '.ipynb':
         # TODO make a mode to export to python?
@@ -346,7 +365,8 @@ def templates():
 
 INPUTS = list(sorted({
     # Path('configs-suck.org'),
-    Path('annotating.org'),
+    Path('exports.org'),
+    # Path('scrapyroo.org'),
     # content / 'myinfra.org',
     # *content.glob('*.org'),
     # content / 'wave.ipynb',
