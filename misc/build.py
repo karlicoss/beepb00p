@@ -223,6 +223,8 @@ def compile_post(path: Path) -> Path:
     set_summary(meta.get('summary'))
     set_tags   (meta.get('tags'))
 
+    ctx['type_special'] = meta.get('special', False)
+
     # TODO FIMXE compile_org should return a temporary directory with 'stuff'?
     outs: Path
     if suffix == '.org':
@@ -231,7 +233,6 @@ def compile_post(path: Path) -> Path:
             path=apath,
         )
         ctx['style_org'] = True
-        ctx['type_special'] = False
         ctx['is_stable'] = True
 
         import orgparse # type: ignore
@@ -365,8 +366,9 @@ def templates():
 
 INPUTS = list(sorted({
     # Path('configs-suck.org'),
-    Path('exports.org'),
+    # Path('exports.org'),
     # Path('scrapyroo.org'),
+    Path('tags.org'),
     # content / 'myinfra.org',
     # *content.glob('*.org'),
     # content / 'wave.ipynb',
