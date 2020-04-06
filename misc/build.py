@@ -183,6 +183,13 @@ def the(things):
 
 
 def compile_post(path: Path) -> Path:
+    try:
+        return _compile_post(path)
+    except Exception as e:
+        raise RuntimeError(f'While compiling {path}') from e
+
+
+def _compile_post(path: Path) -> Path:
     assert not path.is_absolute(), path
     apath = content / path
 
@@ -375,15 +382,23 @@ def templates():
     )
     return env
 
+from itertools import chain
 
 INPUTS = list(sorted({
+    # TODO use glob here; think how to handle drafts?
+    *[c.relative_to(content) for c in chain(
+        # TODO md??
+        content.glob('*.org'),
+        content.glob('*.ipynb'),
+    )],
     # Path('configs-suck.org'),
     # Path('exports.org'),
     # Path('scrapyroo.org'),
     # Path('tags.org'),
     # content / 'myinfra.org',
     # *content.glob('*.org'),
-    Path('wave.ipynb'),
+    # Path('wave.ipynb'),
+    # Path('ipynb-singleline.ipynb'),
     # content / 'contemp-art.org',
     # Path('sandbox/test.org'),
     # Path('sandbox/testipython.ipynb'),
