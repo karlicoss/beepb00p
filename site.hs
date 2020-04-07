@@ -143,8 +143,9 @@ main = do
     doAll doPost      "content/meta/**"
     doAll doPost      "content/sandbox/*"
     doAll doPost      "content/generated/*"
-    -- TODO this should be merged together with posts?
-    doAll doDraft     "content/drafts/*"
+
+    -- disabled for now, will do smth smarter about them later...
+    -- doAll doDraft     "content/drafts/*"
 
 
 -- TODO in org mode files, date should be present
