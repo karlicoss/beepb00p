@@ -509,13 +509,26 @@ def compile_all(max_workers=None):
         top.parent.mkdir(exist_ok=True, parents=True)
         shutil.copy(from_, top)
 
+    from glob import glob
 
-    copy(ROOT / 'meta/robots.txt', 'robots.txt')
+    # TODO fuck. doesn't follow symlinks...
+    copy(ROOT / 'meta/robots.txt'    , 'robots.txt')
+    copy(ROOT / 'meta/robot-face.png', 'robot-face.png')
     for f in (ROOT / 'css').rglob('*.css'):
         copy(f, f.relative_to(ROOT))
     for f in (ROOT / 'images').rglob('*.svg'):
         copy(f, f.relative_to(ROOT))
+    # eh. apparently glob(recursive=True) always follows symlinks??
+    for p in chain.from_iterable(glob(f'{content}/**/*.{x}', recursive=True) for x in ('jpg', 'svg', 'png')):
+        f = Path(p)
+        copy(f, f.relative_to(content))
 
+    # TODO atom
+    # TODO drafts page
+    # TODO index page
+    # TODO rss
+    #
+    # TODO test.png shoud go in sandbox??
 
     from concurrent.futures import ThreadPoolExecutor
     with ThreadPoolExecutor(max_workers=max_workers) as pool:
