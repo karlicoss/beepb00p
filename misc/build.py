@@ -235,6 +235,12 @@ def _compile_post(path: Path) -> Path:
         pmeta = pandoc_meta(apath)
         meta.update(**pmeta)
 
+    hpath = meta.get('html_path')
+    if hpath is None:
+        path = path.with_suffix('.html')
+    else:
+        path = Path(hpath)
+
     ctx: Dict[str, Any] = {}
     #
     # TODO where to extract URL from
@@ -374,8 +380,14 @@ def _compile_post(path: Path) -> Path:
     full = soup.prettify()
     #
 
+    #
+    if 'name="keywords"' not in full:
+        loc = '<meta content="English" name="language"/>'
+        assert loc in full, full
+        full = full.replace(loc, loc + '\n' + '<meta name="keywords" content>')
 
-    opath = outs / path.with_suffix('.html')
+
+    opath = outs / path
     opath.parent.mkdir(exist_ok=True)
     opath.write_text(full)
 
