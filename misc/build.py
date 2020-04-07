@@ -158,11 +158,14 @@ def compile_ipynb(*, compile_script: Path, path: Path) -> Path:
     allow_errors = meta.get('allow_errors', False)
 
     # meh
-    itemid = path.absolute().relative_to(content.absolute().parent)
+    # itemid = path.absolute().relative_to(content.absolute().parent)
+    itemid = 'content/' + path.name
+    # TODO meeeeeh.
     res = run(
         [
             compile_script,
             '--output-dir', d,
+            # TODO do we need it??
             '--item', str(itemid),
             *(['--allow-errors'] if allow_errors else []),
         ],
@@ -354,17 +357,22 @@ def _compile_post(path: Path) -> Path:
 
     assert ctx['title'] is not None, ctx
 
+    # meh
+    check_call(['tree', outs])
+
     opath = outs / path
 
     if opath.parent != outs:
         # ugh. need to move hierarchy down to preserve relative paths..
-        outs_files = list(outs.rglob('*'))
+        outs_files = list(x for x in outs.rglob('*') if not x.is_dir())
+        log.debug("OUTS: %s", outs_files)
         for f in outs_files:
             r = f.relative_to(outs)
             to = opath.parent / r
             to.parent.mkdir(parents=True, exist_ok=True)
+            log.debug('moving %s %s', f, to)
             f.rename(to)
-
+            # TODO remove empty f.parent??
 
     body_file = opath.parent / 'body'
     body = body_file.read_text()
@@ -407,6 +415,9 @@ def _compile_post(path: Path) -> Path:
     opath.parent.mkdir(exist_ok=True)
     # TODO might need to move everything into the same dir??
     opath.write_text(full)
+
+    check_call(['tree', outs])
+
 
     return outs
 
