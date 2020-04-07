@@ -6,7 +6,7 @@ from subprocess import check_call, run, check_output, PIPE
 import shutil
 import sys
 from tempfile import TemporaryDirectory
-from typing import cast, Dict, Any, List, Optional
+from typing import cast, Dict, Any, List, Optional, Union
 
 from kython.klogging2 import LazyLogger
 
@@ -26,6 +26,7 @@ cache = lambda f: lru_cache(1)(f)
 # ok, functions are 'kinda pure'
 # not completely because of filesystem use, but mostly pure
 
+PathIsh = Union[Path, str]
 
 TMP_DIR: Path = cast(Path, None)
 
@@ -89,7 +90,9 @@ def compile_org(*, compile_script: Path, path: Path) -> Path:
     return d
 
 
-content = Path('content')
+# TODO meh, make it relative to the script?
+ROOT = Path('.').absolute()
+content = Path('content').absolute()
 
 
 from typing import Dict
@@ -467,9 +470,35 @@ def compile_all(max_workers=None):
             to = output / rel
             assert not to.exists(), to
 
-
             to.parent.mkdir(exist_ok=True) # meh
             shutil.move(f, to)
+
+    # TODO later, move this into the content??
+    # it makes sense to keep everything as intact as possible during export
+    # so you could reference stuff in org-mode sources
+    #
+    # TODO copy here??
+    # TODO this is root...
+
+    # TODO pathish?
+    def copy(from_: Path, to: PathIsh):
+        if isinstance(to, str):
+            top = output / to
+        else:
+            assert not to.is_absolute(), to
+            top = to
+
+        top = output / to
+        top.parent.mkdir(exist_ok=True, parents=True)
+        shutil.copy(from_, top)
+
+
+    copy(ROOT / 'meta/robots.txt', 'robots.txt')
+    for f in (ROOT / 'css').rglob('*.css'):
+        copy(f, f.relative_to(ROOT))
+    for f in (ROOT / 'images').rglob('*.svg'):
+        copy(f, f.relative_to(ROOT))
+
 
     from concurrent.futures import ThreadPoolExecutor
     with ThreadPoolExecutor(max_workers=max_workers) as pool:
@@ -491,7 +520,6 @@ def compile_all(max_workers=None):
 
 
 def clean():
-    import shutil
     for f in output.iterdir():
         if f.is_dir():
             shutil.rmtree(f)
