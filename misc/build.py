@@ -96,6 +96,21 @@ from typing import Dict
 Meta = Dict[str, Any]
 
 
+def pandoc_meta(path: Path) -> Meta:
+    # wow, that's quite horrible...
+    with TemporaryDirectory() as td:
+        t = Path(td) / 'meta.tpl'
+        t.write_text('$meta-json$')
+        res = check_output([
+            'pandoc',
+            '--template', t,
+            path
+        ])
+
+        import json
+        # TODO might be none??
+        return json.loads(res.decode('utf8'))
+
 
 # pip install ruamel.yaml -- temporary...
 # just use json later?
@@ -106,6 +121,24 @@ def metadata(path: Path) -> Meta:
     from ruamel.yaml import YAML # type: ignore
     yaml = YAML(typ='safe')
     return yaml.load(meta)
+
+
+def compile_md(*, path: Path) -> Path:
+    d = TMP_DIR / path.name
+    d.mkdir()
+
+    res = run(
+        [
+            'pandoc',
+            '--to', 'html',
+        ],
+        input=path.read_bytes(),
+        stdout=PIPE,
+        check=True,
+    )
+    out = res.stdout.decode('utf8')
+    (d / 'body').write_text(out)
+    return d
 
 
 def compile_ipynb(*, compile_script: Path, path: Path) -> Path:
@@ -196,6 +229,11 @@ def _compile_post(path: Path) -> Path:
     suffix = path.suffix
 
     meta = metadata(apath)
+
+    # TODO not sure which meta should win??
+    if suffix == '.md':
+        pmeta = pandoc_meta(apath)
+        meta.update(**pmeta)
 
     ctx: Dict[str, Any] = {}
     #
@@ -295,8 +333,11 @@ def _compile_post(path: Path) -> Path:
 
         ctx['has_math']     = meta.get('has_math'    , False)
         ctx['allow_errors'] = meta.get('allow_errors', False)
+    elif suffix == '.md':
+        outs = compile_md(path=apath)
+        ctx['style_md'] = True
     else:
-        raise RuntimeError(apath)
+        raise RuntimeError(f"Unexpected suffix: {suffix}")
 
     assert ctx['title'] is not None, ctx
 
