@@ -426,16 +426,33 @@ def templates():
 
     inputs = Path('templates')
     outputs = output / 'templates'
-    outputs.mkdir(exist_ok=True)
 
-    for t in inputs.glob('*.html'):
-        out = outputs / t.name
-        body = hakyll_to_jinja(t.read_text())
-        out.write_text(body)
+    # ugh. a bit horrible
+    bdir = output / 'tmp'
+    bdir.mkdir(exist_ok=True)
+    # tdir needs on the same FS as output, otherwise it's not possible to do an atomic rename...
 
-    env = Environment(
-        loader=FileSystemLoader(str(output)),
-    )
+    if not outputs.exists():
+        with TemporaryDirectory(dir=bdir) as td:
+            tdir = Path(td)
+            for t in inputs.glob('*.html'):
+                out = tdir / t.name
+                body = hakyll_to_jinja(t.read_text())
+                out.write_text(body)
+
+            try:
+                tdir.rename(outputs)
+            except OSError as e:
+                if e.errno == 39: # 'Directory not empty'
+                    # ok, someone else managed to do it first
+                    pass
+                else:
+                    raise
+            else:
+                # prevent cleanup from complaining...
+                tdir.mkdir()
+
+    env = Environment(loader=FileSystemLoader(str(output)))
     return env
 
 from itertools import chain
