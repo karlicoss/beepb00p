@@ -48,6 +48,8 @@ def compile_org(*, compile_script: Path, path: Path) -> Path:
     d = TMP_DIR / dname
     d.mkdir()
 
+    log.debug('Running %s %s', compile_script, d)
+
     res = run(
         [
             compile_script,
@@ -87,6 +89,8 @@ def compile_org(*, compile_script: Path, path: Path) -> Path:
     # TODO how to clean stale stuff that's not needed in output dir?
     # TODO output determined externally?
     # TODO some inputs
+    log.debug('org-mode compile results: %s', list(map(str, sorted(d.rglob('*')))))
+
     return d
 
 
@@ -350,9 +354,20 @@ def _compile_post(path: Path) -> Path:
 
     assert ctx['title'] is not None, ctx
 
-    body_file = outs / 'body'
-    body = (outs / 'body').read_text()
+    opath = outs / path
 
+    if opath.parent != outs:
+        # ugh. need to move hierarchy down to preserve relative paths..
+        outs_files = list(outs.rglob('*'))
+        for f in outs_files:
+            r = f.relative_to(outs)
+            to = opath.parent / r
+            to.parent.mkdir(parents=True, exist_ok=True)
+            f.rename(to)
+
+
+    body_file = opath.parent / 'body'
+    body = body_file.read_text()
     body_file.unlink()
 
     # TODO for org-mode, need to be able to stop here and emit whatever we compiled?
@@ -389,9 +404,8 @@ def _compile_post(path: Path) -> Path:
         assert loc in full, full
         full = full.replace(loc, loc + '\n' + '<meta name="keywords" content>')
 
-
-    opath = outs / path
     opath.parent.mkdir(exist_ok=True)
+    # TODO might need to move everything into the same dir??
     opath.write_text(full)
 
     return outs
