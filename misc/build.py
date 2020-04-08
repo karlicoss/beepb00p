@@ -449,7 +449,6 @@ output = Path('site2')
 def templates():
     dbg('reloading all templates')
 
-    inputs = Path('templates')
     outputs = output / 'templates'
 
     # ugh. a bit horrible
@@ -460,9 +459,26 @@ def templates():
     if not outputs.exists():
         with TemporaryDirectory(dir=bdir) as td:
             tdir = Path(td)
-            for t in inputs.glob('*.html'):
+            for t in chain.from_iterable(Path(td).glob('*.html') for td in ('templates', 'meta')):
                 out = tdir / t.name
-                body = hakyll_to_jinja(t.read_text())
+                tt = t.read_text()
+                body = hakyll_to_jinja(tt)
+
+                if t.name == 'post-list.html':
+                    # meh. TODO remove later...
+                    for a, b in [
+                            ('{{ url }}'     , '{{ item.url }}'    ),
+                            (' draft '       , ' item.draft '      ),
+                            (' title '       , ' item.title '      ),
+                            (' summary '     , ' item.summary '    ),
+                            (' date '        , ' item.date '       ),
+                            (' item in tags ', ' tag in item.tags '),
+                            (' body '        , ' tag.body '        ),
+                    ]:
+                        body = body.replace(a, b)
+                    print(body)
+
+
                 out.write_text(body)
 
             try:
