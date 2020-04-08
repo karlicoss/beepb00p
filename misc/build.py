@@ -577,22 +577,33 @@ INPUTS = list(sorted({
 # TODO make a 'parallel' function??
 # almost useless though if they are not sharing the threads...
 
-def feed(posts: List[Post]):
-    from feedgen.feed import FeedGenerator # type: ignore
+from feedgen.feed import FeedGenerator # type: ignore
+
+def feeds(posts: List[Post]):
+    atom = feed(posts, 'atom')
+    rss  = feed(posts, 'rss')
+    (output / 'atom.xml').write_text(atom.atom_str(pretty=True).decode('utf8'))
+    (output / 'rss.xml' ).write_text(rss .rss_str (pretty=True).decode('utf8'))
+
+
+def feed(posts: List[Post], kind: str) -> FeedGenerator:
     fg = FeedGenerator()
     fg.title('beepb00p')
     fg.author(name='karlicoss', email='karlicoss@gmail.com')
+    # TODO better description?
+    fg.description('feed')
 
     bb = lambda x: f'https://beepb00p.xyz{x}'
-    fg.id(bb('/atom.xml'))
-    fg.link(rel='self', href=bb('/atom.xml'))
+    fg.id(bb(f'/{kind}.xml'))
+    fg.link(rel='self', href=bb(f'/{kind}.xml'))
     fg.link(href=bb(''))
     fg.updated(max(tz.localize(p.date) for p in posts))
 
     # eh, apparnetly in adds items to the feed from bottom to top...
     for post in reversed(posts):
         fe = fg.add_entry()
-        fe.id(bb(post.url))
+        # not sure why id() doesn't allow to set permalink=True
+        fe.guid(bb(post.url), permalink=True)
         fe.link(href=bb(post.url))
         fe.title(post.title)
         # TOOD FIXME meh.
@@ -606,10 +617,7 @@ def feed(posts: List[Post]):
         # TODO remove rss etc from contents. maybe?
         # TODO only use text/html for comparisons?
         fe.content(post.body, type='html') # , type='text/html')
-
-
-    atomfeed = fg.atom_str(pretty=True)
-    (output / 'atom.xml').write_text(atomfeed.decode('utf8'))
+    return fg
 
 
 def posts_list(posts: List[Post], name: str, title: str):
@@ -717,7 +725,7 @@ def compile_all(max_workers=None):
     # TODO also filter??
     for_feed = for_index[:9] # TODO FIXME add full feed?
     # TODO eh? not sure if necessary..
-    feed(for_feed)
+    feeds(for_feed)
 
 
 
