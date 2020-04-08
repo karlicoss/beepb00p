@@ -604,7 +604,8 @@ def feed(posts: List[Post]):
         # TODO meh, later use proper update date...
         #
         # TODO remove rss etc from contents. maybe?
-        fe.content(post.body, type='CDATA')
+        # TODO only use text/html for comparisons?
+        fe.content(post.body, type='html') # , type='text/html')
 
 
     atomfeed = fg.atom_str(pretty=True)
@@ -716,7 +717,7 @@ def compile_all(max_workers=None):
     # TODO also filter??
     for_feed = for_index[:9] # TODO FIXME add full feed?
     # TODO eh? not sure if necessary..
-    feed(for_index)
+    feed(for_feed)
 
 
 
