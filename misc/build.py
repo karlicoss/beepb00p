@@ -229,7 +229,12 @@ from typing import NamedTuple, Tuple
 
 class Post(NamedTuple):
     title: str
+    summary: str
+    date: str
     body: str
+    draft: bool
+    special: bool
+    tags: List[str]
 
 
 def compile_post(path: Path) -> Tuple[Path, Post]:
@@ -389,8 +394,13 @@ def _compile_post(path: Path) -> Tuple[Path, Post]:
     # title = ctx['title']
     # post
     post = Post(
-        title=ctx['title'],
-        body=body,
+        title  =ctx['title'],
+        summary=ctx['summary'],
+        date   =ctx['date'],
+        tags   =[t['body'] for t in ctx['tags']],
+        body   =body,
+        draft  =False,
+        special=False,
     )
 
 
@@ -490,7 +500,7 @@ def templates():
                             (' summary '     , ' item.summary '    ),
                             (' date '        , ' item.date '       ),
                             (' item in tags ', ' tag in item.tags '),
-                            (' body '        , ' tag.body '        ),
+                            (' body '        , ' tag '             ),
                     ]:
                         body = body.replace(a, b)
 
@@ -514,7 +524,6 @@ def templates():
 from itertools import chain
 
 INPUTS = list(sorted({
-    # TODO use glob here; think how to handle drafts?
     *[c.relative_to(content) for c in chain(
         # TODO md??
         content.glob('*.org'),
@@ -533,6 +542,22 @@ INPUTS = list(sorted({
     # Path('sandbox/testipython.ipynb'),
     # *content.glob('*.ipynb'),
 }))
+
+
+# TODO make a 'parallel' function??
+# almost useless though if they are not sharing the threads...
+
+def posts_list(posts: List[Post], name: str):
+    it = template('templates/index.html')
+
+    pbody = it.render(posts=posts)
+
+    full_t = template('templates/default.html')
+    full = full_t.render(
+        body=pbody,
+    )
+
+    (output / name).write_text(full)
 
 
 def compile_all(max_workers=None):
@@ -605,6 +630,14 @@ def compile_all(max_workers=None):
                 remaining = list(res.rglob('*'))
                 if len(remaining) > 0:
                     raise RuntimeError(f'remaining files: {remaining}')
+
+    # TODO FIXME body needs to contain compiled??
+
+    for_index  = [p for p in posts if not p.draft and not p.special]
+    for_drafts = [p for p in posts if p.draft]
+    posts_list(for_index , 'index.html')
+    posts_list(for_drafts, 'drafts.html')
+
 
 
 def clean():
