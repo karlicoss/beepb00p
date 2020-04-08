@@ -3,6 +3,7 @@ from pathlib import Path
 from functools import lru_cache, wraps
 import os
 from subprocess import check_call, run, check_output, PIPE
+from datetime import datetime
 import shutil
 import sys
 from tempfile import TemporaryDirectory
@@ -235,6 +236,7 @@ class Post(NamedTuple):
     draft: bool
     special: bool
     tags: List[str]
+    url: str
 
 
 def compile_post(path: Path) -> Tuple[Path, Post]:
@@ -299,12 +301,12 @@ def _compile_post(path: Path) -> Tuple[Path, Post]:
             return
         ctx['title'] = title
 
-    from datetime import datetime
-    def set_date(dates: Optional[str]):
-        if dates is None:
+    def set_date(datish: Optional[Union[str, datetime]]):
+        if datish is None:
             return
-        date = datetime.strptime(dates, '%B %d, %Y').strftime('%d %B %Y')
-        ctx['date'] = date
+
+        date = datetime.strptime(datish, '%B %d, %Y') if isinstance(datish, str) else datish
+        ctx['date'] = date.strftime('%d %B %Y')
 
 
     set_title  (meta.get('title'))
@@ -351,6 +353,12 @@ def _compile_post(path: Path) -> Tuple[Path, Post]:
             tags = list(x for x in ftags.split(':') if len(x) > 0)
             set_tags(tags)
 
+        datess = fprops.get('DATE')
+        if datess is not None:
+            dates = the(datess)
+            date = datetime.strptime(dates, '[%Y-%m-%d %a]')
+            set_date(date)
+
     elif suffix == '.ipynb':
         # TODO make a mode to export to python?
         outs = compile_ipynb(
@@ -366,6 +374,7 @@ def _compile_post(path: Path) -> Tuple[Path, Post]:
         ctx['style_md'] = True
     else:
         raise RuntimeError(f"Unexpected suffix: {suffix}")
+
 
     assert ctx['title'] is not None, ctx
 
@@ -395,11 +404,12 @@ def _compile_post(path: Path) -> Tuple[Path, Post]:
     # post
     post = Post(
         title  =ctx['title'],
-        summary=ctx['summary'],
+        summary=ctx.get('summary', None),
         date   =ctx['date'],
         tags   =[t['body'] for t in ctx['tags']],
         body   =body,
-        draft  =False,
+        draft  =ctx.get('draft', None) is not None,
+        url    =ctx['url'],
         special=False,
     )
 
@@ -417,21 +427,7 @@ def _compile_post(path: Path) -> Tuple[Path, Post]:
         **ctx,
     )
 
-    # relativize urls
-    depth = len(path.parts)
-    rel = '.' * depth
-    from bs4 import BeautifulSoup as bs # type: ignore
-    soup = bs(full, 'html5lib')  # TODO lxml parser?
-    from itertools import chain
-    # a bit meh..
-    for a in chain(soup.findAll('a'), soup.findAll('link')):
-        href = a.get('href', None)
-        if href is None:
-            continue
-        if href.startswith('/'):
-            a['href'] = rel + href
-    full = soup.prettify()
-    #
+    full = relativize_urls(path=path, full=full)
 
     #
     if 'name="keywords"' not in full:
@@ -447,6 +443,23 @@ def _compile_post(path: Path) -> Tuple[Path, Post]:
 
 
     return outs, post
+
+
+def relativize_urls(path: Path, full: str):
+    depth = len(path.parts)
+    rel = '.' * depth
+    from bs4 import BeautifulSoup as bs # type: ignore
+    soup = bs(full, 'html5lib')  # TODO lxml parser?
+    from itertools import chain
+    # a bit meh..
+    for a in chain(soup.findAll('a'), soup.findAll('link')):
+        href = a.get('href', None)
+        if href is None:
+            continue
+        if href.startswith('/'):
+            a['href'] = rel + href
+    full = soup.prettify()
+    return full
 
 
 from jinja2 import Template, Environment, FileSystemLoader # type: ignore
@@ -501,6 +514,8 @@ def templates():
                             (' date '        , ' item.date '       ),
                             (' item in tags ', ' tag in item.tags '),
                             (' body '        , ' tag '             ),
+                            (' if item.summary ' ,
+                             ' if item.summary is not none'),
                     ]:
                         body = body.replace(a, b)
 
@@ -547,17 +562,26 @@ INPUTS = list(sorted({
 # TODO make a 'parallel' function??
 # almost useless though if they are not sharing the threads...
 
-def posts_list(posts: List[Post], name: str):
-    it = template('templates/index.html')
+def posts_list(posts: List[Post], name: str, title: str):
+    it = template(f'templates/{name}')
 
     pbody = it.render(posts=posts)
+
+    ctx: Dict[str, Any] = {}
+    ctx['is_stable'] = True
+    ctx['title'] = title
+    ctx['url'] = f'/{name}'
 
     full_t = template('templates/default.html')
     full = full_t.render(
         body=pbody,
+        **ctx,
     )
 
-    (output / name).write_text(full)
+    path = Path(name)
+    full = relativize_urls(path, full)
+
+    (output / path).write_text(full)
 
 
 def compile_all(max_workers=None):
@@ -635,8 +659,9 @@ def compile_all(max_workers=None):
 
     for_index  = [p for p in posts if not p.draft and not p.special]
     for_drafts = [p for p in posts if p.draft]
-    posts_list(for_index , 'index.html')
-    posts_list(for_drafts, 'drafts.html')
+    posts_list(for_index , 'index.html' , 'XXX')
+    # TODO sort by date???
+    posts_list(for_drafts, 'drafts.html', 'Drafts')
 
 
 
