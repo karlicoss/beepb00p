@@ -7,7 +7,8 @@ from datetime import datetime
 import shutil
 import sys
 from tempfile import TemporaryDirectory
-from typing import cast, Dict, Any, List, Optional, Union
+from typing import cast, Dict, Any, List, Optional, Union, NamedTuple, Tuple
+
 
 from kython.klogging2 import LazyLogger
 
@@ -226,17 +227,23 @@ def the(things):
     return x
 
 
-from typing import NamedTuple, Tuple
 
 class Post(NamedTuple):
     title: str
     summary: str
-    date: str
+    date: Optional[datetime]
     body: str
     draft: bool
     special: bool
     tags: List[str]
     url: str
+
+    @property
+    def dates(self) -> Optional[str]:
+        d = self.date
+        if d is None:
+            return None
+        return d.strftime('%d %B %Y')
 
 
 def compile_post(path: Path) -> Tuple[Path, Post]:
@@ -301,10 +308,12 @@ def _compile_post(path: Path) -> Tuple[Path, Post]:
             return
         ctx['title'] = title
 
+    date = None
     def set_date(datish: Optional[Union[str, datetime]]):
         if datish is None:
             return
 
+        nonlocal date # meh
         date = datetime.strptime(datish, '%B %d, %Y') if isinstance(datish, str) else datish
         ctx['date'] = date.strftime('%d %B %Y')
 
@@ -315,7 +324,8 @@ def _compile_post(path: Path) -> Tuple[Path, Post]:
     set_tags   (meta.get('tags'))
     set_date   (meta.get('date'))
 
-    ctx['type_special'] = meta.get('special', False)
+    special = meta.get('special', False)
+    ctx['type_special'] = special
     ctx['is_stable'] = True
     ctx['draft'] = meta.get('draft')
 
@@ -355,8 +365,8 @@ def _compile_post(path: Path) -> Tuple[Path, Post]:
 
         datess = fprops.get('DATE')
         if datess is not None:
-            dates = the(datess)
-            date = datetime.strptime(dates, '[%Y-%m-%d %a]')
+            dates = the(datess)[1: 1 + len('0000-00-00 Abc')]
+            date = datetime.strptime(dates, '%Y-%m-%d %a')
             set_date(date)
 
     elif suffix == '.ipynb':
@@ -404,13 +414,13 @@ def _compile_post(path: Path) -> Tuple[Path, Post]:
     # post
     post = Post(
         title  =ctx['title'],
-        summary=ctx.get('summary', None),
-        date   =ctx['date'],
-        tags   =[t['body'] for t in ctx['tags']],
+        summary=ctx.get('summary'),
+        date   =date,
+        tags   =[t['body'] for t in ctx.get('tags', [])],
         body   =body,
-        draft  =ctx.get('draft', None) is not None,
+        draft  =ctx.get('draft') is not None,
         url    =ctx['url'],
-        special=False,
+        special=special,
     )
 
 
@@ -511,7 +521,7 @@ def templates():
                             (' draft '       , ' item.draft '      ),
                             (' title '       , ' item.title '      ),
                             (' summary '     , ' item.summary '    ),
-                            (' date '        , ' item.date '       ),
+                            (' date '        , ' item.dates '      ),
                             (' item in tags ', ' tag in item.tags '),
                             (' body '        , ' tag '             ),
                             (' if item.summary ' ,
@@ -656,10 +666,11 @@ def compile_all(max_workers=None):
                     raise RuntimeError(f'remaining files: {remaining}')
 
     # TODO FIXME body needs to contain compiled??
+    posts = list(reversed(sorted(posts, key=lambda p: datetime.min if p.date is None else p.date)))
 
     for_index  = [p for p in posts if not p.draft and not p.special]
     for_drafts = [p for p in posts if p.draft]
-    posts_list(for_index , 'index.html' , 'XXX')
+    posts_list(for_index , 'index.html' , 'Home')
     # TODO sort by date???
     posts_list(for_drafts, 'drafts.html', 'Drafts')
 
