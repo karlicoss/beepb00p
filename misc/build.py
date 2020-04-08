@@ -10,6 +10,14 @@ from tempfile import TemporaryDirectory
 from typing import cast, Dict, Any, List, Optional, Union, NamedTuple, Tuple
 
 
+import pytz # type: ignore
+
+# TODO  meh.
+# tz = pytz.timezone('Europe/London')
+# ugh. this is what Hakyll assumed
+tz = pytz.utc
+
+
 from kython.klogging2 import LazyLogger
 
 log = LazyLogger('build', level='debug')
@@ -410,21 +418,6 @@ def _compile_post(path: Path) -> Tuple[Path, Post]:
     body_file.unlink()
 
 
-    # title = ctx['title']
-    # post
-    post = Post(
-        title  =ctx['title'],
-        summary=ctx.get('summary'),
-        date   =date,
-        tags   =[t['body'] for t in ctx.get('tags', [])],
-        body   =body,
-        draft  =ctx.get('draft') is not None,
-        url    =ctx['url'],
-        special=special,
-    )
-
-
-
     # TODO for org-mode, need to be able to stop here and emit whatever we compiled?
     post_t = template('templates/post.html')
     pbody = post_t.render(
@@ -438,6 +431,18 @@ def _compile_post(path: Path) -> Tuple[Path, Post]:
     )
 
     full = relativize_urls(path=path, full=full)
+
+    post = Post(
+        title  =ctx['title'],
+        summary=ctx.get('summary'),
+        date   =date,
+        tags   =[t['body'] for t in ctx.get('tags', [])],
+        body   =full,
+        draft  =ctx.get('draft') is not None,
+        url    =ctx['url'],
+        special=special,
+    )
+
 
     #
     if 'name="keywords"' not in full:
@@ -572,6 +577,40 @@ INPUTS = list(sorted({
 # TODO make a 'parallel' function??
 # almost useless though if they are not sharing the threads...
 
+def feed(posts: List[Post]):
+    from feedgen.feed import FeedGenerator # type: ignore
+    fg = FeedGenerator()
+    fg.title('beepb00p')
+    fg.author(name='karlicoss', email='karlicoss@gmail.com')
+
+    bb = lambda x: f'https://beepb00p.xyz{x}'
+    fg.id(bb('/atom.xml'))
+    fg.link(rel='self', href=bb('/atom.xml'))
+    fg.link(href=bb(''))
+    fg.updated(max(tz.localize(p.date) for p in posts))
+
+    # eh, apparnetly in adds items to the feed from bottom to top...
+    for post in reversed(posts):
+        fe = fg.add_entry()
+        fe.id(bb(post.url))
+        fe.link(href=bb(post.url))
+        fe.title(post.title)
+        # TOOD FIXME meh.
+        d = post.date
+        assert d is not None
+        td = tz.localize(d)
+        fe.published(td)
+        fe.updated(td)
+        # TODO meh, later use proper update date...
+        #
+        # TODO remove rss etc from contents. maybe?
+        fe.content(post.body, type='CDATA')
+
+
+    atomfeed = fg.atom_str(pretty=True)
+    (output / 'atom.xml').write_text(atomfeed.decode('utf8'))
+
+
 def posts_list(posts: List[Post], name: str, title: str):
     it = template(f'templates/{name}')
 
@@ -674,6 +713,11 @@ def compile_all(max_workers=None):
     # TODO sort by date???
     posts_list(for_drafts, 'drafts.html', 'Drafts')
 
+    # TODO also filter??
+    for_feed = for_index[:9] # TODO FIXME add full feed?
+    # TODO eh? not sure if necessary..
+    feed(for_index)
+
 
 
 def clean():
@@ -701,3 +745,5 @@ if __name__ == '__main__':
 
 # TODO make sure to port todo stripping
 # TODO make urls relative?..
+
+# TODO feed needs to be compact to fit in 512K limit...
