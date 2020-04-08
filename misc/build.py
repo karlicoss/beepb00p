@@ -225,14 +225,21 @@ def the(things):
     return x
 
 
-def compile_post(path: Path) -> Path:
+from typing import NamedTuple, Tuple
+
+class Post(NamedTuple):
+    title: str
+    body: str
+
+
+def compile_post(path: Path) -> Tuple[Path, Post]:
     try:
         return _compile_post(path)
     except Exception as e:
         raise RuntimeError(f'While compiling {path}') from e
 
 
-def _compile_post(path: Path) -> Path:
+def _compile_post(path: Path) -> Tuple[Path, Post]:
     assert not path.is_absolute(), path
     apath = content / path
 
@@ -378,15 +385,25 @@ def _compile_post(path: Path) -> Path:
     body = body_file.read_text()
     body_file.unlink()
 
+
+    # title = ctx['title']
+    # post
+    post = Post(
+        title=ctx['title'],
+        body=body,
+    )
+
+
+
     # TODO for org-mode, need to be able to stop here and emit whatever we compiled?
     post_t = template('templates/post.html')
-    post = post_t.render(
+    pbody = post_t.render(
         body=body,
         **ctx,
     )
     full_t = template('templates/default.html')
     full = full_t.render(
-        body=post,
+        body=pbody,
         **ctx,
     )
 
@@ -419,7 +436,7 @@ def _compile_post(path: Path) -> Path:
     check_call(['tree', outs])
 
 
-    return outs
+    return outs, post
 
 
 from jinja2 import Template, Environment, FileSystemLoader # type: ignore
@@ -476,8 +493,6 @@ def templates():
                             (' body '        , ' tag.body '        ),
                     ]:
                         body = body.replace(a, b)
-                    print(body)
-
 
                 out.write_text(body)
 
@@ -571,9 +586,11 @@ def compile_all(max_workers=None):
     #
     # TODO test.png shoud go in sandbox??
 
+    posts = []
     from concurrent.futures import ThreadPoolExecutor
     with ThreadPoolExecutor(max_workers=max_workers) as pool:
-        for res in pool.map(compile_post, INPUTS):
+        for res, post in pool.map(compile_post, INPUTS):
+            posts.append(post)
             move(res, 'html')
             move(res, 'png')
 
