@@ -3,6 +3,7 @@ from pathlib import Path
 from functools import lru_cache, wraps
 import os
 import re
+import logging
 from subprocess import check_call, run, check_output, PIPE
 from datetime import datetime
 import shutil
@@ -11,46 +12,34 @@ from tempfile import TemporaryDirectory
 from typing import cast, Dict, Any, List, Optional, Union, NamedTuple, Tuple
 
 
+import pytz # type: ignore
+
+
+### TODO keep this in config?
 ROOT    = Path(__file__).absolute().parent.parent
 inputs  = ROOT / 'inputs'
 content = ROOT / 'content'
 output  = Path('site') # TODO relative to ROOT??
 
-
-import pytz # type: ignore
-
-# TODO  meh.
-# tz = pytz.timezone('Europe/London')
-# ugh. this is what Hakyll assumed
-tz = pytz.utc
+tz = pytz.utc # TODO ugh this is what Hakyll assumed
+###
 
 
-from kython.klogging2 import LazyLogger
+PathIsh = Union[Path, str]
 
-log = LazyLogger('build', level='debug')
+log = logging.getLogger('blog')
+
+# global temporary directory
+TMP_DIR: Path = cast(Path, None)
+
 
 # TODO use wraps??
 cache = lambda f: lru_cache(1)(f)
 
-# TODO use injector??
-# https://github.com/alecthomas/injector
-
-# TODO def should detect stuff automatically?
-# TODO make sure it's cached for feed and index page..
-# TODO use threads? most of it is going to be io bound anyway
-
-
-# ok, functions are 'kinda pure'
-# not completely because of filesystem use, but mostly pure
-
-PathIsh = Union[Path, str]
-
-TMP_DIR: Path = cast(Path, None)
-
-RPath = Path
 
 # TODO better name?..
-def sanitize(path: RPath) -> str:
+# TODO there must be something builtin??
+def sanitize(path: Path) -> str:
     pp = str(path)
     pp = pp.replace('/', '_')
     return pp
@@ -65,8 +54,11 @@ def compile_org(*, compile_script: Path, path: Path) -> Path:
     d = TMP_DIR / dname
     d.mkdir()
 
+    # TODO each thread should prob. capture logs...
     log.debug('Running %s %s', compile_script, d)
 
+    # TODO not sure that compile-org should.
+    # unless I copy files separately in the 'sandbox'?
     res = run(
         [
             compile_script,
@@ -102,12 +94,9 @@ def compile_org(*, compile_script: Path, path: Path) -> Path:
         err = '\n'.join(filtered)
         print(err, file=sys.stderr)
 
-
     # TODO how to clean stale stuff that's not needed in output dir?
     # TODO output determined externally?
     # TODO some inputs
-    log.debug('org-mode compile results: %s', list(map(str, sorted(d.rglob('*')))))
-
     return d
 
 
@@ -361,9 +350,6 @@ def _compile_post(path: Path) -> Tuple[Path, Post]:
 
     assert ctx['title'] is not None, ctx
 
-    # meh
-    check_call(['tree', outs])
-
     opath = outs / path
 
     if opath.parent != outs:
@@ -446,24 +432,18 @@ def relativize_urls(path: Path, full: str):
 
 # TODO should use Path with mtime etc
 
-import threading
-# right, separate threads might load twice
-
-def dbg(fmt: str, *args, **kwargs):
-    log.debug('%s: ' + fmt, threading.current_thread().name, *args, **kwargs)
-
 
 from jinja2 import Template # type: ignore
 @cache
 def template(name: str) -> Template:
-    dbg('reloading template %s', name, )
+    log.debug('reloading template %s', name, )
     ts = templates()
     return ts.get_template(name)
 
 
 @cache
 def templates():
-    dbg('reloading all templates')
+    log.debug('reloading all templates')
     from jinja2 import FileSystemLoader, Environment # type: ignore
     env = Environment(loader=FileSystemLoader(str(inputs)))
     return env
@@ -561,7 +541,7 @@ def posts_list(posts: List[Post], name: str, title: str):
 def compile_all(max_workers=None):
     def move(from_: Path, ext: str):
         for f in from_.rglob('*.' + ext):
-            dbg('merging %s', f)
+            log.debug('merging %s', f)
             rel = f.relative_to(from_)
             to = output / rel
             assert not to.exists(), to
@@ -601,13 +581,6 @@ def compile_all(max_workers=None):
     for p in chain.from_iterable(glob(f'{content}/**/*.{x}', recursive=True) for x in ('jpg', 'svg', 'png')):
         f = Path(p)
         copy(f, f.relative_to(content))
-
-    # TODO atom
-    # TODO drafts page
-    # TODO index page
-    # TODO rss
-    #
-    # TODO test.png shoud go in sandbox??
 
     posts = []
     from concurrent.futures import ThreadPoolExecutor
@@ -654,11 +627,28 @@ def clean():
 
 
 def main():
+    import argparse
+    p = argparse.ArgumentParser()
+    p.add_argument('--debug', action='store_true', help='Debug logging')
+    args = p.parse_args()
+
+    debug = args.debug
+    setup_logging(level=getattr(logging, 'DEBUG' if debug else 'INFO'))
+
     clean()
     global TMP_DIR
+    # TODO create it in the output dir? so it's on the same filesystem
     with TemporaryDirectory() as tdir:
         TMP_DIR = Path(tdir)
-        compile_all()
+        compile_all(max_workers=7)
+
+
+
+def setup_logging(level):
+    # TODO make optional?
+    import logzero # type: ignore
+    format = '%(color)s[%(levelname)1.1s %(asctime)s %(module)s:%(lineno)4d %(threadName)s]%(end_color)s %(message)s'
+    logzero.setup_logger(log.name, level=level, formatter=logzero.LogFormatter(fmt=format))
 
 
 if __name__ == '__main__':
@@ -675,3 +665,15 @@ if __name__ == '__main__':
 
 # TODO not sure how metadata should be handled... does every post really have
 # TODO if we use templates in python (as f-strings), they can be statically checked..
+
+
+# TODO use injector??
+# https://github.com/alecthomas/injector
+
+# TODO def should detect stuff automatically?
+# TODO make sure it's cached for feed and index page..
+# TODO use threads? most of it is going to be io bound anyway
+
+
+# ok, functions are 'kinda pure'
+# not completely because of filesystem use, but mostly pure
