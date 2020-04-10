@@ -39,7 +39,7 @@ class Post(NamedTuple):
     draft: bool
     special: bool
     has_math: bool
-    tags: List[str]
+    tags: Tuple[str]
     url: str
 
     @property
@@ -74,7 +74,6 @@ TMP_DIR: Path = cast(Path, None)
 # TODO use wraps??
 cache = lambda f: lru_cache(maxsize=None)(f)
 
-
 # TODO better name?..
 # TODO there must be something builtin??
 def sanitize(path: Path) -> str:
@@ -84,11 +83,10 @@ def sanitize(path: Path) -> str:
 
 
 # TODO how to clean old results??
-@cache
-def compile_org(*, compile_script: MPath, path: MPath) -> Path:
+def compile_org_body(*, compile_script: Path, path: Path) -> Path:
     log.debug('compiling %s %s', compile_script, path)
 
-    dname = sanitize(path.path)
+    dname = sanitize(path)
     d = TMP_DIR / dname
     d.mkdir()
 
@@ -99,11 +97,11 @@ def compile_org(*, compile_script: MPath, path: MPath) -> Path:
     # unless I copy files separately in the 'sandbox'?
     res = run(
         [
-            compile_script.path,
+            compile_script,
             '--output-dir', d,
             # '--org',  # TODO
         ],
-        input=path.path.read_bytes(),
+        input=path.read_bytes(),
         stdout=PIPE,
         stderr=PIPE,
         check=True,
@@ -166,7 +164,9 @@ def metadata(path: Path) -> Meta:
     return yaml.load(meta)
 
 
-def compile_md(*, path: Path) -> Path:
+def compile_md_body(*, path: Path) -> Path:
+    log.debug('compiling %', path)
+
     d = TMP_DIR / path.name
     d.mkdir()
 
@@ -181,7 +181,7 @@ def compile_md(*, path: Path) -> Path:
     return d
 
 
-def compile_ipynb(*, compile_script: Path, path: Path) -> Path:
+def compile_ipynb_body(*, compile_script: Path, path: Path) -> Path:
     d = TMP_DIR / path.name
     d.mkdir()
 
@@ -234,18 +234,66 @@ def _move(from_: Path, ext: str):
         shutil.move(f, to)
 
 
-@cache
-def compile_post(path: MPath) -> Tuple[Path, Post]:
-    log.info('compiling %s', path)
+def compile_post(path: MPath) -> Post:
     try:
-        res = _compile_post(path)
+        return _compile_post(path)
     except Exception as e:
         raise RuntimeError(f'While compiling {path}') from e
 
+
+@dataclass(init=False, unsafe_hash=True)
+class OrgDeps:
+    path: MPath
+    compile_org: MPath
+    misc: Tuple[MPath]
+
+    def __init__(self, path: MPath):
+        self.path = path
+        self.compile_org = MPath(ROOT / 'misc/compile_org.py')
+        self.misc = (      MPath(ROOT / 'misc/compile-org.el'), )
+
+
+@dataclass(unsafe_hash=True)
+class MdDeps:
+    path: MPath
+    # TODO pandoc dependency??
+
+
+@dataclass(init=False, unsafe_hash=True)
+class IpynbDeps:
+    path: MPath
+    compile_ipynb: MPath
+
+    def __init__(self, path: MPath):
+        self.path = path
+        self.compile_ipynb = MPath(ROOT / 'misc/compile-ipynb')
+
+
+Deps = Union[OrgDeps, MdDeps, IpynbDeps]
+
+def _compile_post(mpath: MPath) -> Post:
+    suf = mpath.path.suffix
+    deps: Deps
+    if   suf == '.org':
+        deps = OrgDeps(mpath)
+    elif suf == '.ipynb':
+        deps = IpynbDeps(mpath)
+    elif suf == '.md':
+        deps = MdDeps(mpath)
+    else:
+        raise RuntimeError(mpath)
+
+    return _compile_with_deps(mpath, deps)
+
+
+@cache
+def _compile_with_deps(mpath: MPath, deps: Deps) -> Post:
+
     # TODO wonder if child logger could be a thing?
-    # TODO measure time took?
-    rpath, rpost = res
-    log.info('compiled %s', path)
+    # TODO measure time taken?
+    log.info('compiling %s', mpath)
+    rpath, rpost = _compile_post_aux(mpath, deps)
+    log.info('compiled %s', mpath)
 
     _move(rpath, 'html')
     _move(rpath, 'png')
@@ -262,10 +310,10 @@ def compile_post(path: MPath) -> Tuple[Path, Post]:
         raise RuntimeError(f'remaining files: {remaining}')
     rpath.rmdir()
 
-    return rpath, rpost
+    return rpost
 
 
-def _compile_post(mpath: MPath) -> Tuple[Path, Post]:
+def _compile_post_aux(mpath: MPath, deps: Deps) -> Tuple[Path, Post]:
     path = mpath.path
     if path.is_absolute():
         path = path.relative_to(content) # meh
@@ -277,6 +325,7 @@ def _compile_post(mpath: MPath) -> Tuple[Path, Post]:
     meta = metadata(apath)
 
     # TODO not sure which meta should win??
+    # TODO shit. need to add meta to dependencies?
     if suffix == '.md':
         pmeta = pandoc_meta(apath)
         meta.update(**pmeta)
@@ -344,12 +393,10 @@ def _compile_post(mpath: MPath) -> Tuple[Path, Post]:
     ctx['is_stable'] = True
     ctx['draft'] = meta.get('draft')
 
-    # TODO FIMXE compile_org should return a temporary directory with 'stuff'?
-    outs: Path
-    if suffix == '.org':
-        outs = compile_org(
-            compile_script=MPath('misc/compile_org.py'),
-            path=MPath(apath),
+    if isinstance(deps, OrgDeps):
+        outs = compile_org_body(
+            compile_script=deps.compile_org.path,
+            path=deps.path.path,
         )
         ctx['style_org'] = True
 
@@ -383,23 +430,21 @@ def _compile_post(mpath: MPath) -> Tuple[Path, Post]:
             dates = the(datess)[1: 1 + len('0000-00-00 Abc')]
             date = datetime.strptime(dates, '%Y-%m-%d %a')
             set_date(date)
-
-    elif suffix == '.ipynb':
+    elif isinstance(deps, IpynbDeps):
         # TODO make a mode to export to python?
-        outs = compile_ipynb(
-            compile_script=Path('misc/compile-ipynb'),
-            path=apath,
+        outs = compile_ipynb_body(
+            compile_script=deps.compile_ipynb.path,
+            path=deps.path.path,
         )
         ctx['style_ipynb'] = True
 
         ctx['has_math']     = meta.get('has_math'    , False)
         ctx['allow_errors'] = meta.get('allow_errors', False)
-    elif suffix == '.md':
-        outs = compile_md(path=apath)
+    elif isinstance(deps, MdDeps):
+        outs = compile_md_body(path=deps.path.path)
         ctx['style_md'] = True
     else:
-        raise RuntimeError(f"Unexpected suffix: {suffix}")
-
+        raise RuntimeError(deps)
 
     assert ctx['title'] is not None, ctx
 
@@ -442,7 +487,7 @@ def _compile_post(mpath: MPath) -> Tuple[Path, Post]:
         title  =ctx['title'],
         summary=ctx.get('summary'),
         date   =date,
-        tags   =[t['body'] for t in ctx.get('tags', [])],
+        tags   =tuple(t['body'] for t in ctx.get('tags', [])),
         body   =full,
         draft  =ctx.get('draft') is not None,
         url    =ctx['url'],
@@ -514,14 +559,16 @@ INPUTS = list(sorted({
 
 from feedgen.feed import FeedGenerator # type: ignore
 
-def feeds(posts: List[Post]):
+@cache
+def feeds(posts: Tuple[Post]):
     atom = feed(posts, 'atom')
     rss  = feed(posts, 'rss')
     (output / 'atom.xml').write_text(atom.atom_str(pretty=True).decode('utf8'))
     (output / 'rss.xml' ).write_text(rss .rss_str (pretty=True).decode('utf8'))
 
 
-def feed(posts: List[Post], kind: str) -> FeedGenerator:
+def feed(posts: Tuple[Post], kind: str) -> FeedGenerator:
+    log.debug('generading %s feed', kind)
     fg = FeedGenerator()
     fg.title('beepb00p')
     fg.author(name='karlicoss', email='karlicoss@gmail.com')
@@ -555,7 +602,10 @@ def feed(posts: List[Post], kind: str) -> FeedGenerator:
     return fg
 
 
-def posts_list(posts: List[Post], name: str, title: str):
+@cache
+def posts_list(posts: Tuple[Post], name: str, title: str):
+    log.debug('compiling %s', name)
+
     it = template(name)
 
     pbody = it.render(posts=posts)
@@ -616,14 +666,13 @@ def compile_all(max_workers=None):
     posts = []
     from concurrent.futures import ThreadPoolExecutor
     with ThreadPoolExecutor(max_workers=max_workers) as pool:
-        for res, post in pool.map(compile_post, map(lambda p: MPath(content / p), INPUTS)):
+        for post in pool.map(compile_post, map(lambda p: MPath(content / p), INPUTS)):
             posts.append(post)
 
-    # TODO FIXME body needs to contain compiled??
     posts = list(reversed(sorted(posts, key=lambda p: datetime.min if p.date is None else p.date)))
 
-    for_index  = [p for p in posts if not p.draft and not p.special]
-    for_drafts = [p for p in posts if p.draft]
+    for_index  = tuple(p for p in posts if not p.draft and not p.special)
+    for_drafts = tuple(p for p in posts if p.draft)
     posts_list(for_index , 'index.html' , 'Home')
     # TODO sort by date???
     posts_list(for_drafts, 'drafts.html', 'Drafts')
@@ -673,7 +722,13 @@ def main():
     # TODO create it in the output dir? so it's on the same filesystem
     with TemporaryDirectory() as tdir:
         TMP_DIR = Path(tdir)
-        compile_all(max_workers=7)
+        log.debug('using temporary directory: %s', TMP_DIR)
+        while True:
+            log.debug('detecting changes...')
+            compile_all(max_workers=7)
+            import time
+            # break
+            time.sleep(1)
 
 
 
