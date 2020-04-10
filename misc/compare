@@ -1,14 +1,20 @@
 #!/usr/bin/env python3
+'''
+Compares old output (Hakyll's) to the new output (from my generator)
+'''
 from pathlib import Path
 from typing import Optional
 from subprocess import run
+from itertools import chain
 
-OLD = Path('oldsite')
-NEW = Path('site2')
+OLD = Path('old')
+NEW = Path('new')
 
 
 def compare(p):
     suf = p.suffix
+
+    # need to normalize to strip out the differences in whitespace, indentation, etc
     normalize: Optional[str]
     if suf == '.html':
         normalize = r'python3 -c "import sys; from bs4 import BeautifulSoup as bs; sys.stdout.write(bs(sys.stdin.read(), \"html5lib\").prettify())"'
@@ -17,26 +23,38 @@ def compare(p):
     else:
         normalize = None
 
-    cmd = ['diff']
+    cmd = ['diff', '--color=always']
     for p in [OLD / p, NEW / p]:
         if normalize is None:
             cmd.append(p)
         else:
-            cmd.append(f'<({normalize} <{p})')
+            cmd.append(f'<(({normalize}) <{p})')
 
-    scmd = ' '.join(cmd)
-    print(scmd)
+    scmd = ' '.join(map(str, cmd))
     run(scmd, shell=True, executable='/bin/bash')
 
 
 def main():
     import argparse
     p = argparse.ArgumentParser()
-    p.add_argument('path', type=Path)
+    p.add_argument('paths', nargs='*', type=Path)
     args = p.parse_args()
 
-    path = args.path
-    compare(path)
+    paths = args.paths
+    if len(paths) == 0:
+        pit = [[x.relative_to(base) for x in base.rglob('*') if not x.is_dir()] for base in (OLD, NEW)]
+        paths = list(sorted(
+            set(chain.from_iterable(pit)),
+            key=lambda p: (p.suffix, p), # sorting by suffix for grouping in the comparison report
+        ))
+
+    for path in paths:
+        if 'templates' in path.parts:
+            # exclude templates, they are hakyll vs jinja
+            continue
+
+        print(f'Comparing {path}')
+        compare(path)
 
 
 if __name__ == '__main__':
