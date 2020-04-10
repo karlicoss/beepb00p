@@ -243,6 +243,7 @@ class Post(NamedTuple):
     body: str
     draft: bool
     special: bool
+    has_math: bool
     tags: List[str]
     url: str
 
@@ -417,6 +418,9 @@ def _compile_post(path: Path) -> Tuple[Path, Post]:
     body = body_file.read_text()
     body_file.unlink()
 
+    # strip private stuff
+    body = ''.join(line for line in body.splitlines(keepends=True) if 'NOEXPORT' not in line)
+
 
     # TODO for org-mode, need to be able to stop here and emit whatever we compiled?
     post_t = template('templates/post.html')
@@ -441,6 +445,7 @@ def _compile_post(path: Path) -> Tuple[Path, Post]:
         draft  =ctx.get('draft') is not None,
         url    =ctx['url'],
         special=special,
+        has_math=ctx.get('has_math', False),
     )
 
 
