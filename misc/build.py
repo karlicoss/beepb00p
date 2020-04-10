@@ -12,8 +12,8 @@ from datetime import datetime
 import shutil
 import sys
 from tempfile import TemporaryDirectory
-from typing import cast, Dict, Any, List, Optional, Union, NamedTuple, Tuple
-
+from typing import cast, Dict, Any, List, Optional, Union, Tuple
+from dataclasses import dataclass
 
 import pytz # type: ignore
 
@@ -31,7 +31,8 @@ tz = pytz.utc # TODO ugh this is what Hakyll assumed
 templates = inputs / 'templates'
 
 
-class Post(NamedTuple):
+@dataclass(unsafe_hash=True)
+class Post:
     title: str
     summary: str
     date: Optional[datetime]
@@ -55,7 +56,6 @@ PathIsh = Union[Path, str]
 log = logging.getLogger('blog')
 
 
-from dataclasses import dataclass
 @dataclass(init=False, unsafe_hash=True)
 class MPath:
     path: Path
@@ -690,16 +690,35 @@ def clean():
         else:
             f.unlink()
 
+def serve():
+    # TODO less logging??
+    from http.server import HTTPServer, SimpleHTTPRequestHandler
+    Handler = lambda *args: SimpleHTTPRequestHandler( # type: ignore[misc]
+        *args,
+        directory=str(output),
+    )
+    server_address = ('', 8000)
+    log.info("serving %s", server_address)
+    server = HTTPServer(server_address, Handler)
+    import threading
+    thread = threading.Thread(target=server.serve_forever)
+    # TODO shutdown server on exit??
+    thread.start()
+
 
 def main():
     import argparse
     p = argparse.ArgumentParser()
     p.add_argument('--debug' , action='store_true', help='Debug logging')
     p.add_argument('--filter', action='append', required=False, type=str, help='glob to filter the inputs')
+    p.add_argument('--serve', action='store_true') # TODO host/port?
     args = p.parse_args()
 
     debug = args.debug
     setup_logging(level=getattr(logging, 'DEBUG' if debug else 'INFO'))
+
+    if args.serve:
+        serve()
 
     filter = args.filter
     if filter is not None:
@@ -761,3 +780,5 @@ if __name__ == '__main__':
 
 # ok, functions are 'kinda pure'
 # not completely because of filesystem use, but mostly pure
+
+# TODO add redirects? maybe even to the source, copy htmls as is
