@@ -8,6 +8,7 @@ import os
 import re
 import logging
 from subprocess import check_call, run, check_output, PIPE
+import time
 from datetime import datetime
 import shutil
 import sys
@@ -34,7 +35,7 @@ templates = inputs / 'templates'
 @dataclass(unsafe_hash=True)
 class Post:
     title: str
-    summary: str
+    summary: Optional[str]
     date: Optional[datetime]
     body: str
     draft: bool
@@ -104,12 +105,16 @@ def compile_org_body(*, compile_script: Path, path: Path) -> Path:
         input=path.read_bytes(),
         stdout=PIPE,
         stderr=PIPE,
-        check=True,
     )
     out = res.stdout.decode('utf8')
+    err = res.stderr.decode('utf8')
+    if res.returncode > 0:
+        log.error(err)
+        res.check_returncode()
+
+
     (d / 'body').write_text(out)
 
-    err = res.stderr.decode('utf8')
 
     # TODO filter this in emacs/compile-org?
     filtered = []
@@ -483,11 +488,12 @@ def _compile_post_aux(mpath: MPath, deps: Deps) -> Tuple[Path, Post]:
 
     full = relativize_urls(path=path, full=full)
 
+    ttags = cast(Tuple[str], tuple(t['body'] for t in ctx.get('tags', [])))
     post = Post(
         title  =ctx['title'],
         summary=ctx.get('summary'),
         date   =date,
-        tags   =tuple(t['body'] for t in ctx.get('tags', [])),
+        tags   =ttags,
         body   =full,
         draft  =ctx.get('draft') is not None,
         url    =ctx['url'],
@@ -567,6 +573,11 @@ def feeds(posts: Tuple[Post]):
     (output / 'rss.xml' ).write_text(rss .rss_str (pretty=True).decode('utf8'))
 
 
+from typing import NoReturn
+def throw() -> NoReturn:
+    raise AssertionError("shoudln't happen!")
+
+
 def feed(posts: Tuple[Post], kind: str) -> FeedGenerator:
     log.debug('generading %s feed', kind)
     fg = FeedGenerator()
@@ -580,7 +591,8 @@ def feed(posts: Tuple[Post], kind: str) -> FeedGenerator:
     fg.link(rel='self', href=bb(f'/{kind}.xml'))
     fg.link(href=bb(''))
     if len(posts) > 0:
-        fg.updated(max(tz.localize(p.date) for p in posts))
+        dates = (p.date for p in posts)
+        fg.updated(max(tz.localize(d) if d is not None else throw() for d in dates))
 
     # eh, apparnetly in adds items to the feed from bottom to top...
     for post in reversed(posts):
@@ -711,7 +723,8 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument('--debug' , action='store_true', help='Debug logging')
     p.add_argument('--filter', action='append', required=False, type=str, help='glob to filter the inputs')
-    p.add_argument('--serve', action='store_true') # TODO host/port?
+    p.add_argument('--serve' , action='store_true') # TODO host/port?
+    p.add_argument('--watch' , action='store_true')
     args = p.parse_args()
 
     debug = args.debug
@@ -719,6 +732,8 @@ def main():
 
     if args.serve:
         serve()
+
+    watch = args.watch or args.serve
 
     filter = args.filter
     if filter is not None:
@@ -745,8 +760,9 @@ def main():
         while True:
             log.debug('detecting changes...')
             compile_all(max_workers=7)
-            import time
-            # break
+
+            if not watch:
+                break
             time.sleep(1)
 
 
