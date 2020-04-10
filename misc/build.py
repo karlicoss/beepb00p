@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 from pathlib import Path
 from functools import lru_cache, wraps
+from itertools import chain
+from glob import glob
+from fnmatch import fnmatch
 import os
 import re
 import logging
@@ -25,6 +28,28 @@ tz = pytz.utc # TODO ugh this is what Hakyll assumed
 ###
 
 
+templates = inputs / 'templates'
+
+
+class Post(NamedTuple):
+    title: str
+    summary: str
+    date: Optional[datetime]
+    body: str
+    draft: bool
+    special: bool
+    has_math: bool
+    tags: List[str]
+    url: str
+
+    @property
+    def dates(self) -> Optional[str]:
+        d = self.date
+        if d is None:
+            return None
+        return d.strftime('%d %B %Y')
+
+
 PathIsh = Union[Path, str]
 
 log = logging.getLogger('blog')
@@ -34,7 +59,7 @@ TMP_DIR: Path = cast(Path, None)
 
 
 # TODO use wraps??
-cache = lambda f: lru_cache(1)(f)
+cache = lambda f: lru_cache(maxsize=None)(f)
 
 
 # TODO better name?..
@@ -55,7 +80,7 @@ def compile_org(*, compile_script: Path, path: Path) -> Path:
     d.mkdir()
 
     # TODO each thread should prob. capture logs...
-    log.debug('Running %s %s', compile_script, d)
+    log.debug('running %s %s', compile_script, d)
 
     # TODO not sure that compile-org should.
     # unless I copy files separately in the 'sandbox'?
@@ -92,7 +117,7 @@ def compile_org(*, compile_script: Path, path: Path) -> Path:
         filtered.append(line)
     if len(filtered) > 0:
         err = '\n'.join(filtered)
-        print(err, file=sys.stderr)
+        log.debug('%s: emacs output \n%s', path, indent(err))
 
     # TODO how to clean stale stuff that's not needed in output dir?
     # TODO output determined externally?
@@ -100,7 +125,10 @@ def compile_org(*, compile_script: Path, path: Path) -> Path:
     return d
 
 
-from typing import Dict
+def indent(s: str, spaces=2) -> str:
+    return ''.join(' ' * spaces + s for s in s.splitlines(keepends=True))
+
+
 Meta = Dict[str, Any]
 
 
@@ -109,14 +137,8 @@ def pandoc_meta(path: Path) -> Meta:
     with TemporaryDirectory() as td:
         t = Path(td) / 'meta.tpl'
         t.write_text('$meta-json$')
-        res = check_output([
-            'pandoc',
-            '--template', t,
-            path
-        ])
-
+        res = check_output(['pandoc', '--template', t, path])
         import json
-        # TODO might be none??
         return json.loads(res.decode('utf8'))
 
 
@@ -136,10 +158,7 @@ def compile_md(*, path: Path) -> Path:
     d.mkdir()
 
     res = run(
-        [
-            'pandoc',
-            '--to', 'html',
-        ],
+        ['pandoc', '--to', 'html'],
         input=path.read_bytes(),
         stdout=PIPE,
         check=True,
@@ -188,31 +207,17 @@ def the(things):
     return x
 
 
-
-class Post(NamedTuple):
-    title: str
-    summary: str
-    date: Optional[datetime]
-    body: str
-    draft: bool
-    special: bool
-    has_math: bool
-    tags: List[str]
-    url: str
-
-    @property
-    def dates(self) -> Optional[str]:
-        d = self.date
-        if d is None:
-            return None
-        return d.strftime('%d %B %Y')
-
-
 def compile_post(path: Path) -> Tuple[Path, Post]:
+    log.info('compiling %s', path)
     try:
-        return _compile_post(path)
+        res = _compile_post(path)
     except Exception as e:
         raise RuntimeError(f'While compiling {path}') from e
+    else:
+        # TODO wonder if child logger could be a thing?
+        # TODO measure time took?
+        log.info('compiled %s', path)
+        return res
 
 
 def _compile_post(path: Path) -> Tuple[Path, Post]:
@@ -355,7 +360,6 @@ def _compile_post(path: Path) -> Tuple[Path, Post]:
     if opath.parent != outs:
         # ugh. need to move hierarchy down to preserve relative paths..
         outs_files = list(x for x in outs.rglob('*') if not x.is_dir())
-        log.debug("OUTS: %s", outs_files)
         for f in outs_files:
             r = f.relative_to(outs)
             to = opath.parent / r
@@ -373,12 +377,12 @@ def _compile_post(path: Path) -> Tuple[Path, Post]:
 
 
     # TODO for org-mode, need to be able to stop here and emit whatever we compiled?
-    post_t = template('templates/post.html')
+    post_t = template('post.html')
     pbody = post_t.render(
         body=body,
         **ctx,
     )
-    full_t = template('templates/default.html')
+    full_t = template('default.html')
     full = full_t.render(
         body=pbody,
         **ctx,
@@ -409,9 +413,7 @@ def _compile_post(path: Path) -> Tuple[Path, Post]:
     # TODO might need to move everything into the same dir??
     opath.write_text(full)
 
-    check_call(['tree', outs])
-
-
+    check_call(['tree', '--noreport', outs])
     return outs, post
 
 
@@ -436,38 +438,26 @@ def relativize_urls(path: Path, full: str):
 from jinja2 import Template # type: ignore
 @cache
 def template(name: str) -> Template:
-    log.debug('reloading template %s', name, )
-    ts = templates()
+    log.debug('loading template %s', name, )
+    ts = _templates()
     return ts.get_template(name)
 
 
 @cache
-def templates():
-    log.debug('reloading all templates')
+def _templates():
     from jinja2 import FileSystemLoader, Environment # type: ignore
-    env = Environment(loader=FileSystemLoader(str(inputs)))
+    env = Environment(loader=FileSystemLoader(str(templates)))
     return env
 
-from itertools import chain
+
 
 INPUTS = list(sorted({
     *[c.relative_to(content) for c in chain(
-        # TODO md??
-        content.glob('*.org'),
-        content.glob('*.ipynb'),
+        content.rglob('*.md'),
+        # TODO make more defensive??
+        [x for x in content.rglob('*.org') if 'drafts' not in x.parts],
+        content.rglob('*.ipynb'),
     )],
-    # Path('configs-suck.org'),
-    # Path('exports.org'),
-    # Path('scrapyroo.org'),
-    # Path('tags.org'),
-    # content / 'myinfra.org',
-    # *content.glob('*.org'),
-    # Path('wave.ipynb'),
-    # Path('ipynb-singleline.ipynb'),
-    # content / 'contemp-art.org',
-    # Path('sandbox/test.org'),
-    # Path('sandbox/testipython.ipynb'),
-    # *content.glob('*.ipynb'),
 }))
 
 
@@ -517,7 +507,7 @@ def feed(posts: List[Post], kind: str) -> FeedGenerator:
 
 
 def posts_list(posts: List[Post], name: str, title: str):
-    it = template(f'templates/{name}')
+    it = template(name)
 
     pbody = it.render(posts=posts)
 
@@ -526,7 +516,7 @@ def posts_list(posts: List[Post], name: str, title: str):
     ctx['title'] = title
     ctx['url'] = f'/{name}'
 
-    full_t = template('templates/default.html')
+    full_t = template('default.html')
     full = full_t.render(
         body=pbody,
         **ctx,
@@ -539,6 +529,11 @@ def posts_list(posts: List[Post], name: str, title: str):
 
 
 def compile_all(max_workers=None):
+    # preload all templates
+    for t in templates.glob('*.html'):
+        template(t.name)
+
+
     def move(from_: Path, ext: str):
         for f in from_.rglob('*.' + ext):
             log.debug('merging %s', f)
@@ -567,8 +562,6 @@ def compile_all(max_workers=None):
         top = output / to
         top.parent.mkdir(exist_ok=True, parents=True)
         shutil.copy(from_, top)
-
-    from glob import glob
 
     # TODO fuck. doesn't follow symlinks...
     copy(inputs / 'meta/robots.txt'    , 'robots.txt')
@@ -617,7 +610,6 @@ def compile_all(max_workers=None):
     feeds(for_feed)
 
 
-
 def clean():
     for f in output.iterdir():
         if f.is_dir():
@@ -629,11 +621,28 @@ def clean():
 def main():
     import argparse
     p = argparse.ArgumentParser()
-    p.add_argument('--debug', action='store_true', help='Debug logging')
+    p.add_argument('--debug' , action='store_true', help='Debug logging')
+    p.add_argument('--filter', action='append', required=False, type=str, help='glob to filter the inputs')
     args = p.parse_args()
 
     debug = args.debug
     setup_logging(level=getattr(logging, 'DEBUG' if debug else 'INFO'))
+
+    filter = args.filter
+    if filter is not None:
+        filtered = []
+
+        global INPUTS
+        for x in INPUTS:
+            if any(fnmatch(str(x), f) for f in filter):
+                filtered.append(x)
+            else:
+                log.debug('filtered out %s', x)
+
+        if len(filtered) == 0:
+            log.warning('no files are filtered by %s', filter)
+
+        INPUTS = filtered
 
     clean()
     global TMP_DIR
@@ -656,10 +665,6 @@ if __name__ == '__main__':
 
 
 # TODO self check with mypy/pylint??
-
-
-# TODO make sure to port todo stripping
-# TODO make urls relative?..
 
 # TODO feed needs to be compact to fit in 512K limit...
 
