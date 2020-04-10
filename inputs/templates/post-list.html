@@ -1,0 +1,22 @@
+<!-- TODO hmm, main should have container class on it? -->
+<div class="posts-list">
+
+{% for item in posts %}
+    <div class="post">
+        <a href="{{ item.url }}" class="post-link">
+            <div class="title">{% if item.draft %}🚧{% endif %} {{ item.title }}</div>
+            {% if item.summary is not none%}<div class="summary">{{ item.summary }}</div>{% endif %}
+        </a>
+
+        {% if comment %} TODO add machine readable datetime {% endif %}
+        {% if comment %} TODO don't need "date" class; just use time tag? {% endif %}
+        <time class="date">{{ item.dates }}</time>
+
+        <span class="post-tags">
+            {% if comment %} space here is useful for tui browsers {% endif %}
+            {% for tag in item.tags %} <a class="post-tag" href="/tags.html#{{ tag }}">#{{ tag }}</a>{% endfor %}
+        </span>
+    </div>
+{% endfor %}
+
+</div>

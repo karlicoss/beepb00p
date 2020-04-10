@@ -1,56 +1,56 @@
-$if(style_ipynb)$
+{% if style_ipynb %}
 <link rel="stylesheet" href="/css/ipynb.css" />
 <link rel="stylesheet" href="/css/ipynb-syntax.css" />
-$endif$
-$if(style_org)$
+{% endif %}
+{% if style_org %}
 <!-- <link rel="stylesheet" href="/css/org.css" /> -->
-$if(comment)$
+{% if comment %}
 TODO hmm only add htmlize on demand?
 TODO shit, htmlize messes with a and body tags...
-$endif$
+{% endif %}
 <link rel="stylesheet" href="/css/htmlize.css" />
 <link rel="stylesheet" href="/css/org-default.css" />
 
 <link rel="stylesheet" href="/css/org-extra.css?v=3" />
-$endif$
-$if(style_md)$
-$endif$
+{% endif %}
+{% if style_md %}
+{% endif %}
 
 <article>
-    $if(draft)$
+    {% if draft %}
     <div>THIS IS A DRAFT! It will appear on the main page once finished!</div>
-    $endif$
+    {% endif %}
     <section class="post-title">
-    <h1>$title$</h1>
-    $if(summary)$<div class="summary">$summary$</h2>$endif$
+    <h1>{{ title }}</h1>
+    {% if summary %}<div class="summary">{{ summary }}</h2>{% endif %}
     </section>
     <!-- are sections appropriate for that? -->
 
     <section class="content">
-    $body$
+    {{ body }}
     </section>
 
-    $if(type_special)$
-    $else$
+    {% if type_special %}
+    {% else %}
     <section class="footer">
-        <div class="post-tags">$for(tags)$<a class="post-tag" href="/tags.html#$body$">#$body$</a>$sep$ $endfor$</div>
+        <div class="post-tags">{% for item in tags %}<a class="post-tag" href="/tags.html#{{ item.body }}">#{{ item.body }}</a> {{ item.sep }}{% endfor %}</div>
         <!-- TODO post-date? -->
-        <div class="date">$date$</div>
+        <div class="date">{{ date }}</div>
     </section>
-    $endif$
+    {% endif %}
 
-    $if(pingback)$
+    {% if pingback %}
     <br>
     <div>Discussion:</div>
     <ul>
-    $for(pingback)$
-        <li><a href="$url$">$title$</a></li>
-    $endfor$
+    {% for item in pingback %}
+        <li><a href="{{ item.url }}">{{ item.title }}</a></li>
+    {% endfor %}
     </ul>
-    $endif$
+    {% endif %}
 
     <section class="comments">
-    $partial("templates/isso.html")$
+    {% include "templates/isso.html" %}
     </section>
 
 </article>
