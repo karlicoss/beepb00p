@@ -1,0 +1,43 @@
+#!/usr/bin/env python3
+from pathlib import Path
+from typing import Optional
+from subprocess import run
+
+OLD = Path('oldsite')
+NEW = Path('site2')
+
+
+def compare(p):
+    suf = p.suffix
+    normalize: Optional[str]
+    if suf == '.html':
+        normalize = r'python3 -c "import sys; from bs4 import BeautifulSoup as bs; sys.stdout.write(bs(sys.stdin.read(), \"html5lib\").prettify())"'
+    elif suf == '.xml':
+        normalize = r'xmllint --format - | grep "\S" | sed "s/^[ \t]*//"'
+    else:
+        normalize = None
+
+    cmd = ['diff']
+    for p in [OLD / p, NEW / p]:
+        if normalize is None:
+            cmd.append(p)
+        else:
+            cmd.append(f'<({normalize} <{p})')
+
+    scmd = ' '.join(cmd)
+    print(scmd)
+    run(scmd, shell=True, executable='/bin/bash')
+
+
+def main():
+    import argparse
+    p = argparse.ArgumentParser()
+    p.add_argument('path', type=Path)
+    args = p.parse_args()
+
+    path = args.path
+    compare(path)
+
+
+if __name__ == '__main__':
+    main()
