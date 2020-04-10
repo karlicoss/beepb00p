@@ -54,6 +54,19 @@ PathIsh = Union[Path, str]
 
 log = logging.getLogger('blog')
 
+
+from dataclasses import dataclass
+@dataclass(init=False, unsafe_hash=True)
+class MPath:
+    path: Path
+    mtime: float
+
+    def __init__(self, path: PathIsh) -> None:
+        self.path = Path(path)
+        self.mtime = self.path.stat().st_mtime
+
+    # TODO __str__?
+
 # global temporary directory
 TMP_DIR: Path = cast(Path, None)
 
@@ -69,13 +82,13 @@ def sanitize(path: Path) -> str:
     pp = pp.replace('/', '_')
     return pp
 
-# TODO not sure if should create it first?
 
-# TODO make emacs a bit quieter; do not display all the 'Loading' stuff
-# TODO needs to depend on compile_script and path
-# TODO add COMPILE_ORG to dependency?
-def compile_org(*, compile_script: Path, path: Path) -> Path:
-    dname = sanitize(path)
+# TODO how to clean old results??
+@cache
+def compile_org(*, compile_script: MPath, path: MPath) -> Path:
+    log.debug('compiling %s %s', compile_script, path)
+
+    dname = sanitize(path.path)
     d = TMP_DIR / dname
     d.mkdir()
 
@@ -86,11 +99,11 @@ def compile_org(*, compile_script: Path, path: Path) -> Path:
     # unless I copy files separately in the 'sandbox'?
     res = run(
         [
-            compile_script,
+            compile_script.path,
             '--output-dir', d,
             # '--org',  # TODO
         ],
-        input=path.read_bytes(),
+        input=path.path.read_bytes(),
         stdout=PIPE,
         stderr=PIPE,
         check=True,
@@ -207,22 +220,57 @@ def the(things):
     return x
 
 
-def compile_post(path: Path) -> Tuple[Path, Post]:
+
+def _move(from_: Path, ext: str):
+    for f in from_.rglob('*.' + ext):
+        log.debug('merging %s', f)
+        rel = f.relative_to(from_)
+        to = output / rel
+
+        # TODO FIXME think how to clean up old results..
+        # assert not to.exists(), to
+
+        to.parent.mkdir(exist_ok=True) # meh
+        shutil.move(f, to)
+
+
+@cache
+def compile_post(path: MPath) -> Tuple[Path, Post]:
     log.info('compiling %s', path)
     try:
         res = _compile_post(path)
     except Exception as e:
         raise RuntimeError(f'While compiling {path}') from e
-    else:
-        # TODO wonder if child logger could be a thing?
-        # TODO measure time took?
-        log.info('compiled %s', path)
-        return res
+
+    # TODO wonder if child logger could be a thing?
+    # TODO measure time took?
+    rpath, rpost = res
+    log.info('compiled %s', path)
+
+    _move(rpath, 'html')
+    _move(rpath, 'png')
+
+    for root, dirs, files in os.walk(rpath, topdown=False):
+        # remove all empty dirs. meh.
+        if len(files) == 0:
+            for d in dirs:
+                dd = (Path(root) / d)
+                dd.rmdir()
+
+    remaining = list(rpath.rglob('*'))
+    if len(remaining) > 0:
+        raise RuntimeError(f'remaining files: {remaining}')
+    rpath.rmdir()
+
+    return rpath, rpost
 
 
-def _compile_post(path: Path) -> Tuple[Path, Post]:
-    assert not path.is_absolute(), path
+def _compile_post(mpath: MPath) -> Tuple[Path, Post]:
+    path = mpath.path
+    if path.is_absolute():
+        path = path.relative_to(content) # meh
     apath = content / path
+    # TODO not sure which path should really be used..
 
     suffix = path.suffix
 
@@ -300,8 +348,8 @@ def _compile_post(path: Path) -> Tuple[Path, Post]:
     outs: Path
     if suffix == '.org':
         outs = compile_org(
-            compile_script=Path('misc/compile_org.py'),
-            path=apath,
+            compile_script=MPath('misc/compile_org.py'),
+            path=MPath(apath),
         )
         ctx['style_org'] = True
 
@@ -484,7 +532,8 @@ def feed(posts: List[Post], kind: str) -> FeedGenerator:
     fg.id(bb(f'/{kind}.xml'))
     fg.link(rel='self', href=bb(f'/{kind}.xml'))
     fg.link(href=bb(''))
-    fg.updated(max(tz.localize(p.date) for p in posts))
+    if len(posts) > 0:
+        fg.updated(max(tz.localize(p.date) for p in posts))
 
     # eh, apparnetly in adds items to the feed from bottom to top...
     for post in reversed(posts):
@@ -533,17 +582,6 @@ def compile_all(max_workers=None):
     for t in templates.glob('*.html'):
         template(t.name)
 
-
-    def move(from_: Path, ext: str):
-        for f in from_.rglob('*.' + ext):
-            log.debug('merging %s', f)
-            rel = f.relative_to(from_)
-            to = output / rel
-            assert not to.exists(), to
-
-            to.parent.mkdir(exist_ok=True) # meh
-            shutil.move(f, to)
-
     # TODO later, move this into the content??
     # it makes sense to keep everything as intact as possible during export
     # so you could reference stuff in org-mode sources
@@ -578,22 +616,8 @@ def compile_all(max_workers=None):
     posts = []
     from concurrent.futures import ThreadPoolExecutor
     with ThreadPoolExecutor(max_workers=max_workers) as pool:
-        for res, post in pool.map(compile_post, INPUTS):
+        for res, post in pool.map(compile_post, map(lambda p: MPath(content / p), INPUTS)):
             posts.append(post)
-            move(res, 'html')
-            move(res, 'png')
-
-            # TODO remove all empty dirs???
-            for root, dirs, files in os.walk(res, topdown=False):
-                if len(files) == 0:
-                    for d in dirs:
-                        dd = (Path(root) / d)
-                        dd.rmdir()
-
-            if res.exists():
-                remaining = list(res.rglob('*'))
-                if len(remaining) > 0:
-                    raise RuntimeError(f'remaining files: {remaining}')
 
     # TODO FIXME body needs to contain compiled??
     posts = list(reversed(sorted(posts, key=lambda p: datetime.min if p.date is None else p.date)))
