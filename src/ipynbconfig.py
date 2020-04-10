@@ -3,7 +3,7 @@
 c = get_config()
 c.NbConvertApp.export_format = 'html'
 
-c.HTMLExporter.template_file = 'misc/mybasic.tpl'
+c.HTMLExporter.template_file = 'src/mybasic.tpl'
 
 c.TagRemovePreprocessor.remove_cell_tags.add('noexport') #  TODO emacs tags?
 

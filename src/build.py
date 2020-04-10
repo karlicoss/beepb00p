@@ -254,8 +254,8 @@ class OrgDeps:
 
     def __init__(self, path: MPath):
         self.path = path
-        self.compile_org = MPath(ROOT / 'misc/compile_org.py')
-        self.misc = (      MPath(ROOT / 'misc/compile-org.el'), )
+        self.compile_org = MPath(ROOT / 'src/compile_org.py')
+        self.misc = (      MPath(ROOT / 'src/compile-org.el'), )
 
 
 @dataclass(unsafe_hash=True)
@@ -271,7 +271,7 @@ class IpynbDeps:
 
     def __init__(self, path: MPath):
         self.path = path
-        self.compile_ipynb = MPath(ROOT / 'misc/compile-ipynb')
+        self.compile_ipynb = MPath(ROOT / 'src/compile-ipynb')
 
 
 Deps = Union[OrgDeps, MdDeps, IpynbDeps]

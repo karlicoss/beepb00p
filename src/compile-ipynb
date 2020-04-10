@@ -34,7 +34,7 @@ def run(tdir: Path, args, *rest):
     check_call([
         "jupyter", "nbconvert",
         "--execute",
-        "--config", "misc/ipynbconfig.py",
+        "--config", Path(__file__).parent / 'ipynbconfig.py',
         "--stdin",
         # right, looks like in --stdout mode notebook files are not output anywhere... 
         "--output-dir", str(tdir),
