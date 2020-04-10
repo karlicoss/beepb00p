@@ -2,12 +2,19 @@
 from pathlib import Path
 from functools import lru_cache, wraps
 import os
+import re
 from subprocess import check_call, run, check_output, PIPE
 from datetime import datetime
 import shutil
 import sys
 from tempfile import TemporaryDirectory
 from typing import cast, Dict, Any, List, Optional, Union, NamedTuple, Tuple
+
+
+ROOT    = Path(__file__).absolute().parent.parent
+inputs  = ROOT / 'inputs'
+content = ROOT / 'content'
+output  = Path('site') # TODO relative to ROOT??
 
 
 import pytz # type: ignore
@@ -104,11 +111,6 @@ def compile_org(*, compile_script: Path, path: Path) -> Path:
     return d
 
 
-# TODO meh, make it relative to the script?
-ROOT = Path('.').absolute()
-content = Path('content').absolute()
-
-
 from typing import Dict
 Meta = Dict[str, Any]
 
@@ -189,44 +191,6 @@ def compile_ipynb(*, compile_script: Path, path: Path) -> Path:
 
     return d
 
-
-# TODO move out?
-import re
-# eh, I'm not sure why hakyll chose a different template format...
-# considering I adapted it with string replacement..
-def hakyll_to_jinja(body: str) -> str:
-    replacements = [
-        ('$if('     , '{% if '         ),
-        ('$else$'   , '{% else %}'     ),
-        ('$endif$'  , '{% endif %}'    ),
-        ('$for('    , '{% for item in '),
-        # meh.
-        ('$body$$sep$ '    ,
-         '{{ item.body }}{{ item.sep }}'),
-        ('$body$">#$body$</a>$sep$ ',
-         '{{ item.body }}">#{{ item.body }}</a> {{ item.sep }}'),
-
-        ('$url$">$title$',
-         '{{ item.url }}">{{ item.title }}'),
-
-        ("inlineMath: [ ['$$','$$']",
-         "inlineMath: [ ['$','$']"),
-
-        ('$endfor$' , '{% endfor %}'   ),
-        ('$partial(', '{% include '    ),
-        (')$'       , ' %}'            ),
-    ]
-    for f, t in replacements:
-        body = body.replace(f, t)
-    body = re.sub(r'\$(\w+)\$', r'{{ \1 }}', body)
-
-    for line in body.splitlines():
-        pass
-        # assert '$' not in line, line
-    return body
-
-# TODO not sure how metadata should be handled... does every post really have
-# TODO if we use templates in python (as f-strings), they can be statically checked..
 
 def the(things):
     ss = set(things)
@@ -478,15 +442,9 @@ def relativize_urls(path: Path, full: str):
             continue
         if href.startswith('/'):
             a['href'] = rel + href
-    full = soup.prettify()
-    return full
-
-
-from jinja2 import Template, Environment, FileSystemLoader # type: ignore
-
+    return str(soup)
 
 # TODO should use Path with mtime etc
-
 
 import threading
 # right, separate threads might load twice
@@ -495,7 +453,7 @@ def dbg(fmt: str, *args, **kwargs):
     log.debug('%s: ' + fmt, threading.current_thread().name, *args, **kwargs)
 
 
-
+from jinja2 import Template # type: ignore
 @cache
 def template(name: str) -> Template:
     dbg('reloading template %s', name, )
@@ -503,57 +461,11 @@ def template(name: str) -> Template:
     return ts.get_template(name)
 
 
-output = Path('site2')
-
 @cache
 def templates():
     dbg('reloading all templates')
-
-    outputs = output / 'templates'
-
-    # ugh. a bit horrible
-    bdir = output / 'tmp'
-    bdir.mkdir(exist_ok=True)
-    # tdir needs on the same FS as output, otherwise it's not possible to do an atomic rename...
-
-    if not outputs.exists():
-        with TemporaryDirectory(dir=bdir) as td:
-            tdir = Path(td)
-            for t in chain.from_iterable(Path(td).glob('*.html') for td in ('templates', 'meta')):
-                out = tdir / t.name
-                tt = t.read_text()
-                body = hakyll_to_jinja(tt)
-
-                if t.name == 'post-list.html':
-                    # meh. TODO remove later...
-                    for a, b in [
-                            ('{{ url }}'     , '{{ item.url }}'    ),
-                            (' draft '       , ' item.draft '      ),
-                            (' title '       , ' item.title '      ),
-                            (' summary '     , ' item.summary '    ),
-                            (' date '        , ' item.dates '      ),
-                            (' item in tags ', ' tag in item.tags '),
-                            (' body '        , ' tag '             ),
-                            (' if item.summary ' ,
-                             ' if item.summary is not none'),
-                    ]:
-                        body = body.replace(a, b)
-
-                out.write_text(body)
-
-            try:
-                tdir.rename(outputs)
-            except OSError as e:
-                if e.errno == 39: # 'Directory not empty'
-                    # ok, someone else managed to do it first
-                    pass
-                else:
-                    raise
-            else:
-                # prevent cleanup from complaining...
-                tdir.mkdir()
-
-    env = Environment(loader=FileSystemLoader(str(output)))
+    from jinja2 import FileSystemLoader, Environment # type: ignore
+    env = Environment(loader=FileSystemLoader(str(inputs)))
     return env
 
 from itertools import chain
@@ -619,9 +531,8 @@ def feed(posts: List[Post], kind: str) -> FeedGenerator:
         fe.updated(td)
         # TODO meh, later use proper update date...
         #
-        # TODO remove rss etc from contents. maybe?
-        # TODO only use text/html for comparisons?
-        fe.content(post.body, type='html') # , type='text/html')
+        # TODO use type=text/html for comparisons?
+        fe.content(post.body, type='html')
     return fg
 
 
@@ -680,12 +591,12 @@ def compile_all(max_workers=None):
     from glob import glob
 
     # TODO fuck. doesn't follow symlinks...
-    copy(ROOT / 'meta/robots.txt'    , 'robots.txt')
-    copy(ROOT / 'meta/robot-face.png', 'robot-face.png')
-    for f in (ROOT / 'css').rglob('*.css'):
-        copy(f, f.relative_to(ROOT))
-    for f in (ROOT / 'images').rglob('*.svg'):
-        copy(f, f.relative_to(ROOT))
+    copy(inputs / 'meta/robots.txt'    , 'robots.txt')
+    copy(inputs / 'meta/robot-face.png', 'robot-face.png')
+    for f in (inputs / 'css').rglob('*.css'):
+        copy(f, f.relative_to(inputs))
+    for f in (inputs / 'images').rglob('*.svg'):
+        copy(f, f.relative_to(inputs))
     # eh. apparently glob(recursive=True) always follows symlinks??
     for p in chain.from_iterable(glob(f'{content}/**/*.{x}', recursive=True) for x in ('jpg', 'svg', 'png')):
         f = Path(p)
@@ -761,3 +672,6 @@ if __name__ == '__main__':
 # TODO make urls relative?..
 
 # TODO feed needs to be compact to fit in 512K limit...
+
+# TODO not sure how metadata should be handled... does every post really have
+# TODO if we use templates in python (as f-strings), they can be statically checked..
