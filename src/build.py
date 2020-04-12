@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from pathlib import Path
 from functools import lru_cache, wraps
+from contextlib import contextmanager
 from itertools import chain
 from glob import glob
 from fnmatch import fnmatch
@@ -84,22 +85,17 @@ def sanitize(path: Path) -> str:
 
 
 # TODO how to clean old results??
-def compile_org_body(*, compile_script: Path, path: Path) -> Path:
+def compile_org_body(*, compile_script: Path, path: Path, dir_: Path) -> None:
     log.debug('compiling %s %s', compile_script, path)
-
-    dname = sanitize(path)
-    d = TMP_DIR / dname
-    d.mkdir()
-
     # TODO each thread should prob. capture logs...
-    log.debug('running %s %s', compile_script, d)
+    log.debug('running %s %s', compile_script, dir_)
 
     # TODO not sure that compile-org should.
     # unless I copy files separately in the 'sandbox'?
     res = run(
         [
             compile_script,
-            '--output-dir', d,
+            '--output-dir', dir_,
             # '--org',  # TODO
         ],
         input=path.read_bytes(),
@@ -113,7 +109,7 @@ def compile_org_body(*, compile_script: Path, path: Path) -> Path:
         res.check_returncode()
 
 
-    (d / 'body').write_text(out)
+    (dir_ / 'body').write_text(out)
 
 
     # TODO filter this in emacs/compile-org?
@@ -138,7 +134,6 @@ def compile_org_body(*, compile_script: Path, path: Path) -> Path:
     # TODO how to clean stale stuff that's not needed in output dir?
     # TODO output determined externally?
     # TODO some inputs
-    return d
 
 
 def indent(s: str, spaces=2) -> str:
@@ -169,11 +164,8 @@ def metadata(path: Path) -> Meta:
     return yaml.load(meta)
 
 
-def compile_md_body(*, path: Path) -> Path:
+def compile_md_body(*, path: Path, dir_: Path) -> None:
     log.debug('compiling %', path)
-
-    d = TMP_DIR / path.name
-    d.mkdir()
 
     res = run(
         ['pandoc', '--to', 'html'],
@@ -182,14 +174,10 @@ def compile_md_body(*, path: Path) -> Path:
         check=True,
     )
     out = res.stdout.decode('utf8')
-    (d / 'body').write_text(out)
-    return d
+    (dir_ / 'body').write_text(out)
 
 
-def compile_ipynb_body(*, compile_script: Path, path: Path) -> Path:
-    d = TMP_DIR / path.name
-    d.mkdir()
-
+def compile_ipynb_body(*, compile_script: Path, path: Path, dir_: Path) -> None:
     meta = metadata(path)
 
     # TODO make this an attribute of the notebook somehow? e.g. tag
@@ -202,7 +190,7 @@ def compile_ipynb_body(*, compile_script: Path, path: Path) -> Path:
     res = run(
         [
             compile_script,
-            '--output-dir', d,
+            '--output-dir', dir_,
             # TODO do we need it??
             '--item', str(itemid),
             *(['--allow-errors'] if allow_errors else []),
@@ -213,9 +201,7 @@ def compile_ipynb_body(*, compile_script: Path, path: Path) -> Path:
     )
     # TODO remove duplicats
     out = res.stdout.decode('utf8')
-    (d / 'body').write_text(out)
-
-    return d
+    (dir_ / 'body').write_text(out)
 
 
 def the(things):
@@ -249,8 +235,12 @@ def compile_post(path: MPath) -> Union[Exception, Post]:
 
 
 @dataclass(init=False, unsafe_hash=True)
-class OrgDeps:
+class BaseDeps:
     path: MPath
+
+
+@dataclass(init=False, unsafe_hash=True)
+class OrgDeps(BaseDeps):
     compile_org: MPath
     misc: Tuple[MPath]
 
@@ -261,14 +251,13 @@ class OrgDeps:
 
 
 @dataclass(unsafe_hash=True)
-class MdDeps:
-    path: MPath
+class MdDeps(BaseDeps):
+    pass
     # TODO pandoc dependency??
 
 
 @dataclass(init=False, unsafe_hash=True)
-class IpynbDeps:
-    path: MPath
+class IpynbDeps(BaseDeps):
     compile_ipynb: MPath
 
     def __init__(self, path: MPath):
@@ -277,6 +266,19 @@ class IpynbDeps:
 
 
 Deps = Union[OrgDeps, MdDeps, IpynbDeps]
+
+
+@contextmanager
+def compile_in_dir(path: Path):
+    dname = sanitize(path)
+    d = TMP_DIR / dname
+    d.mkdir()
+    try:
+        yield d
+    finally:
+        if d.exists():
+            shutil.rmtree(d)
+
 
 def _compile_post(mpath: MPath) -> Post:
     suf = mpath.path.suffix
@@ -290,38 +292,41 @@ def _compile_post(mpath: MPath) -> Post:
     else:
         raise RuntimeError(mpath)
 
-    return _compile_with_deps(mpath, deps)
+    with compile_in_dir(mpath.path) as dir_:
+        return _compile_with_deps(deps, dir_=dir_)
 
 
 @cache
-def _compile_with_deps(mpath: MPath, deps: Deps) -> Post:
+def _compile_with_deps(deps: Deps, dir_: Path) -> Post:
+    mpath = deps.path
 
     # TODO wonder if child logger could be a thing?
     # TODO measure time taken?
     log.info('compiling %s', mpath)
-    rpath, rpost = _compile_post_aux(mpath, deps)
+    # TODO rpath is d??
+    rpost = _compile_post_aux(deps, dir_=dir_)
     log.info('compiled %s', mpath)
 
-    _move(rpath, 'html')
-    _move(rpath, 'png')
+    _move(dir_, 'html')
+    _move(dir_, 'png')
 
-    for root, dirs, files in os.walk(rpath, topdown=False):
+    for root, dirs, files in os.walk(dir_, topdown=False):
         # remove all empty dirs. meh.
         if len(files) == 0:
             for d in dirs:
                 dd = (Path(root) / d)
                 dd.rmdir()
 
-    remaining = list(rpath.rglob('*'))
+    remaining = list(dir_.rglob('*'))
     if len(remaining) > 0:
         raise RuntimeError(f'remaining files: {remaining}')
-    rpath.rmdir()
+    dir_.rmdir()
 
     return rpost
 
 
-def _compile_post_aux(mpath: MPath, deps: Deps) -> Tuple[Path, Post]:
-    path = mpath.path
+def _compile_post_aux(deps: Deps, dir_: Path) -> Post:
+    path = deps.path.path
     if path.is_absolute():
         path = path.relative_to(content) # meh
     apath = content / path
@@ -401,9 +406,11 @@ def _compile_post_aux(mpath: MPath, deps: Deps) -> Tuple[Path, Post]:
     ctx['draft'] = meta.get('draft')
 
     if isinstance(deps, OrgDeps):
-        outs = compile_org_body(
+        compile_org_body(
+            # TODO let it figure it out from deps??
             compile_script=deps.compile_org.path,
             path=deps.path.path,
+            dir_=dir_,
         )
         ctx['style_org'] = True
 
@@ -439,29 +446,33 @@ def _compile_post_aux(mpath: MPath, deps: Deps) -> Tuple[Path, Post]:
             set_date(date)
     elif isinstance(deps, IpynbDeps):
         # TODO make a mode to export to python?
-        outs = compile_ipynb_body(
+        compile_ipynb_body(
             compile_script=deps.compile_ipynb.path,
             path=deps.path.path,
+            dir_=dir_,
         )
         ctx['style_ipynb'] = True
 
         ctx['has_math']     = meta.get('has_math'    , False)
         ctx['allow_errors'] = meta.get('allow_errors', False)
     elif isinstance(deps, MdDeps):
-        outs = compile_md_body(path=deps.path.path)
+        compile_md_body(
+            path=deps.path.path,
+            dir_=dir_,
+        )
         ctx['style_md'] = True
     else:
         raise RuntimeError(deps)
 
     assert ctx['title'] is not None, ctx
 
-    opath = outs / path
+    opath = dir_ / path
 
-    if opath.parent != outs:
+    if opath.parent != dir_:
         # ugh. need to move hierarchy down to preserve relative paths..
-        outs_files = list(x for x in outs.rglob('*') if not x.is_dir())
+        outs_files = list(x for x in dir_.rglob('*') if not x.is_dir())
         for f in outs_files:
-            r = f.relative_to(outs)
+            r = f.relative_to(dir_)
             to = opath.parent / r
             to.parent.mkdir(parents=True, exist_ok=True)
             log.debug('moving %s %s', f, to)
@@ -514,8 +525,8 @@ def _compile_post_aux(mpath: MPath, deps: Deps) -> Tuple[Path, Post]:
     # TODO might need to move everything into the same dir??
     opath.write_text(full)
 
-    check_call(['tree', '--noreport', outs])
-    return outs, post
+    check_call(['tree', '--noreport', dir_])
+    return post
 
 
 def relativize_urls(path: Path, full: str):
