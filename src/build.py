@@ -239,11 +239,13 @@ def _move(from_: Path, ext: str):
         shutil.move(f, to)
 
 
-def compile_post(path: MPath) -> Post:
+def compile_post(path: MPath) -> Union[Exception, Post]:
     try:
         return _compile_post(path)
     except Exception as e:
-        raise RuntimeError(f'While compiling {path}') from e
+        ex = RuntimeError(f'While compiling {path}')
+        ex.__cause__ = e
+        return ex
 
 
 @dataclass(init=False, unsafe_hash=True)
@@ -679,7 +681,13 @@ def compile_all(max_workers=None):
     from concurrent.futures import ThreadPoolExecutor
     with ThreadPoolExecutor(max_workers=max_workers) as pool:
         for post in pool.map(compile_post, map(lambda p: MPath(content / p), INPUTS)):
-            posts.append(post)
+            if isinstance(post, Exception):
+                ex = post
+                import traceback
+                parts = traceback.format_exception(Exception, ex, ex.__traceback__)
+                log.error(''.join(parts))
+            else:
+                posts.append(post)
 
     posts = list(reversed(sorted(posts, key=lambda p: datetime.min if p.date is None else p.date)))
 
