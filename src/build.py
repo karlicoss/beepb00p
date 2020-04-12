@@ -473,8 +473,6 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Post:
     else:
         raise RuntimeError(deps)
 
-    assert ctx['title'] is not None, ctx
-
     opath = dir_ / path
 
     if opath.parent != dir_:
@@ -512,7 +510,7 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Post:
 
     ttags = cast(Tuple[str], tuple(t['body'] for t in ctx.get('tags', [])))
     post = Post(
-        title  =ctx['title'],
+        title  =ctx.get('title', 'ERROR: NO TITLE'),
         summary=ctx.get('summary'),
         date   =date,
         tags   =ttags,
