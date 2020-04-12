@@ -412,7 +412,6 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Post:
     special = meta.get('special', False)
     ctx['type_special'] = special
     ctx['is_stable'] = True
-    ctx['draft'] = meta.get('draft')
 
     if isinstance(deps, OrgDeps):
         compile_org_body(
@@ -428,31 +427,41 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Post:
         # TODO need to make public?? also can remove from porg then..
         fprops = o._special_comments
 
+        def fprop(name: str) -> Optional[str]:
+            vals = fprops.get(name)
+            if vals is None:
+                return None
+            return the(vals)
+
         # print(fprops)
 
-        ttls = fprops.get('TITLE')
-        if ttls is not None:
-            set_title(the(ttls))
+        ttl = fprop('TITLE')
+        if ttl is not None:
+            set_title(ttl)
 
-        summs = fprops.get('SUMMARY')
-        if summs is not None:
-            set_summary(the(summs))
+        summ = fprop('SUMMARY')
+        if summ is not None:
+            set_summary(summ)
 
-        upids = fprops.get('UPID')
-        if upids is not None:
-            set_issoid(the(upids))
+        upid = fprop('UPID')
+        if upid is not None:
+            set_issoid(upid)
 
-        ftagss = fprops.get('FILETAGS')
-        if ftagss is not None:
-            ftags = the(ftagss)
+        ftags = fprop('FILETAGS')
+        if ftags is not None:
             tags = list(x for x in ftags.split(':') if len(x) > 0)
             set_tags(tags)
 
-        datess = fprops.get('DATE')
-        if datess is not None:
-            dates = the(datess)[1: 1 + len('0000-00-00 Abc')]
+        dates = fprop('DATE')
+        if dates is not None:
+            dates = dates[1: 1 + len('0000-00-00 Abc')]
             date = datetime.strptime(dates, '%Y-%m-%d %a')
             set_date(date)
+
+
+        draftp = fprop('DRAFT')
+        meta.update({} if draftp is None else {'draft': draftp})
+
     elif isinstance(deps, IpynbDeps):
         # TODO make a mode to export to python?
         compile_ipynb_body(
@@ -472,6 +481,8 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Post:
         ctx['style_md'] = True
     else:
         raise RuntimeError(deps)
+
+    ctx['draft'] = meta.get('draft')
 
     opath = dir_ / path
 
