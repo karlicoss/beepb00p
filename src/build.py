@@ -58,16 +58,20 @@ PathIsh = Union[Path, str]
 log = logging.getLogger('blog')
 
 
-@dataclass(init=False, unsafe_hash=True)
+@dataclass(frozen=True)
 class MPath:
     path: Path
     mtime: float
 
-    def __init__(self, path: PathIsh) -> None:
-        self.path = Path(path)
-        self.mtime = self.path.stat().st_mtime
 
-    # TODO __str__?
+def mpath(path: PathIsh):
+    # TODO ugh. if dataclass is frozen, we can't assign mtime in __init__???
+    # https://docs.python.org/3/library/dataclasses.html#frozen-instances
+    p = Path(path)
+    return MPath(
+        path=p,
+        mtime=p.stat().st_mtime,
+    )
 
 # global temporary directory
 TMP_DIR: Path = cast(Path, None)
@@ -234,35 +238,40 @@ def compile_post(path: MPath) -> Union[Exception, Post]:
         return ex
 
 
-@dataclass(init=False, unsafe_hash=True)
+@dataclass(init=False, frozen=True)
 class BaseDeps:
     path: MPath
 
 
-@dataclass(init=False, unsafe_hash=True)
+@dataclass(frozen=True)
 class OrgDeps(BaseDeps):
     compile_org: MPath
     misc: Tuple[MPath]
 
-    def __init__(self, path: MPath):
-        self.path = path
-        self.compile_org = MPath(ROOT / 'src/compile_org.py')
-        self.misc = (      MPath(ROOT / 'src/compile-org.el'), )
+
+def org_deps(path: MPath) -> OrgDeps:
+    return OrgDeps(
+        path = path,
+        compile_org = mpath(ROOT / 'src/compile_org.py'),
+        misc = (      mpath(ROOT / 'src/compile-org.el'),),
+        )
 
 
-@dataclass(unsafe_hash=True)
+@dataclass(frozen=True)
 class MdDeps(BaseDeps):
     pass
     # TODO pandoc dependency??
 
 
-@dataclass(init=False, unsafe_hash=True)
+@dataclass(frozen=True)
 class IpynbDeps(BaseDeps):
     compile_ipynb: MPath
 
-    def __init__(self, path: MPath):
-        self.path = path
-        self.compile_ipynb = MPath(ROOT / 'src/compile-ipynb')
+def ipynb_deps(path: MPath) -> IpynbDeps:
+    return IpynbDeps(
+        path = path,
+        compile_ipynb = mpath(ROOT / 'src/compile-ipynb'),
+    )
 
 
 Deps = Union[OrgDeps, MdDeps, IpynbDeps]
@@ -284,9 +293,9 @@ def _compile_post(mpath: MPath) -> Post:
     suf = mpath.path.suffix
     deps: Deps
     if   suf == '.org':
-        deps = OrgDeps(mpath)
+        deps = org_deps(mpath)
     elif suf == '.ipynb':
-        deps = IpynbDeps(mpath)
+        deps = ipynb_deps(mpath)
     elif suf == '.md':
         deps = MdDeps(mpath)
     else:
@@ -298,14 +307,14 @@ def _compile_post(mpath: MPath) -> Post:
 
 @cache
 def _compile_with_deps(deps: Deps, dir_: Path) -> Post:
-    mpath = deps.path
+    path = deps.path
 
     # TODO wonder if child logger could be a thing?
     # TODO measure time taken?
-    log.info('compiling %s', mpath)
+    log.info('compiling %s', path)
     # TODO rpath is d??
     rpost = _compile_post_aux(deps, dir_=dir_)
-    log.info('compiled %s', mpath)
+    log.info('compiled %s', path)
 
     _move(dir_, 'html')
     _move(dir_, 'png')
@@ -713,7 +722,7 @@ def compile_all(max_workers=None):
     posts = []
     from concurrent.futures import ThreadPoolExecutor
     with ThreadPoolExecutor(max_workers=max_workers) as pool:
-        for post in pool.map(compile_post, map(lambda p: MPath(content / p), get_inputs())):
+        for post in pool.map(compile_post, map(lambda p: mpath(content / p), get_inputs())):
             if isinstance(post, Exception):
                 ex = post
                 import traceback
