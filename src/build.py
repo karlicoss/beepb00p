@@ -563,14 +563,36 @@ def _templates():
 
 
 
-INPUTS = list(sorted({
-    *[c.relative_to(content) for c in chain(
-        content.rglob('*.md'),
-        # TODO make more defensive??
-        [x for x in content.rglob('*.org') if 'drafts' not in x.parts],
-        content.rglob('*.ipynb'),
-    )],
-}))
+FILTER = None
+
+@cache
+def get_filtered(inputs: Tuple[Path]) -> Tuple[Path]:
+    if FILTER is None:
+        return inputs
+   
+    filtered = []
+
+    for x in inputs:
+        if any(fnmatch(str(x), f) for f in FILTER):
+            filtered.append(x)
+        else:
+            log.debug('filtered out %s', x)
+
+    if len(filtered) == 0:
+        log.warning('no files are filtered by %s', FILTER)
+    return tuple(filtered)
+
+
+def get_inputs():
+    inputs = tuple(sorted({
+        *[c.relative_to(content) for c in chain(
+            content.rglob('*.md'),
+            # TODO make more defensive??
+            [x for x in content.rglob('*.org') if 'drafts' not in x.parts],
+            content.rglob('*.ipynb'),
+        )],
+    }))
+    return get_filtered(inputs)
 
 
 # TODO make a 'parallel' function??
@@ -691,7 +713,7 @@ def compile_all(max_workers=None):
     posts = []
     from concurrent.futures import ThreadPoolExecutor
     with ThreadPoolExecutor(max_workers=max_workers) as pool:
-        for post in pool.map(compile_post, map(lambda p: MPath(content / p), INPUTS)):
+        for post in pool.map(compile_post, map(lambda p: MPath(content / p), get_inputs())):
             if isinstance(post, Exception):
                 ex = post
                 import traceback
@@ -754,21 +776,8 @@ def main():
 
     watch = args.watch or args.serve
 
-    filter = args.filter
-    if filter is not None:
-        filtered = []
-
-        global INPUTS
-        for x in INPUTS:
-            if any(fnmatch(str(x), f) for f in filter):
-                filtered.append(x)
-            else:
-                log.debug('filtered out %s', x)
-
-        if len(filtered) == 0:
-            log.warning('no files are filtered by %s', filter)
-
-        INPUTS = filtered
+    global FILTER
+    FILTER = args.filter
 
     clean()
     global TMP_DIR
@@ -778,6 +787,7 @@ def main():
         log.debug('using temporary directory: %s', TMP_DIR)
         while True:
             log.debug('detecting changes...')
+            # TODO all cores - 1??
             compile_all(max_workers=7)
 
             if not watch:
