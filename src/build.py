@@ -14,7 +14,7 @@ from datetime import datetime
 import shutil
 import sys
 from tempfile import TemporaryDirectory
-from typing import cast, Dict, Any, List, Optional, Union, Tuple
+from typing import cast, Dict, Any, List, Optional, Union, Tuple, Iterable
 from dataclasses import dataclass
 
 import pytz # type: ignore
@@ -692,7 +692,7 @@ def posts_list(posts: Tuple[Post], name: str, title: str):
     (output / path).write_text(full)
 
 
-def compile_all(max_workers=None):
+def compile_all(max_workers=None) -> Iterable[Exception]:
     # preload all templates
     for t in templates.glob('*.html'):
         template(t.name)
@@ -737,6 +737,7 @@ def compile_all(max_workers=None):
                 import traceback
                 parts = traceback.format_exception(Exception, ex, ex.__traceback__)
                 log.error(''.join(parts))
+                yield ex
             else:
                 posts.append(post)
 
@@ -806,9 +807,13 @@ def main():
         while True:
             log.debug('detecting changes...')
             # TODO all cores - 1??
-            compile_all(max_workers=7)
+            errors = list(compile_all(max_workers=7))
+            if len(errors) > 0:
+                log.error('%d errors during the compilation', len(errors))
 
             if not watch:
+                if len(errors) > 0:
+                    sys.exit(1)
                 break
             time.sleep(1)
 
