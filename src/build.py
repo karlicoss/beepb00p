@@ -845,3 +845,5 @@ if __name__ == '__main__':
 # not completely because of filesystem use, but mostly pure
 
 # TODO add redirects? maybe even to the source, copy htmls as is
+
+# TODO FIXME make upid obligatory

@@ -48,6 +48,10 @@
                                                   ("org"  "($0)")
                                                   (_      (error "ERROR"))))
                                  ("anchor"   . "@@html:<a name='$0'></a>@@")
+
+                                 ;; hopefully empty span won't get removed?
+                                 ("extraid"  . "@@html:<span style='visibility:hidden' id='$1'></span>@@")
+
                                  ;; TODO use css instead?
                                  ("question" . "@@html:<span style='color:darkorange'><strong>$0</strong></span>@@")))
 (setq org-export-with-author nil)
