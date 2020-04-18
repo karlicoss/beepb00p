@@ -99,10 +99,10 @@ def compile_org_body(*, compile_script: Path, path: Path, dir_: Path) -> None:
     res = run(
         [
             compile_script,
+            '--input', path,
             '--output-dir', dir_,
             # '--org',  # TODO
         ],
-        input=path.read_bytes(),
         stdout=PIPE,
         stderr=PIPE,
     )
@@ -263,6 +263,12 @@ class MdDeps(BaseDeps):
     # TODO pandoc dependency??
 
 
+def md_deps(path: MPath) -> MdDeps:
+    return MdDeps(
+        path=path,
+    )
+
+
 @dataclass(frozen=True)
 class IpynbDeps(BaseDeps):
     compile_ipynb: MPath
@@ -297,7 +303,7 @@ def _compile_post(mpath: MPath) -> Post:
     elif suf == '.ipynb':
         deps = ipynb_deps(mpath)
     elif suf == '.md':
-        deps = MdDeps(mpath)
+        deps = md_deps(mpath)
     else:
         raise RuntimeError(mpath)
 
