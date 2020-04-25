@@ -44,6 +44,7 @@ class Post:
     has_math: bool
     tags: Tuple[str]
     url: str
+    feed: bool
 
     @property
     def dates(self) -> Optional[str]:
@@ -468,6 +469,8 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Post:
         draftp = fprop('DRAFT')
         meta.update({} if draftp is None else {'draft': draftp})
 
+        nofeedp = fprop('NOFEED')
+        meta.update({} if nofeedp is None else {'nofeed': nofeedp})
     elif isinstance(deps, IpynbDeps):
         # TODO make a mode to export to python?
         compile_ipynb_body(
@@ -536,6 +539,7 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Post:
         url    =ctx['url'],
         special=special,
         has_math=ctx.get('has_math', False),
+        feed   =not ('nofeed' in meta),
     )
 
 
@@ -755,8 +759,7 @@ def compile_all(max_workers=None) -> Iterable[Exception]:
     # TODO sort by date???
     posts_list(for_drafts, 'drafts.html', 'Drafts')
 
-    # TODO also filter??
-    for_feed = for_index[:9] # TODO FIXME add full feed?
+    for_feed = tuple((p for p in for_index if p.feed))[:9] # TODO FIXME add full feed?
     # TODO eh? not sure if necessary..
     feeds(for_feed)
 
