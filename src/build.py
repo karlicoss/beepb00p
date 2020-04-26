@@ -3,6 +3,7 @@ from pathlib import Path
 import sys
 from shutil import rmtree
 from subprocess import check_call
+from typing import List
 
 # TODO sanity check that there are noexport entries or some private tags (e.g. people mentioned)
 # ./check
@@ -30,6 +31,7 @@ root_dir = Path(__file__).absolute().parent.parent
 input_dir  = root_dir / 'input'
 public_dir = root_dir / 'public'
 output_dir = root_dir / 'markdown'  # TODO FIXME
+html_output_dir = root_dir / 'output'
 
 
 def clean_dir(path: Path):
@@ -93,6 +95,28 @@ def main():
     ccall(r"awk -i inplace !/\[README\]/  markdown/SUMMARY.md".split())
     # TODO clean first?
     ccall(['mdbook', 'build'])
+
+    # meh. but it works :shrug:
+    loc = '<h1 class="menu-title">exobrain</h1>'
+    link = '<a style="font-size: 2rem; line-height: var(--menu-bar-height);" href="https://beepb00p.xyz">back to blog</a>'
+    patched: List[Path] = []
+    for html in html_output_dir.rglob('*.html'):
+        body = html.read_text()
+        if loc not in body:
+            continue
+        body = body.replace(loc, link + loc, 1)
+        html.write_text(body)
+        patched.append(html)
+
+        # ugh. fine, keep it non-atomic for now...
+        # https://github.com/untitaker/python-atomicwrites/issues/42
+        # from atomicwrites import atomic_write
+        # # with atomic_write(str(html), mode='w', overwrite=True) as fo:
+        #     fo.write(body)
+
+    assert len(patched) > 0 # just in case
+    # patch in link to the blog..
+    style="font-size: 2rem;/*! text-align: center; *//*! display: inline-block; *//*! font-weight: 200; *//*! flex: 1; *//*! text-align: left; */line-height: var(--menu-bar-height);"
 
 
 if __name__ == '__main__':
