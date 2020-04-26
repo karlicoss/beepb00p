@@ -33,6 +33,8 @@ https://github.com/karlicoss/my-awesome-list
 :END:
 https://www.reddit.com/r/RoamResearch/comments/eho7de/building_a_second_brain_in_roamand_why_you_might
 
+* [#B] [2020-01-20 Mon 19:56] What's wrong with computational notebooks? - Austin Z. Henley :gr:
+http://web.eecs.utk.edu/~azh/blog/notebookpainpoints.html
     '''
     res = process(text)
 
@@ -64,6 +66,8 @@ https://github.com/karlicoss/my-awesome-list
 :ID:       600e2919-7ba5-4dbe-85d5-4e4c642b3cc1
 :END:
 https://www.reddit.com/r/RoamResearch/comments/eho7de/building_a_second_brain_in_roamand_why_you_might
+
+* [#B] [2020-01-20 Mon 19:56] [[http://web.eecs.utk.edu/~azh/blog/notebookpainpoints.html][What's wrong with computational notebooks? - Austin Z. Henley]] :gr:
 
     '''
     print(res)
