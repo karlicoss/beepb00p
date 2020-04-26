@@ -89,8 +89,7 @@ def sanitize(path: Path) -> str:
     return pp
 
 
-# TODO how to clean old results??
-def compile_org_body(*, compile_script: Path, path: Path, dir_: Path) -> None:
+def compile_org_body(*, compile_script: Path, path: Path, dir_: Path, check_ids=False) -> None:
     log.debug('compiling %s %s', compile_script, path)
     # TODO each thread should prob. capture logs...
     log.debug('running %s %s', compile_script, dir_)
@@ -100,6 +99,7 @@ def compile_org_body(*, compile_script: Path, path: Path, dir_: Path) -> None:
     res = run(
         [
             compile_script,
+            *(['--check-ids'] if check_ids else []),
             '--input', path,
             '--output-dir', dir_,
             # '--org',  # TODO
@@ -166,7 +166,10 @@ def metadata(path: Path) -> Meta:
         return {}
     from ruamel.yaml import YAML # type: ignore
     yaml = YAML(typ='safe')
-    return yaml.load(meta)
+    res = yaml.load(meta)
+    if res is None:
+        res = {} # fuck yaml...
+    return res
 
 
 def compile_md_body(*, path: Path, dir_: Path) -> None:
@@ -409,6 +412,8 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Post:
         date = datetime.strptime(datish, '%B %d, %Y') if isinstance(datish, str) else datish
         ctx['date'] = date.strftime('%d %B %Y')
 
+    # TODO fucking yaml and implicit casts
+    check_ids = meta.get('check_ids', True)
 
     set_title  (meta.get('title'))
     set_issoid (meta.get('upid'))
@@ -421,12 +426,6 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Post:
     ctx['is_stable'] = True
 
     if isinstance(deps, OrgDeps):
-        compile_org_body(
-            # TODO let it figure it out from deps??
-            compile_script=deps.compile_org.path,
-            path=deps.path.path,
-            dir_=dir_,
-        )
         ctx['style_org'] = True
 
         import orgparse # type: ignore
@@ -439,8 +438,6 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Post:
             if vals is None:
                 return None
             return the(vals)
-
-        # print(fprops)
 
         ttl = fprop('TITLE')
         if ttl is not None:
@@ -468,9 +465,18 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Post:
 
         draftp = fprop('DRAFT')
         meta.update({} if draftp is None else {'draft': draftp})
+        check_ids = check_ids and draftp is None
 
         nofeedp = fprop('NOFEED')
         meta.update({} if nofeedp is None else {'nofeed': nofeedp})
+
+        compile_org_body(
+            # TODO let it figure it out from deps??
+            compile_script=deps.compile_org.path,
+            path=deps.path.path,
+            dir_=dir_,
+            check_ids=check_ids,
+        )
     elif isinstance(deps, IpynbDeps):
         # TODO make a mode to export to python?
         compile_ipynb_body(
