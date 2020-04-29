@@ -232,7 +232,8 @@ def post_process(html: str, *, check_ids: bool) -> str:
     for aside in soup.find_all('aside'):
         parent = aside.parent
 
-        assert parent.name in {'p', 'li'}
+        # TODO hmm. maybe needs to support h* tags (for * something {aside})
+        assert parent.name in {'p', 'li'}, parent
         if parent.name != 'p':
             pp = soup.new_tag(parent.name)
             old = parent.replace_with(pp)
@@ -245,6 +246,8 @@ def post_process(html: str, *, check_ids: bool) -> str:
         aside['class'] = aside.get('class', []) + ['sidenote']
         aside.extract()
 
+        # right.. I can't use 'p' here, because <p> can only contain inline elemnts
+        # and aside seems to be block element..
         div = soup.new_tag('div')
         oldp = parent.replace_with(div)
         div.append(oldp)
