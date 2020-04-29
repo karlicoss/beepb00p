@@ -11,6 +11,8 @@ from typing import Tuple, List, Optional, Sequence
 
 # TODO mm, might need to apt install emacs-goodies-el first for code hightlight... https://stackoverflow.com/a/24087061/706389
 
+# TODO meh
+DEFAULT_ORG_P_MARGIN = '16px'
 
 ED = Path('~/.emacs.d').expanduser()
 
@@ -228,7 +230,7 @@ def post_process(html: str, *, check_ids: bool) -> str:
     # convert all
     # <?>text<aside>something<aside><?>
     # to
-    # <div><span>text</span><aside class='sidenote'>something</aside></div>
+    # <div><?>text</?><aside class='sidenote'>something</aside></div>
     for aside in soup.find_all('aside'):
         parent = aside.parent
 
@@ -249,9 +251,11 @@ def post_process(html: str, *, check_ids: bool) -> str:
         # right.. I can't use 'p' here, because <p> can only contain inline elemnts
         # and aside seems to be block element..
         div = soup.new_tag('div')
+        div['style'] = f'margin-top: {DEFAULT_ORG_P_MARGIN}; margin-bottom: {DEFAULT_ORG_P_MARGIN}'
         oldp = parent.replace_with(div)
         div.append(oldp)
         div.append(aside)
+        # NOTE if I use 'p' here, the margins end up expanding the parent div
         oldp.name = 'span'
         oldp['class'] = oldp.get('class', []) + ['before-aside']
     ####
