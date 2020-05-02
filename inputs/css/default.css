@@ -1,12 +1,21 @@
+:root {
+    --link-color: #0000EE;
+    --visited-link-color: #551A8B;
+    --width: 70rem;
+    --aside-width: 10rem;
+}
+
+
 html {
   font-size: 100%;
   font-family: "Source Serif Pro", serif;
 }
 
+/* TODO why 80? is this --width + --aside-width? looks like coinsidence though...  */
 @media (min-width: 80rem) {
     body {
         /* TODO how to choose good width?? */
-        width: 70rem;
+        width: var(--width);
 
         /* auto margin centers the content. not sure if it's the right way to do it... */
         margin-left:  auto;
@@ -17,11 +26,10 @@ html {
         /* debugging */
         /* color: red; */
     }
-}
 
-:root {
-    --link-color: #0000EE;
-    --visited-link-color: #551A8B;
+    header {
+        width: calc(var(--width) - var(--aside-width));
+    }
 }
 
 /*
@@ -153,7 +161,6 @@ img {
 
 
 article .content {
-    --aside-width: 10rem;
     position: relative;
 }
 
