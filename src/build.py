@@ -413,7 +413,7 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Post:
         ctx['date'] = date.strftime('%d %B %Y')
 
     # TODO fucking yaml and implicit casts
-    check_ids = meta.get('check_ids', True)
+    check_ids = meta.get('check_ids')
 
     set_title  (meta.get('title'))
     set_issoid (meta.get('upid'))
@@ -465,7 +465,9 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Post:
 
         draftp = fprop('DRAFT')
         meta.update({} if draftp is None else {'draft': draftp})
-        check_ids = check_ids and draftp is None
+        # TODO right.. I guess we want drafts to have default
+        if check_ids is None:
+            check_ids = draftp is None
 
         nofeedp = fprop('NOFEED')
         meta.update({} if nofeedp is None else {'nofeed': nofeedp})
