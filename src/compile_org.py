@@ -16,7 +16,7 @@ DEFAULT_ORG_P_MARGIN = '16px'
 
 ED = Path('~/.emacs.d').expanduser()
 
-def uses_doom():
+def uses_doom() -> bool:
     return (ED / 'bin/doom').exists() # otherwise assumes spacemacs
 
 
@@ -60,7 +60,7 @@ def main():
     fg.add_argument('--org' , action='store_const', const='org' , dest='format')
     # TODO also strip them away?
     args = p.parse_args()
-    inf = args.input
+    inf: Path = args.input
     deps = []
     if inf is not None:
         # TODO FIXME meh. later, parse '#+include' properly??
@@ -179,7 +179,7 @@ def process(
         return output
 
 
-def emacs(*args, **kwargs):
+def emacs(*args, **kwargs) -> None:
     modules = [
         'org-mode', # present for doom, but for spacemacs I've used a custom hack..
         'htmlize', 'dash', 's',
@@ -373,7 +373,7 @@ def get_test_src() -> str:
 
 
 # TODO literate test docs
-def test_aside(tmp_path):
+def test_aside(tmp_path: Path) -> None:
     src = get_test_src()
 
     # precondition
@@ -390,7 +390,7 @@ def test_aside(tmp_path):
 
 
 # TODO also tests intrapage links by accident, but ok for now..
-def test_section_links(tmp_path):
+def test_section_links(tmp_path: Path) -> None:
     src = get_test_src()
 
     # precondition
@@ -407,7 +407,7 @@ def test_section_links(tmp_path):
     assert expected in html
 
 
-def test_removes_useless_ids(tmp_path):
+def test_removes_useless_ids(tmp_path: Path) -> None:
     src = get_test_src()
 
     # precondition
