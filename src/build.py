@@ -14,7 +14,7 @@ from datetime import datetime
 import shutil
 import sys
 from tempfile import TemporaryDirectory
-from typing import cast, Dict, Any, List, Optional, Union, Tuple, Iterable
+from typing import cast, Dict, Any, List, Optional, Union, Tuple, Iterable, Iterator
 from dataclasses import dataclass
 
 import pytz # type: ignore
@@ -89,7 +89,7 @@ def sanitize(path: Path) -> str:
     return pp
 
 
-def compile_org_body(*, compile_script: Path, path: Path, dir_: Path, check_ids=False) -> None:
+def compile_org_body(*, compile_script: Path, path: Path, dir_: Path, check_ids: bool=False) -> None:
     log.debug('compiling %s %s', compile_script, path)
     # TODO each thread should prob. capture logs...
     log.debug('running %s %s', compile_script, dir_)
@@ -141,7 +141,7 @@ def compile_org_body(*, compile_script: Path, path: Path, dir_: Path, check_ids=
     # TODO some inputs
 
 
-def indent(s: str, spaces=2) -> str:
+def indent(s: str, spaces: int=2) -> str:
     return ''.join(' ' * spaces + s for s in s.splitlines(keepends=True))
 
 
@@ -212,6 +212,7 @@ def compile_ipynb_body(*, compile_script: Path, path: Path, dir_: Path) -> None:
     (dir_ / 'body').write_text(out)
 
 
+# TODO use more_itertools?
 def the(things):
     ss = set(things)
     assert len(ss) == 1, ss
@@ -220,7 +221,7 @@ def the(things):
 
 
 
-def _move(from_: Path, ext: str):
+def _move(from_: Path, ext: str) -> None:
     for f in from_.rglob('*.' + ext):
         log.debug('merging %s', f)
         rel = f.relative_to(from_)
@@ -232,8 +233,9 @@ def _move(from_: Path, ext: str):
         to.parent.mkdir(exist_ok=True) # meh
         shutil.move(f, to)
 
+Result = Union[Post, Exception]
 
-def compile_post(path: MPath) -> Union[Exception, Post]:
+def compile_post(path: MPath) -> Result:
     try:
         return _compile_post(path)
     except Exception as e:
@@ -288,7 +290,7 @@ Deps = Union[OrgDeps, MdDeps, IpynbDeps]
 
 
 @contextmanager
-def compile_in_dir(path: Path):
+def compile_in_dir(path: Path) -> Iterator[Path]:
     dname = sanitize(path)
     d = TMP_DIR / dname
     d.mkdir()
@@ -383,28 +385,28 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Post:
     # TODO need to be raw??
     ctx['pingback'] = pingback
 
-    def set_issoid(upid: Optional[str]):
+    def set_issoid(upid: Optional[str]) -> None:
         if upid is None:
             return
         ctx['issoid'] = f'isso_{upid}'
 
-    def set_summary(summ: Optional[str]):
+    def set_summary(summ: Optional[str]) -> None:
         if summ is None:
             return
         ctx['summary'] = summ
 
-    def set_tags(tags: Optional[List[str]]):
+    def set_tags(tags: Optional[List[str]]) -> None:
         if tags is None:
             return
         ctx['tags'] = [{'body': tag, 'sep': '' if i == len(tags) - 1 else ' '} for i, tag in enumerate(tags)]
 
-    def set_title(title: Optional[str]):
+    def set_title(title: Optional[str]) -> None:
         if title is None:
             return
         ctx['title'] = title
 
     date = None
-    def set_date(datish: Optional[Union[str, datetime]]):
+    def set_date(datish: Optional[Union[str, datetime]]) -> None:
         if datish is None:
             return
 
@@ -565,7 +567,7 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Post:
     return post
 
 
-def relativize_urls(path: Path, full: str):
+def relativize_urls(path: Path, full: str) -> str:
     depth = len(path.parts)
     rel = '.' * depth
     from bs4 import BeautifulSoup as bs # type: ignore
@@ -606,8 +608,9 @@ def get_filtered(inputs: Tuple[Path]) -> Tuple[Path]:
     if FILTER is None:
         return inputs
    
-    filtered = []
+    filtered: List[Path] = []
 
+    # TODO why isn't this covered??
     for x in inputs:
         if any(fnmatch(str(x), f) for f in FILTER):
             filtered.append(x)
@@ -619,7 +622,7 @@ def get_filtered(inputs: Tuple[Path]) -> Tuple[Path]:
     return tuple(filtered)
 
 
-def get_inputs():
+def get_inputs() -> Tuple[Path]:
     inputs = tuple(sorted({
         *[c.relative_to(content) for c in chain(
             content.rglob('*.md'),
@@ -637,7 +640,7 @@ def get_inputs():
 from feedgen.feed import FeedGenerator # type: ignore
 
 @cache
-def feeds(posts: Tuple[Post]):
+def feeds(posts: Tuple[Post]) -> None:
     atom = feed(posts, 'atom')
     rss  = feed(posts, 'rss')
     (output / 'atom.xml').write_text(atom.atom_str(pretty=True).decode('utf8'))
@@ -686,7 +689,7 @@ def feed(posts: Tuple[Post], kind: str) -> FeedGenerator:
 
 
 @cache
-def posts_list(posts: Tuple[Post], name: str, title: str):
+def posts_list(posts: Tuple[Post], name: str, title: str) -> None:
     log.debug('compiling %s', name)
 
     it = template(name)
@@ -710,7 +713,7 @@ def posts_list(posts: Tuple[Post], name: str, title: str):
     (output / path).write_text(full)
 
 
-def compile_all(max_workers=None) -> Iterable[Exception]:
+def compile_all(max_workers: Optional[int]=None) -> Iterable[Exception]:
     # preload all templates
     for t in templates.glob('*.html'):
         template(t.name)
@@ -723,7 +726,7 @@ def compile_all(max_workers=None) -> Iterable[Exception]:
     # TODO this is root...
 
     # TODO pathish?
-    def copy(from_: Path, to: PathIsh):
+    def copy(from_: Path, to: PathIsh) -> None:
         if isinstance(to, str):
             top = output / to
         else:
@@ -772,14 +775,14 @@ def compile_all(max_workers=None) -> Iterable[Exception]:
     feeds(for_feed)
 
 
-def clean():
+def clean() -> None:
     for f in output.iterdir():
         if f.is_dir():
             shutil.rmtree(f)
         else:
             f.unlink()
 
-def serve():
+def serve() -> None:
     # TODO less logging??
     from http.server import HTTPServer, SimpleHTTPRequestHandler
     Handler = lambda *args: SimpleHTTPRequestHandler( # type: ignore[misc]
@@ -795,7 +798,7 @@ def serve():
     thread.start()
 
 
-def main():
+def main() -> None:
     import argparse
     p = argparse.ArgumentParser()
     p.add_argument('--debug' , action='store_true', help='Debug logging')
