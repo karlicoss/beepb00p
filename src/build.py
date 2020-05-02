@@ -89,7 +89,8 @@ def sanitize(path: Path) -> str:
     return pp
 
 
-def compile_org_body(*, compile_script: Path, path: Path, dir_: Path, check_ids: bool=False) -> None:
+def compile_org_body(*, compile_script: Path, path: Path, dir_: Path, check_ids: bool=False) -> List[Exception]:
+    errors: List[Exception] = []
     log.debug('compiling %s %s', compile_script, path)
     # TODO each thread should prob. capture logs...
     log.debug('running %s %s', compile_script, dir_)
@@ -111,8 +112,13 @@ def compile_org_body(*, compile_script: Path, path: Path, dir_: Path, check_ids:
     err = res.stderr.decode('utf8')
     if res.returncode > 0:
         log.error(err)
-        res.check_returncode()
 
+        if res.returncode == 1:
+            # non-fatal error. carry on..
+            # TODO add a strict mode? I guess we only want to allow
+            errors.append(RuntimeError(f'error compiling {path}'))
+        else:
+            res.check_returncode()
 
     (dir_ / 'body').write_text(out)
 
@@ -139,6 +145,7 @@ def compile_org_body(*, compile_script: Path, path: Path, dir_: Path, check_ids:
     # TODO how to clean stale stuff that's not needed in output dir?
     # TODO output determined externally?
     # TODO some inputs
+    return errors
 
 
 def indent(s: str, spaces: int=2) -> str:
@@ -233,15 +240,20 @@ def _move(from_: Path, ext: str) -> None:
         to.parent.mkdir(exist_ok=True) # meh
         shutil.move(f, to)
 
-Result = Union[Post, Exception]
+Results = Iterable[Union[Post, Exception]]
 
-def compile_post(path: MPath) -> Result:
+def compile_post(path: MPath) -> Results:
+    '''
+    Ok, Iterable of posts is a bit confusing type.
+    What I want in reality is: a stream of Exceptions and [optionally, depending on the fatality] a Post
+    But that wouldn't be expressible in mypy, and the caller is merging everything together anyway. So whatever.
+    '''
     try:
-        return _compile_post(path)
+        yield from _compile_post(path)
     except Exception as e:
         ex = RuntimeError(f'While compiling {path}')
         ex.__cause__ = e
-        return ex
+        yield ex
 
 
 @dataclass(init=False, frozen=True)
@@ -301,7 +313,7 @@ def compile_in_dir(path: Path) -> Iterator[Path]:
             shutil.rmtree(d)
 
 
-def _compile_post(mpath: MPath) -> Post:
+def _compile_post(mpath: MPath) -> Results:
     suf = mpath.path.suffix
     deps: Deps
     if   suf == '.org':
@@ -314,18 +326,18 @@ def _compile_post(mpath: MPath) -> Post:
         raise RuntimeError(mpath)
 
     with compile_in_dir(mpath.path) as dir_:
-        return _compile_with_deps(deps, dir_=dir_)
+        yield from _compile_with_deps(deps, dir_=dir_)
 
 
 @cache
-def _compile_with_deps(deps: Deps, dir_: Path) -> Post:
+def _compile_with_deps(deps: Deps, dir_: Path) -> Results:
     path = deps.path
 
     # TODO wonder if child logger could be a thing?
     # TODO measure time taken?
     log.info('compiling %s', path)
     # TODO rpath is d??
-    rpost = _compile_post_aux(deps, dir_=dir_)
+    yield from _compile_post_aux(deps, dir_=dir_)
     log.info('compiled %s', path)
 
     _move(dir_, 'html')
@@ -343,10 +355,8 @@ def _compile_with_deps(deps: Deps, dir_: Path) -> Post:
         raise RuntimeError(f'remaining files: {remaining}')
     dir_.rmdir()
 
-    return rpost
 
-
-def _compile_post_aux(deps: Deps, dir_: Path) -> Post:
+def _compile_post_aux(deps: Deps, dir_: Path) -> Results:
     path = deps.path.path
     if path.is_absolute():
         path = path.relative_to(content) # meh
@@ -474,13 +484,14 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Post:
         nofeedp = fprop('NOFEED')
         meta.update({} if nofeedp is None else {'nofeed': nofeedp})
 
-        compile_org_body(
+        berrors = compile_org_body(
             # TODO let it figure it out from deps??
             compile_script=deps.compile_org.path,
             path=deps.path.path,
             dir_=dir_,
             check_ids=check_ids,
         )
+        yield from berrors
     elif isinstance(deps, IpynbDeps):
         # TODO make a mode to export to python?
         compile_ipynb_body(
@@ -564,7 +575,7 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Post:
     opath.write_text(full)
 
     check_call(['tree', '--noreport', dir_])
-    return post
+    yield post
 
 
 def relativize_urls(path: Path, full: str) -> str:
@@ -752,15 +763,16 @@ def compile_all(max_workers: Optional[int]=None) -> Iterable[Exception]:
     posts = []
     from concurrent.futures import ThreadPoolExecutor
     with ThreadPoolExecutor(max_workers=max_workers) as pool:
-        for post in pool.map(compile_post, map(lambda p: mpath(content / p), get_inputs())):
-            if isinstance(post, Exception):
-                ex = post
-                import traceback
-                parts = traceback.format_exception(Exception, ex, ex.__traceback__)
-                log.error(''.join(parts))
-                yield ex
-            else:
-                posts.append(post)
+        for rpost in pool.map(compile_post, map(lambda p: mpath(content / p), get_inputs())):
+            for post in rpost:
+                if isinstance(post, Exception):
+                    ex = post
+                    import traceback
+                    parts = traceback.format_exception(Exception, ex, ex.__traceback__)
+                    log.error(''.join(parts))
+                    yield ex
+                else:
+                    posts.append(post)
 
     posts = list(reversed(sorted(posts, key=lambda p: datetime.min if p.date is None else p.date)))
 

@@ -11,6 +11,11 @@ from typing import Tuple, List, Optional, Sequence, Union, Iterable
 
 from more_itertools import ilen
 
+import logging
+
+def get_logger():
+    return logging.getLogger('compile_org')
+
 # TODO mm, might need to apt install emacs-goodies-el first for code hightlight... https://stackoverflow.com/a/24087061/706389
 
 # TODO meh
@@ -88,11 +93,12 @@ EXIT CODE:
         format=args.format,
         deps=deps,
     )
+    logger = get_logger()
     errs = list(ierrs)
     code = 0
-    if len(errs) > 0:
-        # TODO how to log?
-        code = 1
+    for e in errs:
+        logger.exception(e)
+        code = EXIT_WARNING
 
     sys.stdout.write(output)
     sys.exit(code)
@@ -196,7 +202,7 @@ def process(
             for f in files:
                 shutil.move(str(f), str(outdir / f.name))
 
-        return (output, [])
+        return (output, errs)
 
 
 def emacs(*args, **kwargs) -> None:
@@ -385,6 +391,7 @@ def post_process(html: str, *, check_ids: bool) -> Result:
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
     main()
 
 
