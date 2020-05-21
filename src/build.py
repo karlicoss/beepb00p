@@ -240,6 +240,7 @@ def _move(from_: Path, ext: str) -> None:
         to.parent.mkdir(exist_ok=True) # meh
         shutil.move(f, to)
 
+# TODO hmm. iterable is not very cachable, exhausts the iterator..
 Results = Iterable[Union[Post, Exception]]
 
 def compile_post(path: MPath) -> Results:
@@ -329,7 +330,15 @@ def _compile_post(mpath: MPath) -> Results:
         yield from _compile_with_deps(deps, dir_=dir_)
 
 
+from more_itertools import make_decorator
+tupler = make_decorator(wrapping_func=tuple)
+# needed to make sure the iterator is replayable (because it's cached)
+
+# todo could use for dictify/listify
+
+
 @cache
+@tupler()
 def _compile_with_deps(deps: Deps, dir_: Path) -> Results:
     path = deps.path
 
