@@ -14,11 +14,12 @@ from datetime import datetime
 import shutil
 import sys
 from tempfile import TemporaryDirectory
-from typing import cast, Dict, Any, List, Optional, Union, Tuple, Iterable, Iterator
+from typing import cast, Dict, Any, List, Optional, Union, Tuple, Iterable, Iterator, Sequence
 from dataclasses import dataclass
 
 import pytz # type: ignore
 
+import orgparse # type: ignore
 
 ### TODO keep this in config?
 ROOT    = Path(__file__).absolute().parent.parent
@@ -34,6 +35,15 @@ templates = inputs / 'templates'
 
 
 @dataclass(unsafe_hash=True)
+class Tag:
+    name: str
+
+    @property
+    def exists(self) -> bool:
+        return self.name in blog_tags()
+
+
+@dataclass(unsafe_hash=True)
 class Post:
     title: str
     summary: Optional[str]
@@ -42,7 +52,7 @@ class Post:
     draft: bool
     special: bool
     has_math: bool
-    tags: Tuple[str]
+    tags: Sequence[Tag]
     url: str
     feed: bool
 
@@ -416,8 +426,8 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Results:
 
     def set_tags(tags: Optional[List[str]]) -> None:
         if tags is None:
-            return
-        ctx['tags'] = [{'body': tag, 'sep': '' if i == len(tags) - 1 else ' '} for i, tag in enumerate(tags)]
+            tags = []
+        ctx['tags'] = tuple(map(Tag, tags))
 
     def set_title(title: Optional[str]) -> None:
         if title is None:
@@ -449,7 +459,6 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Results:
     if isinstance(deps, OrgDeps):
         ctx['style_org'] = True
 
-        import orgparse # type: ignore
         o = orgparse.loads(apath.read_text())
         # TODO need to make public?? also can remove from porg then..
         fprops = o._special_comments
@@ -558,12 +567,11 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Results:
 
     full = relativize_urls(path=path, full=full)
 
-    ttags = cast(Tuple[str], tuple(t['body'] for t in ctx.get('tags', [])))
     post = Post(
         title  =ctx.get('title', 'ERROR: NO TITLE'),
         summary=ctx.get('summary'),
         date   =date,
-        tags   =ttags,
+        tags   =ctx['tags'],
         body   =full,
         draft  =ctx.get('draft') is not None,
         url    =ctx['url'],
@@ -642,7 +650,7 @@ def get_filtered(inputs: Tuple[Path]) -> Tuple[Path]:
     return tuple(filtered)
 
 
-def get_inputs() -> Tuple[Path]:
+def get_inputs() -> Tuple[Path]: # TODO use ...?
     inputs = tuple(sorted({
         *[c.relative_to(content) for c in chain(
             content.rglob('*.md'),
@@ -652,6 +660,21 @@ def get_inputs() -> Tuple[Path]:
         )],
     }))
     return get_filtered(inputs)
+
+
+
+def blog_tags():
+    @cache
+    def aux(tags_file: MPath) -> Tuple[str, ...]:
+        path = tags_file.path
+        root = orgparse.loads(path.read_text())
+        tags = []
+        for ch in root.children:
+            tag = ch.properties.get('CUSTOM_ID')
+            if tag is not None:
+                tags.append(tag)
+        return tuple(tags)
+    return aux(mpath(content / 'tags.org'))
 
 
 # TODO make a 'parallel' function??

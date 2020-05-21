@@ -33,9 +33,16 @@ TODO shit, htmlize messes with a and body tags...
     {% if type_special %}
     {% else %}
     <section class="footer">
-        <div class="post-tags">{% for item in tags %}<a class="post-tag" href="/tags.html#{{ item.body }}">#{{ item.body }}</a> {{ item.sep }}{% endfor %}</div>
+        <div class="post-tags">
+            {% for tag in tags %}
+            <a
+                class="post-tag {{ 'tag-active'   if tag.exists else 'tag-inactive' }}"
+                href="/tags.html{{ '#' + tag.name if tag.exists else ''}}">#{{ tag.name }}</a>
+            {% endfor %}
         <!-- TODO post-date? -->
+        <!-- TODO use time element? -->
         <div class="date">{{ date }}</div>
+        </div>
     </section>
     {% endif %}
 

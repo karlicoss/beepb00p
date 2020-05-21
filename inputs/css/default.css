@@ -109,7 +109,6 @@ footer {
 
 .post-tag {
   font-size: 0.95em;
-  color: #a51;
   font-family: "Lucida Console", Monaco, monospace;
 
   /* https://stackoverflow.com/a/12362315/706389
@@ -118,6 +117,13 @@ footer {
   white-space: nowrap;
 }
 
+.tag-active {
+  color: #a51;
+}
+
+.tag-inactive {
+  color: black;
+}
 
 section.post-title {
   margin-bottom: 1rem;

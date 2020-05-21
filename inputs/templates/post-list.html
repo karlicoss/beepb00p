@@ -14,7 +14,11 @@
 
         <span class="post-tags">
             {% if comment %} space here is useful for tui browsers {% endif %}
-            {% for tag in item.tags %} <a class="post-tag" href="/tags.html#{{ tag }}">#{{ tag }}</a>{% endfor %}
+            {% for tag in item.tags %}
+            <a
+                class="post-tag {{ 'tag-active'   if tag.exists else 'tag-inactive' }}"
+                href="/tags.html{{ '#' + tag.name if tag.exists else ''}}">#{{ tag.name }}</a>
+            {% endfor %}
         </span>
     </div>
 {% endfor %}
