@@ -11,12 +11,12 @@
         <time datetime="{{ item.date.isoformat() }}">{{ item.date_human }}</time>
 
         <span class="post-tags">
-            {% if comment %} space here is useful for tui browsers {% endif %}
-            {% for tag in item.tags %}
+            {%- if comment %} space here is useful for tui browsers {% endif %}
+            {%- for tag in item.tags %}
             <a
                 class="post-tag {{ 'tag-active'   if tag.exists else 'tag-inactive' }}"
                 href="/tags.html{{ '#' + tag.name if tag.exists else ''}}">#{{ tag.name }}</a>
-            {% endfor %}
+            {%- endfor %}
         </span>
     </div>
 {% endfor %}

@@ -9,10 +9,10 @@
         <link rel="icon" href="/robot-face.png">
         <link rel="apple-touch-icon" href="/robot-face.png">
 
-        <meta name="generator" content="hakyll">
+        <meta name="generator" content="https://github.com/karlicoss/beepb00p">
         <meta name="language"  content="English">
         {% if tags %}
-        <meta name="keywords"  content="{% for item in tags %}{{ item.body }}{{ item.sep }}{% endfor %}">
+        <meta name="keywords"  content="{% for tag in tags %}{{ tag.name }}{{ " " if not loop.last }}{% endfor %}">
         {% endif %}
         <!-- TODO concat with keywords tags; also need to make comma separated? -->
 
@@ -69,13 +69,10 @@
         <main>
             {{ body }}
         </main>
-
-        <!-- TODO hmm maybe display something in a footer, so it's clear it's end of content... -->
         {% if comment %}
         <!-- TODO [2019-09-21 14:04] would be nice to get rebuild time somehow in context -->
         <!-- TODO [2019-09-21 14:06] add a link to stable version of the same page -->
         {% endif %}
-
         <!-- TODO make semantic -->
         <footer>
             <span style="float:left">
@@ -85,10 +82,10 @@
             </span>
 
             <a href="http://creativecommons.org/licenses/by/4.0">CC BY 4.0</a>
-            {% if is_stable %}
-            {% else %}
+            {%- if is_stable %}
+            {%- else %}
             Unstable version
-            {% endif %}
+            {%- endif %}
         </footer>
     </body>
 </html>

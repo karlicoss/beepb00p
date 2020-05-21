@@ -34,11 +34,11 @@ TODO shit, htmlize messes with a and body tags...
     {% else %}
     <section class="footer">
         <div class="post-tags">
-            {% for tag in tags %}
+            {%- for tag in tags %}
             <a
                 class="post-tag {{ 'tag-active'   if tag.exists else 'tag-inactive' }}"
                 href="/tags.html{{ '#' + tag.name if tag.exists else ''}}">#{{ tag.name }}</a>
-            {% endfor %}
+            {%- endfor %}
         </div>
         <time datetime="{{ date.isoformat() }}">{{ date.strftime('%d %B %Y') }}</time>
     </section>
@@ -48,9 +48,9 @@ TODO shit, htmlize messes with a and body tags...
     <br>
     <div>Discussion:</div>
     <ul>
-    {% for item in pingback %}
+    {%- for item in pingback %}
         <li><a href="{{ item.url }}">{{ item.title }}</a></li>
-    {% endfor %}
+    {%- endfor %}
     </ul>
     {% endif %}
 

@@ -1,4 +1,8 @@
-Hakyll compiler for my blog.
+Compiler for my blog.
+
+NOTE: readme is a little outdated, I've moved away from Hakyll to a custom generation [[file:src/build.py][script]].
+You can fild retired Hakyll stuff [[file:hakyll][here]].
+
 
 Features:
 - formats:
