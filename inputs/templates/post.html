@@ -39,10 +39,8 @@ TODO shit, htmlize messes with a and body tags...
                 class="post-tag {{ 'tag-active'   if tag.exists else 'tag-inactive' }}"
                 href="/tags.html{{ '#' + tag.name if tag.exists else ''}}">#{{ tag.name }}</a>
             {% endfor %}
-        <!-- TODO post-date? -->
-        <!-- TODO use time element? -->
-        <div class="date">{{ date }}</div>
         </div>
+        <time datetime="{{ date.isoformat() }}">{{ date.strftime('%d %B %Y') }}</time>
     </section>
     {% endif %}
 

@@ -57,7 +57,7 @@ class Post:
     feed: bool
 
     @property
-    def dates(self) -> Optional[str]:
+    def date_human(self) -> Optional[str]:
         d = self.date
         if d is None:
             return None
@@ -441,7 +441,7 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Results:
 
         nonlocal date # meh
         date = datetime.strptime(datish, '%B %d, %Y') if isinstance(datish, str) else datish
-        ctx['date'] = date.strftime('%d %B %Y')
+        ctx['date'] = date
 
     # TODO fucking yaml and implicit casts
     check_ids = meta.get('check_ids')

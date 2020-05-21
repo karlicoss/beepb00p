@@ -8,9 +8,7 @@
             {% if item.summary is not none%}<div class="summary">{{ item.summary }}</div>{% endif %}
         </a>
 
-        {% if comment %} TODO add machine readable datetime {% endif %}
-        {% if comment %} TODO don't need "date" class; just use time tag? {% endif %}
-        <time class="date">{{ item.dates }}</time>
+        <time datetime="{{ item.date.isoformat() }}">{{ item.date_human }}</time>
 
         <span class="post-tags">
             {% if comment %} space here is useful for tui browsers {% endif %}

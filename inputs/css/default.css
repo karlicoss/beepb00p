@@ -97,8 +97,7 @@ footer {
 }
 
 
-/* TODO ?? */
-.date {
+time {
     font-family: "Lucida Console", Monaco, monospace;
 }
 
@@ -154,7 +153,7 @@ h2 {
   font-size: 1.4rem;
 }
 
-article .footer .date {
+article .footer time {
   /* font-size: 1.4rem; */
   color: #555;
 }
