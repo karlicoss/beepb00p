@@ -248,9 +248,15 @@ def org_to_html(*, tdir: Path, org_data: str, format: str='html') -> Tuple[str, 
     files.remove(out_html)
     return out_html.read_text(), files
 
-def post_process(html: str, *, check_ids: bool) -> Result:
+
+def make_soup(html: str):
     from bs4 import BeautifulSoup # type: ignore
     soup = BeautifulSoup(html, 'lxml')
+    return soup
+
+
+def post_process(html: str, *, check_ids: bool) -> Result:
+    soup = make_soup(html)
 
     errors: List[Exception] = []
 
@@ -326,8 +332,10 @@ def post_process(html: str, *, check_ids: bool) -> Result:
             hh.insert(0, newa)
     ####
 
-    ### put intrapage arrows to indicate that link refers to content on the page
     toc = soup.find(id=TOC)
+    # TODO not sure if it's always present?
+
+    ### put intrapage arrows to indicate that link refers to content on the page
     id_map = {}
     for idx, tag in enumerate(soup.find_all()):
         id_ = tag.get('id')
@@ -379,7 +387,19 @@ def post_process(html: str, *, check_ids: bool) -> Result:
 
     # TODO some whitespace in tags???
 
-    # extract body because that's what hakyll expects
+
+    ### make sure tags in TOC are outside of the link (tested by test_keeps_toc_tags...)
+    for a_elem in toc.find_all('a'):
+        last = a_elem
+        for tag_elem in a_elem.select('.tag'):
+            tag_elem.extract()
+            last.insert_after(tag_elem)
+            last = tag_elem
+    ###
+
+   
+
+    # extract body because that's what the generator expects
     body = str(soup.find('body'))
     #
 
@@ -455,3 +475,26 @@ def test_removes_useless_ids(tmp_path: Path) -> None:
 
     assert not re.search(r'id="outline-container-', html)
     assert not re.search(r'id="text-org00', html)
+
+
+def test_keeps_tags_outside_toc_link(tmp_path: Path) -> None:
+    src = get_test_src()
+
+    # precondition
+    assert 'heading with tags' in src
+
+    html, errs = process(
+        org_data=src,
+        outdir=tmp_path,
+        check_ids=False,
+    )
+    assert ilen(errs) == 0
+
+    # NOTE: there are some sneaky nbsps there..
+    # (defun org-html-format-headline-default-function
+	# (and tags "&#xa0;&#xa0;&#xa0;") tags)))
+
+    ##                                                                                                                                           vvv NBSPS!!
+    before = '<li><a href="#something"><span class="timestamp-wrapper"><span class="timestamp">[2019-09-02 19:45]</span></span> heading with tags   <span class="tag"><span class="tag1">tag1</span> <span class="tag2">tag2</span></span></a>'
+    after  = '<li><a href="#something"><span class="timestamp-wrapper"><span class="timestamp">[2019-09-02 19:45]</span></span> heading with tags   </a><span class="tag"><span class="tag1">tag1</span> <span class="tag2">tag2</span></span>'
+    assert after in html
