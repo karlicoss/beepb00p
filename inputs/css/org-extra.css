@@ -145,3 +145,26 @@ pre.src:before {
     right: 30px;
 }
 /* end */
+
+
+
+/* tweak todo keywords  */
+
+.todo,.done {
+    font-weight: bold;
+}
+
+.TODO {
+    color: orangered;
+
+}
+
+.STRT,.START,.WIP {
+    color: magenta;
+}
+
+.CNCL {
+    color: black;
+}
+
+/* end */

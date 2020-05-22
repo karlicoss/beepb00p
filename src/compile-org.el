@@ -33,8 +33,7 @@
 
 ;; TODO ok, so maybe do not export CREATED property, but show it as a tooltip?
 ;; TODO hmm. find another way to configure these...
-;; TODO use STRT?
-(setq org-todo-keywords '((sequence "TODO" "STRT" "START" "DONE")))
+(setq org-todo-keywords '((sequence "TODO" "STRT" "START" "WIP" "|" "CNCL" "CANCEL" "DONE")))
 
 (setq org-time-stamp-custom-formats
       '("[%Y-%m-%d]" . "[%Y-%m-%d %H:%M]"))
