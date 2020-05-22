@@ -6,32 +6,6 @@ blockquote {
     border-left: 3px solid #ccc;
 }
 
-/*
-TODO hmm. not sure how to fit tags in TOC nicely..
-.tag {
-    all: unset;
-}
-
-$monospace: Lucida Console, monospace;
-.tag {
-    font-family: $monospace;
-    font-size: 0.7em;
-    font-weight: normal;
-}
-
-.tag span {
-    padding: 0.3em 0.3em;
-    float: right;
-    margin-right: .5em;
-    border: 1px solid #bbb;
-    border-radius: 3px;
-    background-clip: padding-box;
-    color: #333;
-    background-color: #eee;
-    line-height: 1;
-}
-*/
-
 /* xxx */
 
 /* mm. a bit ugly that 3 and 4 are hardcoded. just to tabulate subtasts */
@@ -93,9 +67,9 @@ $monospace: Lucida Console, monospace;
     display: none;
 }
 
-.todo {
+.todo,.done {
     display: inline-block;
-    width: 5ch; /* to fit in START. perhaps need 6 for CANCEL as well? */
+    width: 4ch;
 }
 
 
@@ -181,3 +155,38 @@ pre.src:before {
 }
 
 /*  */
+
+
+/* tweak TOC */
+
+/* highlight tags on hovering */
+#table-of-contents li:hover > .tag {
+    background-color: lightgrey;
+}
+
+/* underline link on hovering  */
+#table-of-contents li:hover > a {
+    text-decoration: underline;
+    color: darkgreen; /* eh, not sure about it */
+}
+
+#table-of-contents li {
+    /* need inline-block for proper responsivenes... othervise list elements overlap on mobile */
+    /* that makes list markers go... but whatever  */
+    display: inline-block;
+    /* width so elements are not piling up on the same line in wide layout */
+    width: 100%;
+}
+/* */
+
+/* ugh. attempt to prevent underlining priority... but doesn't really work. whatever...
+a:hover .priority {
+    text-decoration: none !important;
+    color: blue;
+}
+*/
+
+
+.tag {
+    font-size: 90%;
+}

@@ -118,6 +118,7 @@ time {
 
 .tag-active {
   color: #a51;
+  font-weight: bold;
 }
 
 .tag-inactive {

@@ -413,17 +413,15 @@ def post_process_html(html: str, *, check_ids: bool, active_tags: Sequence[str])
             tag['class'] = tag.get('class', []) + ['tag-active' if active else 'tag-inactive']
 
 
-    for a_elem in toc.find_all('a'):
-        tag_blocks = a_elem.select('.tag')
-        ### make sure tags in TOC are outside of the link (tested by test_keeps_toc_tags...)
-        last = a_elem
-        for tag_elem in tag_blocks:
-            tag_elem.extract()
-            last.insert_after(tag_elem)
-            last = tag_elem
+    ### make sure tags in TOC are outside of the link
+    for a_elem in ([] if toc is None else toc.find_all('a')):
+        tag = a_elem.select_one('.tag')
+        if tag is not None:
+            tag.extract()
+            a_elem.insert_after(tag)
+        # TODO  not sure about .todo/.done states or prio..
     ###
 
-   
 
     # extract body because that's what the generator expects
     body = str(soup.find('body'))
