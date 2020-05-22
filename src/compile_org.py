@@ -396,25 +396,28 @@ def post_process_html(html: str, *, check_ids: bool, active_tags: Sequence[str])
     # TODO some whitespace in tags???
 
 
-    for a_elem in toc.find_all('a'):
-        tags = a_elem.select('.tag')
+    ### tag handling
 
-        # add links
-        # TODO this might break exobrain?
-        for tag_block in tags:
-            # so it's got shape like <span class="tag"><span class="tag1">tag1</span>....</span>
-            for tag in tag_block.find_all('span'):
-                tag_name = tag.get_text() # todo not sure if should use class instead?
-                active = tag_name in active_tags
-                # todo not sure if should keep tag's class?
-                tag.name = 'a'
-                link = './tags.html' + (f'#{tag_name}' if active else '')
-                tag['href'] = link
-                tag['class'] = tag.get('class', []) + ['tag-active' if active else 'tag-inactive']
-     
+    # add links
+    tag_blocks = soup.select('.tag')
+    # TODO this might break exobrain?
+    for tag_block in tag_blocks:
+        # so it's got shape like <span class="tag"><span class="tag1">tag1</span>....</span>
+        for tag in tag_block.find_all('span'):
+            tag_name = tag.get_text() # todo not sure if should use class instead?
+            active = tag_name in active_tags
+            # todo not sure if should keep tag's class?
+            tag.name = 'a'
+            link = './tags.html' + (f'#{tag_name}' if active else '')
+            tag['href'] = link
+            tag['class'] = tag.get('class', []) + ['tag-active' if active else 'tag-inactive']
+
+
+    for a_elem in toc.find_all('a'):
+        tag_blocks = a_elem.select('.tag')
         ### make sure tags in TOC are outside of the link (tested by test_keeps_toc_tags...)
         last = a_elem
-        for tag_elem in tags:
+        for tag_elem in tag_blocks:
             tag_elem.extract()
             last.insert_after(tag_elem)
             last = tag_elem
@@ -500,7 +503,7 @@ def test_removes_useless_ids(tmp_path: Path) -> None:
     assert not re.search(r'id="text-org00', html)
 
 
-def test_keeps_tags_outside_toc_link(tmp_path: Path) -> None:
+def test_tag_handling(tmp_path: Path) -> None:
     src = get_test_src()
 
     # precondition
@@ -518,6 +521,7 @@ def test_keeps_tags_outside_toc_link(tmp_path: Path) -> None:
     # (defun org-html-format-headline-default-function
 	# (and tags "&#xa0;&#xa0;&#xa0;") tags)))
 
+    ## toc handling + adding tag links
     ##                                                                                                                                           vvv NBSPS!!
     before = '<li><a href="#something"><span class="timestamp-wrapper"><span class="timestamp">[2019-09-02 19:45]</span></span> heading with tags   <span class="tag"><span class="tag1">tag1</span> <span class="tag2">tag2</span></span></a>'
     after  = '<li><a href="#something"><span class="timestamp-wrapper"><span class="timestamp">[2019-09-02 19:45]</span></span> heading with tags   </a><span class="tag"><a class="tag1 tag-inactive" href="./tags.html">tag1</a> <a class="tag2 tag-active" href="./tags.html#tag2">tag2</a></span>'

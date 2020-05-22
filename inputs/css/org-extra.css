@@ -170,9 +170,14 @@ pre.src:before {
 /* end */
 
 
-/* tweak tags in TOC */
-#table-of-contents .tag {
+/* tweak tags  */
+.tag {
     background-color: initial; /* undo default grey */
+}
+
+/* not sure about this one... */
+.tag a::before {
+    content: "#";
 }
 
 /*  */
