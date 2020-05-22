@@ -84,7 +84,7 @@ $monospace: Lucida Console, monospace;
     text-transform: lowercase;
 }
 
-/* hide 'Table of Contents', couldn't control it via org... */
+/* hide 'Table of Contents' words, couldn't control it via org... */
 #table-of-contents h2 {
     display: none;
 }
@@ -168,3 +168,11 @@ pre.src:before {
 }
 
 /* end */
+
+
+/* tweak tags in TOC */
+#table-of-contents .tag {
+    background-color: initial; /* undo default grey */
+}
+
+/*  */

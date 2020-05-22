@@ -113,6 +113,7 @@ def compile_org_body(*, compile_script: Path, path: Path, dir_: Path, check_ids:
             *(['--check-ids'] if check_ids else []),
             '--input', path,
             '--output-dir', dir_,
+            '--active-tags', ','.join(blog_tags()),
             # '--org',  # TODO
         ],
         stdout=PIPE,
@@ -663,7 +664,7 @@ def get_inputs() -> Tuple[Path]: # TODO use ...?
 
 
 
-def blog_tags():
+def blog_tags() -> Sequence[str]:
     @cache
     def aux(tags_file: MPath) -> Tuple[str, ...]:
         path = tags_file.path
