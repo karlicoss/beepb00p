@@ -622,14 +622,16 @@ def relativize_urls(path: Path, full: str) -> str:
 
 
 from jinja2 import Template # type: ignore
-@cache
 def template(name: str) -> Template:
-    log.debug('loading template %s', name, )
-    ts = _templates()
-    return ts.get_template(name)
+    @cache
+    def aux(name: str, key: Tuple[MPath, ...]):
+        log.debug('reloading templates')
+        ts = _templates()
+        return ts.get_template(name)
+
+    return aux(name=name, key=tuple(map(mpath, sorted(templates.glob('*.html')))))
 
 
-@cache
 def _templates():
     from jinja2 import FileSystemLoader, Environment # type: ignore
     env = Environment(loader=FileSystemLoader(str(templates)))
