@@ -100,6 +100,13 @@
 ;;;
 
 
+;;; distinguish priorities
+(defun org-html--priority-override (priority _info)
+  (and priority (format "<span class=\"priority priority-%c\">[%c]</span>" priority priority)))
+(advice-add #'org-html--priority :override #'org-html--priority-override)
+;;
+
+
 ; TODO give tags different colors depending on whether it actually exists or not?
 ;; (defun org-blog-tag-follow (path)) TODO ?
 

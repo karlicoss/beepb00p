@@ -192,8 +192,22 @@ pre.src:before {
     display: inline-block;
 
     margin-right: 1ch;
+    font-weight: bold;
 }
 
+/* borrowed from Doom config */
+.priority-A {
+    color: #ff6c6b;
+}
+.priority-B {
+    color: #da8548;
+}
+.priority-C {
+    color: #ecbe7b
+}
+.priority-D {
+    color: #51afef;
+}
 
 .tag {
     /* default is 80, bit too small esp in TOC? */
