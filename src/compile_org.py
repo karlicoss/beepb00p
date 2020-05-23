@@ -393,15 +393,17 @@ def post_process_html(html: str, *, check_ids: bool, active_tags: Sequence[str])
     # TODO to be fair, paragraph ids make sense, but if they are unstable, they do more harm
     # TODO some of them do not follow text-org, e.g. text-1
 
-    # TODO some whitespace in tags???
-
-
-    ### tag handling
+    ### tag handling + TOC handling
 
     # add links
     tag_blocks = soup.select('.tag')
     # TODO this might break exobrain?
     for tag_block in tag_blocks:
+
+        for x in list(tag_block.strings):
+            nbsp = '\xa0'
+            x.replace_with(x.strip(nbsp))
+
         # so it's got shape like <span class="tag"><span class="tag1">tag1</span>....</span>
         for tag in tag_block.find_all('span'):
             tag_name = tag.get_text() # todo not sure if should use class instead?
@@ -413,8 +415,8 @@ def post_process_html(html: str, *, check_ids: bool, active_tags: Sequence[str])
             tag['class'] = tag.get('class', []) + ['tag-active' if active else 'tag-inactive']
 
 
-    ### make sure tags in TOC are outside of the link
     for a_elem in ([] if toc is None else toc.find_all('a')):
+        ### make sure tags in TOC are outside of the link
         tag = a_elem.select_one('.tag')
         if tag is not None:
             tag.extract()
@@ -522,5 +524,7 @@ def test_tag_handling(tmp_path: Path) -> None:
     ## toc handling + adding tag links
     ##                                                                                                                                           vvv NBSPS!!
     before = '<li><a href="#something"><span class="timestamp-wrapper"><span class="timestamp">[2019-09-02 19:45]</span></span> heading with tags   <span class="tag"><span class="tag1">tag1</span> <span class="tag2">tag2</span></span></a>'
-    after  = '<li><a href="#something"><span class="timestamp-wrapper"><span class="timestamp">[2019-09-02 19:45]</span></span> heading with tags   </a><span class="tag"><a class="tag1 tag-inactive" href="./tags.html">tag1</a> <a class="tag2 tag-active" href="./tags.html#tag2">tag2</a></span>'
+    after  = '<li><a href="#something"><span class="timestamp-wrapper"><span class="timestamp">[2019-09-02 19:45]</span></span> heading with tags</a><span class="tag"><a class="tag1 tag-inactive" href="./tags.html">tag1</a><a class="tag2 tag-active" href="./tags.html#tag2">tag2</a></span>'
+    # aft    = '<li><a href="#something"><span class="timestamp-wrapper"><span class="timestamp">[2019-09-02 19:45]</span></span> heading with tags</a><span class="tag"><a class="tag1 tag-inactive" href="./tags.html">tag1</a><a class="tag2 tag-inactive" href="./tags.html">tag2</a></span>'
+
     assert after in html

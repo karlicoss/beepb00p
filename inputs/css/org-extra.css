@@ -160,8 +160,8 @@ pre.src:before {
 /* tweak TOC */
 
 /* highlight tags on hovering */
-#table-of-contents li:hover > .tag {
-    background-color: lightgrey;
+#table-of-contents li:hover > .tag a {
+    background-color: #dddddd;
 }
 
 /* underline link on hovering  */
@@ -177,16 +177,37 @@ pre.src:before {
     /* width so elements are not piling up on the same line in wide layout */
     width: 100%;
 }
-/* */
 
-/* ugh. attempt to prevent underlining priority... but doesn't really work. whatever...
-a:hover .priority {
-    text-decoration: none !important;
-    color: blue;
+/*  */
+
+
+/* todo use single .state selector? */
+.todo, .done {
+    margin-right: 1ch;
 }
-*/
+
+.priority {
+    /* not sure how it works, but in prevents underlining the priority in heading link */
+    /* I just borrowed it from default .todo style  */
+    display: inline-block;
+
+    margin-right: 1ch;
+}
 
 
 .tag {
-    font-size: 90%;
+    /* default is 80, bit too small esp in TOC? */
+    font-size: 100%;
+}
+
+/* todo not very reliable... perhaps add a css specifically for tags? */
+.tag a {
+    margin-left: 1ch;
+}
+
+.tag a:hover {
+    /* todo hmm bold looks nice, but active are already bold.. */
+    /* font-weight: bold; */
+
+    text-decoration: underline;
 }

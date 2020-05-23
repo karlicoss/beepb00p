@@ -36,19 +36,16 @@ html {
    Used to be bold, but visually a bit too spammy. I wouldn't mind 'slightly' bold perhaps at some point..
  */
 a:link {
-    text-decoration: none;
-}
-
-a:visited {
+    /* default is underline... dunno, feels pretty distracting */
     text-decoration: none;
 }
 
 a:hover {
-    text-decoration: underline;
-}
+/*      text-decoration: overline; */
+     /* color: yellow; */
 
-a:active {
-    text-decoration: underline;
+    /* mm, this is nice, but annoying because it infrates and may impact content around the link */
+    /* font-weight: bold; */
 }
 
 

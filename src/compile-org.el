@@ -83,6 +83,23 @@
 
 ;; https://emacs.stackexchange.com/questions/24960/org-mode-reference-remote-table-from-a-different-file
 
+
+;;; remove annoying whitespace/nbsp
+;;; or some reason org-mode relies on this instead of css...
+;;; TODO might be better everywhere, not just TOC?
+(defun org-html-format-headline-default-function-override
+    (todo _todo-type priority text tags info)
+  (let ((todo (org-html--todo todo info))
+        (priority (org-html--priority priority info))
+        (tags (org-html--tags tags info)))
+    (concat todo (and todo "")
+      priority (and priority "")
+      text
+      (and tags "") tags)))
+(advice-add #'org-html-format-headline-default-function :override #'org-html-format-headline-default-function-override)
+;;;
+
+
 ; TODO give tags different colors depending on whether it actually exists or not?
 ;; (defun org-blog-tag-follow (path)) TODO ?
 
