@@ -670,18 +670,24 @@ def get_inputs() -> Tuple[Path]: # TODO use ...?
     return get_filtered(inputs)
 
 
+from more_itertools import make_decorator
+tuplify = make_decorator(wrapping_func=tuple)
+
 
 def blog_tags() -> Sequence[str]:
     @cache
-    def aux(tags_file: MPath) -> Tuple[str, ...]:
+    @tuplify()
+    def aux(tags_file: MPath) -> Iterator[str]:
         path = tags_file.path
         root = orgparse.loads(path.read_text())
-        tags = []
         for ch in root.children:
             tag = ch.properties.get('CUSTOM_ID')
             if tag is not None:
-                tags.append(tag)
-        return tuple(tags)
+                yield tag
+            for ch2 in ch.children:
+                tag = ch2.properties.get('CUSTOM_ID')
+                if tag is not None:
+                    yield tag
     return aux(mpath(content / 'tags.org'))
 
 
