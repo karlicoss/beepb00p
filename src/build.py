@@ -99,7 +99,7 @@ def sanitize(path: Path) -> str:
     return pp
 
 
-def compile_org_body(*, compile_script: Path, path: Path, dir_: Path, check_ids: bool=False) -> List[Exception]:
+def compile_org_body(*, compile_script: Path, path: Path, dir_: Path, active_tags: Sequence[str], check_ids: bool=False) -> List[Exception]:
     errors: List[Exception] = []
     log.debug('compiling %s %s', compile_script, path)
     # TODO each thread should prob. capture logs...
@@ -113,7 +113,7 @@ def compile_org_body(*, compile_script: Path, path: Path, dir_: Path, check_ids:
             *(['--check-ids'] if check_ids else []),
             '--input', path,
             '--output-dir', dir_,
-            '--active-tags', ','.join(blog_tags()),
+            '--active-tags', ','.join(active_tags),
             # '--org',  # TODO
         ],
         stdout=PIPE,
@@ -276,15 +276,21 @@ class BaseDeps:
 @dataclass(frozen=True)
 class OrgDeps(BaseDeps):
     compile_org: MPath
-    misc: Tuple[MPath]
+    misc: Tuple[MPath, ...]
+    active_tags: Tuple[str, ...]
 
 
 def org_deps(path: MPath) -> OrgDeps:
     return OrgDeps(
         path = path,
         compile_org = mpath(ROOT / 'src/compile_org.py'),
-        misc = (      mpath(ROOT / 'src/compile-org.el'),),
-        )
+        misc = (
+            mpath(ROOT / 'src/compile-org.el'),
+        ),
+        # todo active tags should be in base?
+        # NOTE: damn, this is super neat... maybe write about it
+        active_tags=tuple(blog_tags()),
+    )
 
 
 @dataclass(frozen=True)
@@ -508,6 +514,7 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Results:
             compile_script=deps.compile_org.path,
             path=deps.path.path,
             dir_=dir_,
+            active_tags=deps.active_tags,
             check_ids=check_ids,
         )
         yield from berrors
