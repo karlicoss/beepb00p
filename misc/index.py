@@ -46,17 +46,21 @@ wave
 '''.splitlines()
 
 
+def upid(name: str) -> str:
+    u = name
+    # TODO meeeh. pretty horrible
+    if u not in EXISTING:
+        x = u.replace('_', '-')
+        if x in EXISTING:
+            u = x
+    assert u in EXISTING, u
+    return u
+
+
 # TODO later, add dates...
 def P(label: str, tags: str='', **kwargs) -> Node:
     def make_label(self_, label=label, tags=tags) -> str:
-        n = self_.name
-        u = n
-        # TODO meeeh. pretty horrible
-        if u not in EXISTING:
-            x = u.replace('_', '-')
-            if x in EXISTING:
-                u = x
-        assert u in EXISTING, u
+        u = upid(self_.name)
         mtags = '' if len(tags) == 0 else f'<tr><td>{tags}</td></tr>'
 
         # https://graphviz.gitlab.io/_pages/doc/info/shapes.html#html ok this is a good guide
@@ -72,8 +76,9 @@ def P(label: str, tags: str='', **kwargs) -> Node:
 
     return node(
         label=make_label,
-        set_class=True, #todo not sure about this, use lazy property?
-        id=lambda self_: self_.name,
+        # set_class=True, #todo not sure about this, use lazy property?
+        id=lambda self_: upid(self_.name),
+        **{'class': lambda self_: upid(self_.name)},
 
         # TODO keep URL anyway? duno
         # URL=make_url,
@@ -95,13 +100,14 @@ def order(*args, **kwargs):
 # TODO move to core!
 def medge(fr, to, **kwargs):
     assert 'class' not in kwargs
-    def nodename(n: Nodish) -> str:
+    def nodeup(n: Nodish) -> str:
         if isinstance(n, str):
-            return n
+            name = n
         else:
-            return n.name
+            name = n.name
+        return upid(name)
 
-    kwargs['class'] = lambda self_: f'{nodename(fr)} {nodename(to)}'
+    kwargs['class'] = lambda self_: f'{nodeup(fr)} {nodeup(to)}'
     return edge(fr, to, **kwargs)
 
 
@@ -114,7 +120,7 @@ def medge(fr, to, **kwargs):
 grasp       = P('Grasp', tags='#orgmode')
 promnesia   = P('Promnesia:<br/>journey in fixing browser history', tags='#pkm #promnesia')
 # aaaa = promnesia # TODO shit, this is a bit unfortunate...
-hpi         = P('HPI(Human Programming Interface)')
+hpi         = P('HPI<br/>(Human Programming Interface)')
 sad_infra   = P('The sad state of personal data and infrastructure')
 exports     = P('Building data liberation infrastructure')
 # TODO would be nice to display tags in boxes or something?
@@ -128,9 +134,15 @@ pkm_todos   = P('My GTD setup', tags='#gtd #orgmode')
 scheduler   = P('In search of a better job scheduler')
 configs_suck= P('Your configs suck? Try a real programming language')
 unnecessary_db  = P('Against unnecessary databases')
+orger           = P('Orger:<br/>reflect your life in org-mode')
+my_data     = P('What data on myself I collect and why?')
+orger_todos     = P('Using Orger for processing infromation')
+myinfra_roam= P('Extending my personal infrastructure:<br/>Roam Research', tags='#emacs #orgmode')
+# todo could do a table for tags?
+takeout_data_gone = P('Google Takeouts silently removes old data')
+annotating  = P('How to annotate everything')
+pkm_search  = P('Building personal search infrastructure')
 
-
-length: 26
 
 G = digraph(
     '''
@@ -153,56 +165,47 @@ G = digraph(
     '''.strip(), # todo not sure how many spaces I like
 
     cluster(
-    '''
-    {
-orger       [label="Orger:\nreflect your life in org-mode"]
-mydata      [label="What data on myself I collect and why?"]
-orger_2     [label="Using Orger for processing infromation"]
-myinfra_roam[label="Extending my personal infrastructure:\nRoam Research|#emacs #orgmode"]
-# todo could do a table for tags?
-takeout_removed[label="Google Takeouts silently removes old data"]
-    }
-''',
+        orger,
+        my_data,
+        orger_todos,
+        myinfra_roam,
+        takeout_data_gone,
         promnesia,
         hpi,
         sad_infra,
         exports,
         name='main',
+        label='Data liberation', # TODO and ???
     ),
 
-    'subgraph cluster_aux {',
-    'edge [constraint=false]',
-
-    '{',
-    scheduler,
-    configs_suck,
-    unnecessary_db,
-    mypy_error_handling,
-    *order(mypy_error_handling, 'unnecessary_db', 'scheduler', 'configs_suck'),
-    '}',
-    '''
-'''.strip(),
-    medge('scheduler'   , 'exports'  ),
-    medge('scheduler'   , 'mydata'   ),
-    medge('scheduler'   , 'orger'    ),
-    medge('configs_suck', 'hpi'      ),
-    medge('configs_suck', 'promnesia'),
-    medge('unnecessary_db'  , 'hpi'      ),
-    medge('unnecessary_db'  , 'mydata'   ),
-    medge('unnecessary_db'  , 'hpi'      ),
-    '}',
+    cluster(
+        'edge [constraint=false]',
+        scheduler,
+        configs_suck,
+        unnecessary_db,
+        mypy_error_handling,
+        *order(mypy_error_handling, unnecessary_db, scheduler, configs_suck),
+        medge(scheduler, exports),
+        medge(scheduler, my_data),
+        medge(scheduler, orger  ),
+        medge(configs_suck, hpi ),
+        medge(configs_suck, promnesia),
+        medge(unnecessary_db, hpi),
+        medge(unnecessary_db, my_data),
+        medge(unnecessary_db, hpi),
+        name='aux',
+        label='Tools/Libraries',
+    ),
 
     cluster(
-        '''
-        annotating  [label="How to annotate everything"]
-        pkm_search  [label="Building personal search infrastructure"]
-        ''',
+        annotating,
+        pkm_search,
         pkm_todos,
         cloudmacs,
         grasp,
         pkm_setup,
         # TODO needs to be date ordered?..
-        *order('grasp', 'cloudmacs', 'annotating', pkm_todos, 'pkm_search'),
+        *order(grasp, cloudmacs, annotating, pkm_todos, pkm_search),
         name='pkm',
         label='PKM',
     ),
@@ -217,42 +220,32 @@ takeout_removed[label="Google Takeouts silently removes old data"]
         label='Quantified self',
     ),
 
-'''
-grasp           -> pkm_setup;
-takeout_removed -> mydata;
-annotating      -> pkm_setup;
-cloudmacs       -> pkm_setup;
-pkm_search      -> pkm_setup;
-
-promnesia       -> pkm_setup [constraint=false];
-orger           -> pkm_setup [constraint=false];
-orger_2         -> pkm_setup [constraint=false];
-
-orger           -> orger_2;
-
-
-
-exports         -> hpi;
-mydata          -> hpi;
-
-hpi             -> exercise_bike_model [constraint=false];
-
-hpi             -> myinfra_roam;
-promnesia       -> myinfra_roam [constraint=false];
-orger           -> myinfra_roam;
-
-pkm_todos       -> pkm_setup;
-    ''',
+    medge(grasp            , pkm_setup  ),
+    medge(takeout_data_gone, my_data    ),
+    medge(annotating       , pkm_setup  ),
+    medge(cloudmacs        , pkm_setup  ),
+    medge(pkm_search       , pkm_setup  ),
+    medge(orger            , orger_todos),
+    medge(promnesia        , pkm_setup, **noconstraint),
+    medge(orger            , pkm_setup, **noconstraint),
+    medge(orger_todos      , pkm_setup, **noconstraint),
+    medge(exports          , hpi),
+    medge(my_data          , hpi),
+    medge(hpi              , exercise_bike_model, **noconstraint),
+    medge(hpi              , heartbeats_vs_kcals, **noconstraint),
+    medge(pkm_todos        , pkm_setup),
+    medge(hpi             , myinfra_roam),
+    medge(promnesia       , myinfra_roam, **noconstraint),
+    medge(orger           , myinfra_roam),
 
     # todo maybe syntax with operators or something?
     medge(hpi, promnesia),
 
     medge(sad_infra, promnesia),
     medge(sad_infra, hpi),
-    medge(sad_infra, 'mydata'),
+    medge(sad_infra, my_data),
     medge(sad_infra, pkm_setup, **noconstraint),
 
-    # edge(mypy_error_handling, exports  , **noconstraint),
     medge(mypy_error_handling, hpi      , **noconstraint),
     medge(mypy_error_handling, promnesia, **noconstraint),
 )
@@ -263,8 +256,9 @@ from pathlib import Path
 
 
 STYLE = '''
-.node.hl text {
-   fill: red;
+.node.hl polygon {
+   # fill: red;
+   stroke: red;
 }
 
 .edge.hl path {
@@ -274,7 +268,6 @@ STYLE = '''
    stroke: red;
    fill: red;
 }
-
 '''
 
 JS = '''
@@ -375,3 +368,8 @@ if __name__ == '__main__':
 # add classes to css
 
 # TODO hmm, fdp isn't so different from neato... also have to remove cluster_
+
+# TODO space a bit more between layers
+# TODO somehow set gravity to top??
+
+# TODO maybe remove boxes?
