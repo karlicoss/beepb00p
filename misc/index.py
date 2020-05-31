@@ -45,6 +45,19 @@ def order(*args, **kwargs):
     # return []
 
 
+# TODO move to core!
+def medge(fr, to, **kwargs):
+    assert 'class' not in kwargs
+    def nodename(n: Nodish) -> str:
+        if isinstance(n, str):
+            return n
+        else:
+            return n.name
+
+    kwargs['class'] = lambda self_: f'{nodename(fr)} {nodename(to)}'
+    return edge(fr, to, **kwargs)
+
+
 # TODO would be nice to add dates
 
 # TODO could make 'auto' label (or extracting from blog)
@@ -65,6 +78,9 @@ bike_power  = P("How I found my exercise bike to violate laws of physics", tags=
 endo_kcal   = P("Making sense of Endomondo's calorie estimation", tags='#quantifiedself')
 cloudmacs   = P('Cloudmacs', tags='#emacs')
 todo_lists  = P('My GTD setup', tags='#gtd #orgmode')
+scheduler   = P('In search of a better job scheduler')
+configs_suck= P('Your configs suck? Try a real programming language')
+against_db  = P('Against unnecessary databases')
 
 
 G = digraph(
@@ -87,8 +103,8 @@ G = digraph(
   node[shape=box]
     '''.strip(), # todo not sure how many spaces I like
 
+    cluster(
     '''
-    subgraph cluster_main {
     {
 orger       [label="Orger:\nreflect your life in org-mode"]
 mydata      [label="What data on myself I collect and why?"]
@@ -98,31 +114,33 @@ myinfra_roam[label="Extending my personal infrastructure:\nRoam Research|#emacs 
 takeout_removed[label="Google Takeouts silently removes old data"]
     }
 ''',
-    promnesia,
-    hpi,
-    sad_infra,
-    exports,
-    '}',
+        promnesia,
+        hpi,
+        sad_infra,
+        exports,
+        name='main',
+    ),
 
     'subgraph cluster_aux {',
     'edge [constraint=false]',
 
     '{',
-    'scheduler   [label="In search of a better job scheduler"]',
-    'configs_suck[label="Your configs suck? Try a real programming language"]',
-    'against_db  [label="Against unnecessary databases"]',
+    scheduler,
+    configs_suck,
+    against_db,
     mypy_errors,
     *order(mypy_errors, 'against_db', 'scheduler', 'configs_suck'),
     '}',
     '''
-scheduler       -> exports
-scheduler       -> mydata
-scheduler       -> orger
-against_db      -> mydata
-against_db      -> hpi
-configs_suck    -> hpi
-configs_suck    -> promnesia
 '''.strip(),
+    medge('scheduler'   , 'exports'  ),
+    medge('scheduler'   , 'mydata'   ),
+    medge('scheduler'   , 'orger'    ),
+    medge('configs_suck', 'hpi'      ),
+    medge('configs_suck', 'promnesia'),
+    medge('against_db'  , 'hpi'      ),
+    medge('against_db'  , 'mydata'   ),
+    medge('against_db'  , 'hpi'      ),
     '}',
 
     cluster(
@@ -178,16 +196,16 @@ todo_lists      -> pkm_setup;
     ''',
 
     # todo maybe syntax with operators or something?
-    edge(hpi, promnesia),
+    medge(hpi, promnesia),
 
-    edge(sad_infra, promnesia),
-    edge(sad_infra, hpi),
-    edge(sad_infra, 'mydata'),
-    edge(sad_infra, pkm_setup, **noconstraint),
+    medge(sad_infra, promnesia),
+    medge(sad_infra, hpi),
+    medge(sad_infra, 'mydata'),
+    medge(sad_infra, pkm_setup, **noconstraint),
 
     # edge(mypy_errors, exports  , **noconstraint),
-    edge(mypy_errors, hpi      , **noconstraint),
-    edge(mypy_errors, promnesia, **noconstraint),
+    medge(mypy_errors, hpi      , **noconstraint),
+    medge(mypy_errors, promnesia, **noconstraint),
 )
 
 
@@ -196,26 +214,21 @@ from pathlib import Path
 
 
 STYLE = '''
-.node text {
-  /* fill:red; */
+.node.hl text {
+   fill: red;
 }
 
-.node.hl text {
+.edge.hl path {
+   stroke: red;
+}
+.edge.hl polygon {
+   stroke: red;
    fill: red;
 }
 
 '''
 
 JS = '''
-// TODO just hl all classes and ids it can get hands on?
-const mm = new Map([
-  ['#fs'     , ['#cluster_filesystem']],
-  ['#exports', ['#cluster_exports']],
-  ['#mypkg'  , ['#cluster_mypkgcl']],
-  ['#dal'    , ['.dal_edge']],
-])
-
-
 const HL_CLASS = 'hl';
 
 const cb = (e) => {
@@ -223,19 +236,14 @@ const cb = (e) => {
     hld.classList.remove(HL_CLASS);
   }
 
-
   const hsh = e.target.location.hash
   if (hsh == null || hsh == '')
      return
 
   const name = hsh.substr(1);
-
-
-  // TODO FIXME reset to original value??
-  const nodes = document.querySelectorAll('#' + name)
-  for (const node of nodes) {
-    console.error(node);
-    node.classList.add('hl');
+  const things = document.querySelectorAll('.' + name)
+  for (const th of things) {
+    th.classList.add('hl')
   }
 }
 // TODO FIXME blink with js?
