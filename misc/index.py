@@ -57,6 +57,9 @@ def upid(name: str) -> str:
     return u
 
 
+# TODO MEH!
+ALL_POSTS = []
+
 # TODO later, add dates...
 def P(label: str, tags: str='', **kwargs) -> Node:
     def make_label(self_, label=label, tags=tags) -> str:
@@ -74,7 +77,7 @@ def P(label: str, tags: str='', **kwargs) -> Node:
         label = f'< {label} >'
         return label
 
-    return node(
+    n = node(
         label=make_label,
         # set_class=True, #todo not sure about this, use lazy property?
         id=lambda self_: upid(self_.name),
@@ -88,6 +91,8 @@ def P(label: str, tags: str='', **kwargs) -> Node:
         # TODO maybe even keep in dotpy? dunno
         **kwargs,
     )
+    ALL_POSTS.append(n)
+    return n
 
 
 def order(*args, **kwargs):
@@ -257,7 +262,6 @@ from pathlib import Path
 
 STYLE = '''
 .node.hl polygon {
-   # fill: red;
    stroke: red;
 }
 
@@ -270,7 +274,27 @@ STYLE = '''
 }
 '''
 
-JS = '''
+
+# absolutely mental, but I like the idea of using just CSS for it...
+def node_css(node: Node) -> str:
+    cls = upid(node.name)
+    # todo use fill for polygon for arrow heads?
+    return f'''
+g.{cls}:target polygon,
+g.{cls}:target ~ .{cls}.edge path,
+g.{cls}:target ~ .{cls}.edge polygon {{stroke: red;}}
+'''
+
+
+def make_style() -> str:
+    return STYLE + '\n'.join(node_css(node) for node in ALL_POSTS)
+
+
+# TODO hmmm. not sure what's better -- a larger CSS, or a tiny JS.. but this is interesting...
+
+
+JS = ''
+JS_PREV = '''
 const HL_CLASS = 'hl';
 
 const cb = (e) => {
@@ -288,11 +312,12 @@ const cb = (e) => {
     th.classList.add('hl')
   }
 }
-// TODO FIXME blink with js?
 window.addEventListener('load'      , cb, false)
 window.addEventListener('hashchange', cb, false)
-
 '''
+        # <noscript>
+        #     Javascript is required for edge highlights to work. Sorry!
+        # </noscript>
 
 # todo separate thing to hl deps
 HTML = '''
@@ -305,9 +330,6 @@ HTML = '''
         <script>{JS}</script>
     </head>
     <body>
-        <noscript>
-            Javascript is required for edge highlights to work. Sorry!
-        </noscript>
         {SVG}
     </body>
 </html>
@@ -323,8 +345,7 @@ def generate(to: Optional[Path]) -> str:
     res = run(['dot', '-T', 'svg'], input=dot.encode('utf8'), check=True, stdout=PIPE)
     svg = res.stdout.decode('utf8')
 
-    svg = with_style(svg=svg, style=STYLE)
-
+    svg = with_style(svg=svg, style=make_style())
 
     html = HTML.format(SVG=svg, JS=JS)
     Path('index.html').write_text(html)
