@@ -1,12 +1,43 @@
 #!/usr/bin/env python3
+import dotpy
+dotpy.init(__name__) # TODO extremely meh
+
+
+from dotpy import Node, node, render, edge
+
+
+def P(label: str) -> Node:
+    return node(
+        label=label,
+    )
+
+
+promnesia = P('Promnesia')
+hpi       = P('HPI (Human Programming Interface)')
+
+
+res = [
+    promnesia,
+    hpi,
+    # todo maybe syntax with operators or something?
+    edge(hpi, promnesia,)
+]
 
 
 def main():
-    pass
+    for r in res:
+        print(render(r))
 
 
 if __name__ == '__main__':
     main()
+
+# TODO ok, so I guess I need to keep it in sync with the frontpage...
+# need to declare stuff anyway.. so
+# warn on mismatches
+# TODO integrate with compile script
+# TODO integrate with compile script to load information about posts!
+# I think specifying deps etc in python is fine.. just keep separate from the blog compiler?
 
 
 '''
