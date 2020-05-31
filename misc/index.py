@@ -7,36 +7,73 @@ dotpy.init(__name__) # TODO extremely meh
 from dotpy import *
 
 
-def P(label: str, *args, **kwargs) -> Node:
+def P(label: str, tags: str='', **kwargs) -> Node:
+#     ts = [f'<td>{t}</td>' for t in tags.split() if len(t) > 0]
+#     tags_el = '' if len(ts) == 0 else f'<tr align="left">{ts}</tr>'
+#     label = f'''<
+# <table border="0">
+# <tr><td>{label}</td></tr>
+# {tags_el}
+# </table>
+# >'''
+    if len(tags) > 0:
+        label = f'{label}<br/><b>{tags}</b>'
+
+    # todo replace \n with br?
+
+    if '<' in label:
+        # meh..
+        label = f'< {label} >'
+
     return node(
-        *args,
         label=label,
         **kwargs,
     )
+
+
+def order(*args, **kwargs):
+    # TODO remove arrow heads
+    return edges(*args, constraint='true', **invisible, **kwargs)
+    # TODO disable for neato?
+    # return []
 
 
 # TODO could make 'auto' label (or extracting from blog)
 # should be lazy then too
 # todo warn about unused (unrechable?)
 # TODO make it possible to simply pass dict and unpack
-promnesia   = P('Promnesia: journey in fixing browser history|#pkm #promnesia', **record)
-hpi         = P('HPI (Human Programming Interface)')
+grasp       = P('Grasp', tags='#orgmode')
+promnesia   = P('Promnesia:<br/>journey in fixing browser history', tags='#pkm #promnesia')
+# aaaa = promnesia # TODO shit, this is a bit unfortunate...
+hpi         = P('HPI(Human Programming Interface)')
 sad_infra   = P('The sad state of personal data and infrastructure')
 exports     = P('Building data liberation infrastructure')
 # TODO would be nice to display tags in boxes or something?
-mypy_errors = P('Using mypy for error handling|#python #mypy #plt', **record)
+mypy_errors = P('Using mypy for error handling', tags='#python #mypy #plt')
+pkm_setup   = P('How to cope with a fleshy human brain', tags='#pkm')
+
+bike_power  = P("How I found my exercise bike to violate laws of physics", tags='#quantifiedself')
+endo_kcal   = P("Making sense of Endomondo's calorie estimation", tags='#quantifiedself')
+cloudmacs   = P('Cloudmacs', tags='#emacs')
+todo_lists  = P('My GTD setup', tags='#gtd #orgmode')
 
 
 G = digraph(
     '''
-  # ???
-  # overlap=scale
-  # splines=true
-  ratio=fill
-  size=20
+  ## these are for neato
+  overlap=scale
+  splines=true
+  ##
+
+  ## TODO hmm without size isn't so bad?
+  # ratio=fill
+  # size=20
+  ##
+
   # newrank=true
-  rankdir=TB
+  rankdir=BT
   # TODO ??? rank=min
+  searchsize=500
 
   node[shape=box]
     '''.strip(), # todo not sure how many spaces I like
@@ -44,18 +81,11 @@ G = digraph(
     '''
     subgraph cluster_main {
     {
-grasp       [label="Grasp"]
-annotating  [label="How to annotate everything"]
-orger       [label="Orger: reflect your life in org-mode"]
-pkm_setup   [label="How to cope with a fleshy human brain"]
+orger       [label="Orger:\nreflect your life in org-mode"]
 mydata      [label="What data on myself I collect and why?"]
-pkm_search  [label="Building personal search infrastructure"]
 orger_2     [label="Using Orger for processing infromation"]
-myinfra_roam[label="Extending my personal infrastructure: Roam Research|#emacs #orgmode"]
-cloudmacs   [label="Cloudmacs|#emacs" shape=record]
+myinfra_roam[label="Extending my personal infrastructure:\nRoam Research|#emacs #orgmode"]
 # todo could do a table for tags?
-bike_power  [label="How I found my exercise bike to violate laws of physics"]
-todo_lists  [label="On TODO lists"]
 takeout_removed[label="Google Takeouts silently removes old data"]
     }
 ''',
@@ -65,17 +95,15 @@ takeout_removed[label="Google Takeouts silently removes old data"]
     exports,
     '}',
 
-    'subgraph cluster_yyy {',
+    'subgraph cluster_aux {',
     'edge [constraint=false]',
 
     '{',
     'scheduler   [label="In search of a better job scheduler"]',
     'configs_suck[label="Your configs suck? Try a real programming language"]',
     'against_db  [label="Against unnecessary databases"]',
-     mypy_errors,
-    'mypy_errors->against_db [constraint=true]',
-    'against_db->scheduler   [constraint=true]',
-    'scheduler->configs_suck [constraint=true]',
+    mypy_errors,
+    *order(mypy_errors, 'against_db', 'scheduler', 'configs_suck'),
     '}',
     '''
 scheduler       -> exports
@@ -88,6 +116,31 @@ configs_suck    -> promnesia
 '''.strip(),
     '}',
 
+    cluster(
+        '''
+        annotating  [label="How to annotate everything"]
+        pkm_search  [label="Building personal search infrastructure"]
+        ''',
+        todo_lists,
+        cloudmacs,
+        grasp,
+        pkm_setup,
+        # TODO needs to be date ordered?..
+        *order('grasp', 'cloudmacs', 'annotating', 'todo_lists', 'pkm_search'),
+        name='pkm',
+        label='PKM',
+    ),
+
+    cluster(
+        endo_kcal,
+        bike_power,
+
+        *order(endo_kcal, bike_power),
+
+        name='qs',
+        label='Quantified self',
+    ),
+
 '''
 grasp           -> pkm_setup;
 takeout_removed -> mydata;
@@ -95,9 +148,11 @@ annotating      -> pkm_setup;
 cloudmacs       -> pkm_setup;
 pkm_search      -> pkm_setup;
 
-orger           -> pkm_setup;
+promnesia       -> pkm_setup [constraint=false];
+orger           -> pkm_setup [constraint=false];
+orger_2         -> pkm_setup [constraint=false];
+
 orger           -> orger_2;
-orger_2         -> pkm_setup;
 
 
 
@@ -107,7 +162,7 @@ mydata          -> hpi;
 hpi             -> bike_power [constraint=false];
 
 hpi             -> myinfra_roam;
-promnesia       -> myinfra_roam;
+promnesia       -> myinfra_roam [constraint=false];
 orger           -> myinfra_roam;
 
 todo_lists      -> pkm_setup;
@@ -119,6 +174,7 @@ todo_lists      -> pkm_setup;
     edge(sad_infra, promnesia),
     edge(sad_infra, hpi),
     edge(sad_infra, 'mydata'),
+    edge(sad_infra, pkm_setup),
 
     # edge(mypy_errors, exports  , **noconstraint),
     edge(mypy_errors, hpi      , **noconstraint),
@@ -140,3 +196,10 @@ if __name__ == '__main__':
 # TODO integrate with compile script to load information about posts!
 # I think specifying deps etc in python is fine.. just keep separate from the blog compiler?
 # TODO mark drafts separately?
+
+# TODO send other posts in 'misc'
+# TODO identify by upid??
+# TODO on click, highlight edges that lead to a node
+# add classes to css
+
+# TODO hmm, fdp isn't so different from neato... also have to remove cluster_
