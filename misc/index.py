@@ -27,16 +27,25 @@ def P(label: str, tags: str='', **kwargs) -> Node:
 
     return node(
         label=label,
+        set_class=True, #todo not sure about this, use lazy property?
+        id=lambda self_: self_.name,
+
+        URL=lambda self_: '#' + self_.name, # TODO pass color?
+        fontcolor=INTERNAL,
+
+        # TODO need supplemenary js?
+        # TODO maybe even keep in dotpy? dunno
         **kwargs,
     )
 
 
 def order(*args, **kwargs):
-    # TODO remove arrow heads
-    return edges(*args, constraint='true', **invisible, **kwargs)
+    return edges(*args, constraint='true', **invisible, arrowhead='none', **kwargs)
     # TODO disable for neato?
     # return []
 
+
+# TODO would be nice to add dates
 
 # TODO could make 'auto' label (or extracting from blog)
 # should be lazy then too
@@ -73,7 +82,7 @@ G = digraph(
   # newrank=true
   rankdir=BT
   # TODO ??? rank=min
-  searchsize=500
+  # searchsize=500
 
   node[shape=box]
     '''.strip(), # todo not sure how many spaces I like
@@ -174,7 +183,7 @@ todo_lists      -> pkm_setup;
     edge(sad_infra, promnesia),
     edge(sad_infra, hpi),
     edge(sad_infra, 'mydata'),
-    edge(sad_infra, pkm_setup),
+    edge(sad_infra, pkm_setup, **noconstraint),
 
     # edge(mypy_errors, exports  , **noconstraint),
     edge(mypy_errors, hpi      , **noconstraint),
@@ -182,8 +191,114 @@ todo_lists      -> pkm_setup;
 )
 
 
+from typing import Optional
+from pathlib import Path
+
+
+STYLE = '''
+.node text {
+  /* fill:red; */
+}
+
+.node.hl text {
+   fill: red;
+}
+
+'''
+
+JS = '''
+// TODO just hl all classes and ids it can get hands on?
+const mm = new Map([
+  ['#fs'     , ['#cluster_filesystem']],
+  ['#exports', ['#cluster_exports']],
+  ['#mypkg'  , ['#cluster_mypkgcl']],
+  ['#dal'    , ['.dal_edge']],
+])
+
+
+const HL_CLASS = 'hl';
+
+const cb = (e) => {
+  for (const hld of document.querySelectorAll('.' + HL_CLASS)) {
+    hld.classList.remove(HL_CLASS);
+  }
+
+
+  const hsh = e.target.location.hash
+  if (hsh == null || hsh == '')
+     return
+
+  const name = hsh.substr(1);
+
+
+  // TODO FIXME reset to original value??
+  const nodes = document.querySelectorAll('#' + name)
+  for (const node of nodes) {
+    console.error(node);
+    node.classList.add('hl');
+  }
+}
+// TODO FIXME blink with js?
+window.addEventListener('load'      , cb, false)
+window.addEventListener('hashchange', cb, false)
+
+'''
+
+# todo separate thing to hl deps
+HTML = '''
+<!doctype html>
+<html lang="">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <title>Index</title>
+        <script>{JS}</script>
+    </head>
+    <body>
+        <noscript>
+            Javascript is required for edge highlights to work. Sorry!
+        </noscript>
+        {SVG}
+    </body>
+</html>
+'''
+
+# TODO generate HTML too? eh.
+
+def generate(to: Optional[Path]) -> str:
+    dot = render(G)
+    # todo eh. dump intermediate?
+
+    from subprocess import run, PIPE
+    res = run(['dot', '-T', 'svg'], input=dot.encode('utf8'), check=True, stdout=PIPE)
+    svg = res.stdout.decode('utf8')
+
+    svg = with_style(svg=svg, style=STYLE)
+
+
+    html = HTML.format(SVG=svg, JS=JS)
+    Path('index.html').write_text(html)
+
+
+    if to is None:
+        import sys
+        sys.stdout.write(svg)
+    else:
+        to.write_text(svg)
+
+
 def main():
-    print(render(G))
+    import argparse
+    p = argparse.ArgumentParser()
+    p.add_argument('file', nargs='?', default='-')
+    # TODO pass engine?
+    args = p.parse_args()
+
+    # todo should end with .svg?
+    file = None if args.file == '-' else Path(args.file)
+    generate(to=file)
+    # TODO, ok add right after svg
+    #
 
 
 if __name__ == '__main__':
