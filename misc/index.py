@@ -7,31 +7,77 @@ dotpy.init(__name__) # TODO extremely meh
 from dotpy import *
 
 
+# TODO remove later..
+
+EXISTING = '''
+myinfra-roam
+configs-suck
+hpi
+exports
+unnecessary-db
+scheduler
+my-data
+sad-infra
+exercise-bike-model
+scrapyroo
+pkm-search
+mypy-error-handling
+orger-todos
+orger
+cloudmacs
+heartbeats_vs_kcals
+annotating
+pkm-setup
+contemp-art
+sufs
+recycling-is-hard
+ipynb-singleline
+takeout-data-gone
+quantified-mind
+sleep-tracking
+grasp
+promnesia
+kython
+axol
+myinfra
+pkm-todos
+lagrangians
+wave
+'''.splitlines()
+
+
+# TODO later, add dates...
 def P(label: str, tags: str='', **kwargs) -> Node:
-#     ts = [f'<td>{t}</td>' for t in tags.split() if len(t) > 0]
-#     tags_el = '' if len(ts) == 0 else f'<tr align="left">{ts}</tr>'
-#     label = f'''<
-# <table border="0">
-# <tr><td>{label}</td></tr>
-# {tags_el}
-# </table>
-# >'''
-    if len(tags) > 0:
-        label = f'{label}<br/><b>{tags}</b>'
+    def make_label(self_, label=label, tags=tags) -> str:
+        n = self_.name
+        u = n
+        # TODO meeeh. pretty horrible
+        if u not in EXISTING:
+            x = u.replace('_', '-')
+            if x in EXISTING:
+                u = x
+        assert u in EXISTING, u
+        mtags = '' if len(tags) == 0 else f'<tr><td>{tags}</td></tr>'
 
-    # todo replace \n with br?
-
-    if '<' in label:
-        # meh..
+        # https://graphviz.gitlab.io/_pages/doc/info/shapes.html#html ok this is a good guide
+        label = f'''
+<table border="0">
+<tr><td href="http://beepb00p.xyz/{u}.html">{label}</td></tr>
+{mtags}
+<tr><td href="#{u}" color="yellow"   >💡</td></tr>
+</table>
+'''.strip()
         label = f'< {label} >'
+        return label
 
     return node(
-        label=label,
+        label=make_label,
         set_class=True, #todo not sure about this, use lazy property?
         id=lambda self_: self_.name,
 
-        URL=lambda self_: '#' + self_.name, # TODO pass color?
-        fontcolor=INTERNAL,
+        # TODO keep URL anyway? duno
+        # URL=make_url,
+        # fontcolor=INTERNAL,
 
         # TODO need supplemenary js?
         # TODO maybe even keep in dotpy? dunno
@@ -43,6 +89,7 @@ def order(*args, **kwargs):
     return edges(*args, constraint='true', **invisible, arrowhead='none', **kwargs)
     # TODO disable for neato?
     # return []
+
 
 
 # TODO move to core!
@@ -71,17 +118,19 @@ hpi         = P('HPI(Human Programming Interface)')
 sad_infra   = P('The sad state of personal data and infrastructure')
 exports     = P('Building data liberation infrastructure')
 # TODO would be nice to display tags in boxes or something?
-mypy_errors = P('Using mypy for error handling', tags='#python #mypy #plt')
+mypy_error_handling = P('Using mypy for error handling', tags='#python #mypy #plt')
 pkm_setup   = P('How to cope with a fleshy human brain', tags='#pkm')
 
-bike_power  = P("How I found my exercise bike to violate laws of physics", tags='#quantifiedself')
-endo_kcal   = P("Making sense of Endomondo's calorie estimation", tags='#quantifiedself')
+exercise_bike_model  = P("How I found my exercise bike to violate laws of physics", tags='#quantifiedself')
+heartbeats_vs_kcals = P("Making sense of Endomondo's calorie estimation", tags='#quantifiedself')
 cloudmacs   = P('Cloudmacs', tags='#emacs')
-todo_lists  = P('My GTD setup', tags='#gtd #orgmode')
+pkm_todos   = P('My GTD setup', tags='#gtd #orgmode')
 scheduler   = P('In search of a better job scheduler')
 configs_suck= P('Your configs suck? Try a real programming language')
-against_db  = P('Against unnecessary databases')
+unnecessary_db  = P('Against unnecessary databases')
 
+
+length: 26
 
 G = digraph(
     '''
@@ -127,9 +176,9 @@ takeout_removed[label="Google Takeouts silently removes old data"]
     '{',
     scheduler,
     configs_suck,
-    against_db,
-    mypy_errors,
-    *order(mypy_errors, 'against_db', 'scheduler', 'configs_suck'),
+    unnecessary_db,
+    mypy_error_handling,
+    *order(mypy_error_handling, 'unnecessary_db', 'scheduler', 'configs_suck'),
     '}',
     '''
 '''.strip(),
@@ -138,9 +187,9 @@ takeout_removed[label="Google Takeouts silently removes old data"]
     medge('scheduler'   , 'orger'    ),
     medge('configs_suck', 'hpi'      ),
     medge('configs_suck', 'promnesia'),
-    medge('against_db'  , 'hpi'      ),
-    medge('against_db'  , 'mydata'   ),
-    medge('against_db'  , 'hpi'      ),
+    medge('unnecessary_db'  , 'hpi'      ),
+    medge('unnecessary_db'  , 'mydata'   ),
+    medge('unnecessary_db'  , 'hpi'      ),
     '}',
 
     cluster(
@@ -148,21 +197,21 @@ takeout_removed[label="Google Takeouts silently removes old data"]
         annotating  [label="How to annotate everything"]
         pkm_search  [label="Building personal search infrastructure"]
         ''',
-        todo_lists,
+        pkm_todos,
         cloudmacs,
         grasp,
         pkm_setup,
         # TODO needs to be date ordered?..
-        *order('grasp', 'cloudmacs', 'annotating', 'todo_lists', 'pkm_search'),
+        *order('grasp', 'cloudmacs', 'annotating', pkm_todos, 'pkm_search'),
         name='pkm',
         label='PKM',
     ),
 
     cluster(
-        endo_kcal,
-        bike_power,
+        heartbeats_vs_kcals,
+        exercise_bike_model,
 
-        *order(endo_kcal, bike_power),
+        *order(heartbeats_vs_kcals, exercise_bike_model),
 
         name='qs',
         label='Quantified self',
@@ -186,13 +235,13 @@ orger           -> orger_2;
 exports         -> hpi;
 mydata          -> hpi;
 
-hpi             -> bike_power [constraint=false];
+hpi             -> exercise_bike_model [constraint=false];
 
 hpi             -> myinfra_roam;
 promnesia       -> myinfra_roam [constraint=false];
 orger           -> myinfra_roam;
 
-todo_lists      -> pkm_setup;
+pkm_todos       -> pkm_setup;
     ''',
 
     # todo maybe syntax with operators or something?
@@ -203,9 +252,9 @@ todo_lists      -> pkm_setup;
     medge(sad_infra, 'mydata'),
     medge(sad_infra, pkm_setup, **noconstraint),
 
-    # edge(mypy_errors, exports  , **noconstraint),
-    medge(mypy_errors, hpi      , **noconstraint),
-    medge(mypy_errors, promnesia, **noconstraint),
+    # edge(mypy_error_handling, exports  , **noconstraint),
+    medge(mypy_error_handling, hpi      , **noconstraint),
+    medge(mypy_error_handling, promnesia, **noconstraint),
 )
 
 

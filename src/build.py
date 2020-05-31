@@ -466,6 +466,7 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Results:
     if isinstance(deps, OrgDeps):
         ctx['style_org'] = True
 
+        # TODO extract get_meta method??
         o = orgparse.loads(apath.read_text())
         # TODO need to make public?? also can remove from porg then..
         fprops = o._special_comments
