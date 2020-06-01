@@ -55,6 +55,7 @@ class Post:
     tags: Sequence[Tag]
     url: str
     feed: bool
+    upid: Optional[str]=None # TODO FIXME
 
     @property
     def date_human(self) -> Optional[str]:
@@ -382,6 +383,58 @@ def _compile_with_deps(deps: Deps, dir_: Path) -> Results:
     dir_.rmdir()
 
 
+
+def org_meta(apath: Path) -> Post:
+    # TODO extract get_meta method??
+    o = orgparse.loads(apath.read_text())
+    # TODO need to make public?? also can remove from porg then..
+    fprops = o._special_comments
+
+    def fprop(name: str) -> Optional[str]:
+        vals = fprops.get(name)
+        if vals is None:
+            return None
+        return the(vals)
+
+    ttl     = fprop('TITLE'); assert ttl is not None
+    summ    = fprop('SUMMARY')
+    upid    = fprop('UPID')
+    ftags   = fprop('FILETAGS')
+    dates   = fprop('DATE')
+    draftp  = fprop('DRAFT')
+    nofeedp = fprop('NOFEED')
+
+
+    nofeed = False if nofeedp is None else True
+    draft  = False if draftp  is None else True
+
+    if ftags is not None: # todo maybe should always be set?..
+        tags = tuple(Tag(x) for x in ftags.split(':') if len(x) > 0)
+    else:
+        tags = ()
+
+    date: Optional[datetime]
+    if dates is not None:
+        dates = dates[1: 1 + len('0000-00-00 Abc')]
+        date = datetime.strptime(dates, '%Y-%m-%d %a')
+    else:
+        date = None
+
+    return Post(
+        title=ttl,
+        summary=summ,
+        date=date,
+        body='',
+        draft=draft,
+        special=False,
+        has_math=False,
+        tags=tags,
+        url='', # TODO ???
+        feed=True if nofeed is None else False, # todo meh, inversion is annoying
+        upid=upid, # todo perhaps should always have upid?
+    )
+
+
 def _compile_post_aux(deps: Deps, dir_: Path) -> Results:
     path = deps.path.path
     if path.is_absolute():
@@ -431,7 +484,7 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Results:
             return
         ctx['summary'] = summ
 
-    def set_tags(tags: Optional[List[str]]) -> None:
+    def set_tags(tags: Optional[Sequence[str]]) -> None:
         if tags is None:
             tags = []
         ctx['tags'] = tuple(map(Tag, tags))
@@ -466,49 +519,30 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Results:
     if isinstance(deps, OrgDeps):
         ctx['style_org'] = True
 
-        # TODO extract get_meta method??
-        o = orgparse.loads(apath.read_text())
-        # TODO need to make public?? also can remove from porg then..
-        fprops = o._special_comments
+        ometa = org_meta(apath)
+        # TODO after making generic metadata method, just ditch set_ things
+        set_title(ometa.title)
+        if ometa.summary is not None:
+            set_summary(ometa.summary)
 
-        def fprop(name: str) -> Optional[str]:
-            vals = fprops.get(name)
-            if vals is None:
-                return None
-            return the(vals)
+        if ometa.upid is not None:
+            set_issoid(ometa.upid)
 
-        ttl = fprop('TITLE')
-        if ttl is not None:
-            set_title(ttl)
+        dt = ometa.date
+        if dt is not None:
+            set_date(dt)
 
-        summ = fprop('SUMMARY')
-        if summ is not None:
-            set_summary(summ)
+        tags = ometa.tags
+        if len(tags) > 0: # todo not sure..
+            set_tags([t.name for t in tags])
 
-        upid = fprop('UPID')
-        if upid is not None:
-            set_issoid(upid)
-
-        ftags = fprop('FILETAGS')
-        if ftags is not None:
-            tags = list(x for x in ftags.split(':') if len(x) > 0)
-            set_tags(tags)
-
-        dates = fprop('DATE')
-        if dates is not None:
-            dates = dates[1: 1 + len('0000-00-00 Abc')]
-            date = datetime.strptime(dates, '%Y-%m-%d %a')
-            set_date(date)
-
-
-        draftp = fprop('DRAFT')
-        meta.update({} if draftp is None else {'draft': draftp})
+        meta.update({'draft': True} if ometa.draft else {})
         # TODO right.. I guess we want drafts to have default
         if check_ids is None:
-            check_ids = draftp is None
+            check_ids = ometa.draft is False
 
-        nofeedp = fprop('NOFEED')
-        meta.update({} if nofeedp is None else {'nofeed': nofeedp})
+        feed = ometa.feed
+        meta.update({} if feed else {'nofeed': True})
 
         berrors = compile_org_body(
             # TODO let it figure it out from deps??
