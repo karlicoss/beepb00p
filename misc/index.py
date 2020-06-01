@@ -247,7 +247,6 @@ G = digraph(
         medge(scheduler, orger  ),
         medge(configs_suck, hpi ),
         medge(configs_suck, promnesia),
-        medge(unnecessary_db, hpi),
         medge(unnecessary_db, my_data),
         medge(unnecessary_db, hpi),
         name='aux',
@@ -315,7 +314,14 @@ from typing import Optional
 from pathlib import Path
 
 
+# TODO crap. first-child doesn't work?
 STYLE = '''
+@-moz-document url-prefix() {
+  .node polygon + g a text {
+     font-size: 72%;
+  }
+}
+
 .node.hl polygon {
    stroke: red;
 }
