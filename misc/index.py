@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from datetime import datetime
+import textwrap
 
 import dotpy
 dotpy.init(__name__) # TODO extremely meh
@@ -20,16 +21,16 @@ METAS = [(path.stem, build.org_meta(build.content / path)) for path in INPUTS if
 
 # todo ok, upid is kinda irrelevant, only useful for comments
 # not sure what to do...
-for (url, ) in [
-        ('takeout_data_gone'  ,),
-        ('grasp'              ,),
-        ('heartbeats_vs_kcals',),
-        ('exercise_bike_model',),
-        # ('hpi'              ,),
+for (url, date, summary) in [
+        ('takeout_data_gone'  , '08 March 2019'   , ''),
+        ('grasp'              , '09 February 2019', 'How to capture infromation from your browser and stay sane'),
+        ('heartbeats_vs_kcals', '03 August 2019'  , ''),
+        ('exercise_bike_model', '08 December 2019', 'How I found my exercise machine to violate laws of physics'),
 ]:
     METAS.append((url, build.Post(
+        date=date,
+        summary=summary,
         title='',
-        summary='',
         body='',
         upid='',
         draft=False,
@@ -37,7 +38,6 @@ for (url, ) in [
         tags=(),
         feed=True,
         url='',
-        date=datetime.min,
         special=False,
     )))
 
@@ -67,16 +67,62 @@ ALL_POSTS = []
 def P(label: str, tags: str='', **kwargs) -> Node:
     def make_label(self_, label=label, tags=tags) -> str:
         u, m = meta(self_.name)
-        mtags = '' if len(tags) == 0 else f'<td align="right">{tags}</td>'
+
+        # todo links? not sure
+        # todo font?
+
+        etags = [tag.name for tag in m.tags if tag.exists]
+        assert len(etags) <= 3, etags # TODO
+        etags = [None] * (3 - len(etags)) + etags
+
+        def make_tag(tag):
+            if tag is None:
+                return '<td> </td>'
+            else:
+                return f'''
+                <td
+                   href="https://beepb00p.xyz/tags.html#{tag}"
+                   align="right"
+                ><font face="monospace" color="#aa5511">#{tag}</font></td>
+                '''
+
+
+        mtags = ' '.join(make_tag(tag) for tag in etags)
         mdraft = '🚧wip🚧' if m.draft else ''
         # https://graphviz.gitlab.io/_pages/doc/info/shapes.html#html ok this is a good guide
+
+
+        summary = m.summary
+        lines = textwrap.wrap(summary, 50, break_long_words=False)
+        summary = '<br/>'.join(lines) or " " # ugh
+
+        # TODO mmm. displaying summary is nice, but it might be too long..
+        dates = m.date if isinstance(m.date, str) else m.date_human
+        # todo not sure about colspan 4..
         label = f'''
 <table border="0">
-<tr><td colspan="2" href="http://beepb00p.xyz/{u}.html">{label}</td></tr>
-<tr><td align="left" >{mdraft}</td>{mtags}</tr>
-<tr><td align="left" href="#{u}" color="yellow" tooltip="Show connections">🔍</td><td align="right">{m.date_human}</td></tr>
+<tr>
+  <td
+    colspan="4"
+    href="https://beepb00p.xyz/{u}.html"
+    title="{m.title}"
+  >
+   <font color="blue"     >{label}  </font><br/>
+   <font color="darkgreen">{summary}</font>
+  </td>
+</tr>
+<tr>
+  <td align="left" >{mdraft}</td>
+  {mtags}
+</tr>
+<tr>
+  <td align="left"  href="#{u}" tooltip="Show connections">🔍</td>
+  <td align="right" href="#{u}" tooltip="Show connections" colspan="3"><font face="monospace" color="#666666">{dates}</font></td>
+</tr>
 </table>
 '''.strip()
+  # <td align="right"><font face="monospace">{mtags}</font></td>
+        # todo hl year differently?
         # todo 'focus'?
         label = f'< {label} >'
         return label
@@ -126,8 +172,8 @@ def medge(fr, to, **kwargs):
 # should be lazy then too
 # todo warn about unused (unrechable?)
 # TODO make it possible to simply pass dict and unpack
-grasp       = P('Grasp', tags='#orgmode')
-promnesia   = P('Promnesia:<br/>journey in fixing browser history', tags='#pkm #promnesia')
+grasp       = P('Grasp', tags='#orgmode') # todo name 'inherit'??
+promnesia   = P('Promnesia', tags='#pkm #promnesia')
 # aaaa = promnesia # TODO shit, this is a bit unfortunate...
 hpi         = P('HPI<br/>(Human Programming Interface)')
 sad_infra   = P('The sad state of personal data and infrastructure')
@@ -136,17 +182,17 @@ exports     = P('Building data liberation infrastructure')
 mypy_error_handling = P('Using mypy for error handling', tags='#python #mypy #plt')
 pkm_setup   = P('How to cope with a fleshy human brain', tags='#pkm')
 
-exercise_bike_model  = P("How I found my exercise bike to violate laws of physics", tags='#quantifiedself')
+exercise_bike_model  = P("Analyzing accuracy of power reported by stationary bike", tags='#quantifiedself')
 heartbeats_vs_kcals = P("Making sense of Endomondo's calorie estimation", tags='#quantifiedself')
 cloudmacs   = P('Cloudmacs', tags='#emacs')
 pkm_todos   = P('My GTD setup', tags='#gtd #orgmode')
 scheduler   = P('In search of a better job scheduler')
 configs_suck= P('Your configs suck? Try a real programming language')
 unnecessary_db  = P('Against unnecessary databases')
-orger           = P('Orger:<br/>reflect your life in org-mode')
+orger           = P('Orger')
 my_data     = P('What data on myself I collect and why?')
 orger_todos     = P('Using Orger for processing infromation')
-myinfra_roam= P('Extending my personal infrastructure:<br/>Roam Research', tags='#emacs #orgmode')
+myinfra_roam= P('Extending my personal infrastructure', tags='#emacs #orgmode')
 # todo could do a table for tags?
 takeout_data_gone = P('Google Takeouts silently removes old data')
 annotating  = P('How to annotate everything')
@@ -169,8 +215,9 @@ G = digraph(
   rankdir=BT
   # TODO ??? rank=min
   # searchsize=500
+  ranksep=1.5
 
-  node[shape=box]
+  node[shape=box style=dashed]
     '''.strip(), # todo not sure how many spaces I like
 
     cluster(
@@ -185,6 +232,7 @@ G = digraph(
         exports,
         name='main',
         label='Data liberation', # TODO and ???
+        style=dotted,
     ),
 
     cluster(
@@ -204,6 +252,7 @@ G = digraph(
         medge(unnecessary_db, hpi),
         name='aux',
         label='Tools/Libraries',
+        style=dotted,
     ),
 
     cluster(
@@ -217,6 +266,7 @@ G = digraph(
         *order(grasp, cloudmacs, annotating, pkm_todos, pkm_search),
         name='pkm',
         label='PKM',
+        style=dotted,
     ),
 
     cluster(
@@ -227,14 +277,16 @@ G = digraph(
 
         name='qs',
         label='Quantified self',
+        style=dotted,
     ),
 
     medge(grasp            , pkm_setup  ),
-    medge(takeout_data_gone, my_data    ),
+    medge(pkm_todos        , pkm_setup),
     medge(annotating       , pkm_setup  ),
     medge(cloudmacs        , pkm_setup  ),
     medge(pkm_search       , pkm_setup  ),
     medge(orger            , orger_todos),
+    medge(takeout_data_gone, my_data    ),
     medge(promnesia        , pkm_setup, **noconstraint),
     medge(orger            , pkm_setup, **noconstraint),
     medge(orger_todos      , pkm_setup, **noconstraint),
@@ -242,7 +294,6 @@ G = digraph(
     medge(my_data          , hpi),
     medge(hpi              , exercise_bike_model, **noconstraint),
     medge(hpi              , heartbeats_vs_kcals, **noconstraint),
-    medge(pkm_todos        , pkm_setup),
     medge(hpi             , myinfra_roam),
     medge(promnesia       , myinfra_roam, **noconstraint),
     medge(orger           , myinfra_roam),
@@ -398,3 +449,5 @@ if __name__ == '__main__':
 # TODO somehow set gravity to top??
 
 # TODO maybe remove boxes?
+
+# TODO color edges?
