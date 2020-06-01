@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+from datetime import datetime
+
 import dotpy
 dotpy.init(__name__) # TODO extremely meh
 # TODO could use similar trick for dron?
@@ -7,46 +9,42 @@ dotpy.init(__name__) # TODO extremely meh
 from dotpy import *
 
 
-# TODO remove later..
-
-EXISTING = '''
-myinfra-roam
-configs-suck
-hpi
-exports
-unnecessary-db
-scheduler
-my-data
-sad-infra
-exercise-bike-model
-scrapyroo
-pkm-search
-mypy-error-handling
-orger-todos
-orger
-cloudmacs
-heartbeats_vs_kcals
-annotating
-pkm-setup
-contemp-art
-sufs
-recycling-is-hard
-ipynb-singleline
-takeout-data-gone
-quantified-mind
-sleep-tracking
-grasp
-promnesia
-kython
-axol
-myinfra
-pkm-todos
-lagrangians
-wave
-'''.splitlines()
+import build
 
 
-def upid(name: str) -> str:
+INPUTS = build.get_inputs()
+
+# todo would be nice to cache?
+METAS = [(path.stem, build.org_meta(build.content / path)) for path in INPUTS if path.suffix == '.org']
+
+
+# todo ok, upid is kinda irrelevant, only useful for comments
+# not sure what to do...
+for (url, ) in [
+        ('takeout_data_gone'  ,),
+        ('grasp'              ,),
+        ('heartbeats_vs_kcals',),
+        ('exercise_bike_model',),
+        # ('hpi'              ,),
+]:
+    METAS.append((url, build.Post(
+        title='',
+        summary='',
+        body='',
+        upid='',
+        draft=False,
+        has_math=False,
+        tags=(),
+        feed=True,
+        url='',
+        date=datetime.min,
+        special=False,
+    )))
+
+
+EXISTING = {x: m for x, m in METAS}
+
+def meta(name: str):
     u = name
     # TODO meeeh. pretty horrible
     if u not in EXISTING:
@@ -54,6 +52,11 @@ def upid(name: str) -> str:
         if x in EXISTING:
             u = x
     assert u in EXISTING, u
+    return u, EXISTING[u]
+
+
+def upid(name: str) -> str:
+    u, _ = meta(name)
     return u
 
 
@@ -63,17 +66,18 @@ ALL_POSTS = []
 # TODO later, add dates...
 def P(label: str, tags: str='', **kwargs) -> Node:
     def make_label(self_, label=label, tags=tags) -> str:
-        u = upid(self_.name)
-        mtags = '' if len(tags) == 0 else f'<tr><td>{tags}</td></tr>'
-
+        u, m = meta(self_.name)
+        mtags = '' if len(tags) == 0 else f'<td align="right">{tags}</td>'
+        mdraft = '🚧wip🚧' if m.draft else ''
         # https://graphviz.gitlab.io/_pages/doc/info/shapes.html#html ok this is a good guide
         label = f'''
 <table border="0">
-<tr><td href="http://beepb00p.xyz/{u}.html">{label}</td></tr>
-{mtags}
-<tr><td href="#{u}" color="yellow"   >💡</td></tr>
+<tr><td colspan="2" href="http://beepb00p.xyz/{u}.html">{label}</td></tr>
+<tr><td align="left" >{mdraft}</td>{mtags}</tr>
+<tr><td align="left" href="#{u}" color="yellow" tooltip="Show connections">🔍</td><td align="right">{m.date_human}</td></tr>
 </table>
 '''.strip()
+        # todo 'focus'?
         label = f'< {label} >'
         return label
 

@@ -554,22 +554,21 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Results:
         )
         yield from berrors
     elif isinstance(deps, IpynbDeps):
+        ctx['style_ipynb'] = True
         # TODO make a mode to export to python?
         compile_ipynb_body(
             compile_script=deps.compile_ipynb.path,
             path=deps.path.path,
             dir_=dir_,
         )
-        ctx['style_ipynb'] = True
 
         ctx['has_math']     = meta.get('has_math'    , False)
-        ctx['allow_errors'] = meta.get('allow_errors', False)
     elif isinstance(deps, MdDeps):
+        ctx['style_md'] = True
         compile_md_body(
             path=deps.path.path,
             dir_=dir_,
         )
-        ctx['style_md'] = True
     else:
         raise RuntimeError(deps)
 
