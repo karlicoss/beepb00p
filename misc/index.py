@@ -322,18 +322,23 @@ STYLE = '''
   }
 }
 
-.node.hl polygon {
-   stroke: red;
-}
-
-.edge.hl path {
-   stroke: red;
-}
-.edge.hl polygon {
-   stroke: red;
-   fill: red;
+svg {
+  zoom: 70%;
 }
 '''
+
+# old js stuff
+# .node.hl polygon {
+#    stroke: red;
+# }
+#
+# .edge.hl path {
+#    stroke: red;
+# }
+# .edge.hl polygon {
+#    stroke: red;
+#    fill: red;
+# }
 
 
 # absolutely mental, but I like the idea of using just CSS for it...
@@ -343,7 +348,7 @@ def node_css(node: Node) -> str:
     return f'''
 g.{cls}:target polygon,
 g.{cls}:target ~ .{cls}.edge path,
-g.{cls}:target ~ .{cls}.edge polygon {{stroke: red;}}
+g.{cls}:target ~ .{cls}.edge polygon {{stroke: red; stroke-width: 2px;}}
 '''
 
 

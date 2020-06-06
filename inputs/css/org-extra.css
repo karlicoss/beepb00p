@@ -178,6 +178,11 @@ pre.src:before {
     width: 100%;
 }
 
+#table-of-contents ul {
+    /* otherwise the default is quite big and it ends up wasting lots of horizontal space, especially on phones */
+    padding-left: 1em;
+}
+
 /*  */
 
 

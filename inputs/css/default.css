@@ -27,9 +27,17 @@ html {
         /* color: red; */
     }
 
+    /* mm, otherwise it might not work properly (at least on OSX chrome) */
+    a.headerlink {
+        margin-left: -1em;
+    }
+
+    /* TODO not sure about this vvv */
+    /*
     header {
         width: calc(var(--width) - var(--aside-width));
     }
+    */
 }
 
 /*
@@ -220,7 +228,6 @@ article .content aside.sidenote {
 
 
 a.headerlink {
-    margin-left: -1em;
     text-decoration: none;
     color: lightgrey;
 }
