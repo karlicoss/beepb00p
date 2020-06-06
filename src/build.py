@@ -429,7 +429,7 @@ def org_meta(apath: Path) -> Post:
         special=False,
         has_math=False,
         tags=tags,
-        url='', # TODO ???
+        url='/' + str(apath.with_suffix('.html').name), # TODO not sure...
         feed=True if nofeed is None else False, # todo meh, inversion is annoying
         upid=upid, # todo perhaps should always have upid?
     )

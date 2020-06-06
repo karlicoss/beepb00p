@@ -30,9 +30,9 @@ for (url, date, summary) in [
     METAS.append((url, build.Post(
         date=date,
         summary=summary,
+        upid=url, # TODO FIXME not sure about this
         title='',
         body='',
-        upid='',
         draft=False,
         has_math=False,
         tags=(),
@@ -52,12 +52,12 @@ def meta(name: str):
         if x in EXISTING:
             u = x
     assert u in EXISTING, u
-    return u, EXISTING[u]
+    return EXISTING[u]
 
 
 def upid(name: str) -> str:
-    u, _ = meta(name)
-    return u
+    m = meta(name)
+    return m.upid
 
 
 # TODO MEH!
@@ -66,7 +66,9 @@ ALL_POSTS = []
 # TODO later, add dates...
 def P(label: str, tags: str='', **kwargs) -> Node:
     def make_label(self_, label=label, tags=tags) -> str:
-        u, m = meta(self_.name)
+        m = meta(self_.name)
+        upid = m.upid
+        post_url = m.url
 
         # todo links? not sure
         # todo font?
@@ -104,7 +106,7 @@ def P(label: str, tags: str='', **kwargs) -> Node:
 <tr>
   <td
     colspan="4"
-    href="https://beepb00p.xyz/{u}.html"
+    href="https://beepb00p.xyz{post_url}"
     title="{m.title}"
   >
    <font color="blue"     >{label}  </font><br/>
@@ -116,8 +118,8 @@ def P(label: str, tags: str='', **kwargs) -> Node:
   {mtags}
 </tr>
 <tr>
-  <td align="left"  href="#{u}" tooltip="Show connections">🔍</td>
-  <td align="right" href="#{u}" tooltip="Show connections" colspan="3"><font face="monospace" color="#666666">{dates}</font></td>
+  <td align="left"  href="#{upid}" tooltip="Show connections">🔍</td>
+  <td align="right" href="#{upid}" tooltip="Show connections" colspan="3"><font face="monospace" color="#666666">{dates}</font></td>
 </tr>
 </table>
 '''.strip()
