@@ -402,10 +402,8 @@ def org_meta(apath: Path) -> Post:
     ftags   = fprop('FILETAGS')
     dates   = fprop('DATE')
     draftp  = fprop('DRAFT')
-    nofeedp = fprop('NOFEED')
 
 
-    nofeed = False if nofeedp is None else True
     draft  = False if draftp  is None else True
 
     if ftags is not None: # todo maybe should always be set?..
@@ -430,7 +428,7 @@ def org_meta(apath: Path) -> Post:
         has_math=False,
         tags=tags,
         url='/' + str(apath.with_suffix('.html').name), # TODO not sure...
-        feed=True if nofeed is None else False, # todo meh, inversion is annoying
+        feed=True,
         upid=upid, # todo perhaps should always have upid?
     )
 
@@ -542,9 +540,6 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Results:
         if check_ids is None:
             check_ids = ometa.draft is False
 
-        feed = ometa.feed
-        meta.update({} if feed else {'nofeed': True})
-
         berrors = compile_org_body(
             # TODO let it figure it out from deps??
             compile_script=deps.compile_org.path,
@@ -620,7 +615,7 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Results:
         url    =ctx['url'],
         special=special,
         has_math=ctx.get('has_math', False),
-        feed   =not ('nofeed' in meta),
+        feed=True,
     )
 
 
