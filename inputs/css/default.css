@@ -130,12 +130,8 @@ time {
   color: black;
 }
 
-section.post-title {
-  margin-bottom: 1rem;
-}
-
 section.post-title h1 {
-  -webkit-margin-after:0em;
+  margin-bottom: 0em;
 }
 
 section.post-title .summary {

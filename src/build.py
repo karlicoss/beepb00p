@@ -477,6 +477,7 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Results:
     def set_issoid(upid: Optional[str]) -> None:
         if upid is None:
             return
+        ctx['upid'  ] = upid
         ctx['issoid'] = f'isso_{upid}'
 
     def set_summary(summ: Optional[str]) -> None:

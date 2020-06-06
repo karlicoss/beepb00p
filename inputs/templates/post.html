@@ -21,7 +21,14 @@ TODO shit, htmlize messes with a and body tags...
     <div>THIS IS A DRAFT! It will appear on the main page once finished!</div>
     {% endif %}
     <section class="post-title">
-    <h1>{{ title }}</h1>
+    <h1>
+        {{ title }}
+        <a
+            href="/blog-graph.html#{{ upid }}"
+            title="See this post within the blog graph, and how it's connected to other posts"
+            style="font-size: 1rem;vertical-align: super;"
+        >[see within blog graph]</a>
+    </h1>
     {% if summary %}<div class="summary">{{ summary }}</h2>{% endif %}
     </section>
     <!-- are sections appropriate for that? -->
