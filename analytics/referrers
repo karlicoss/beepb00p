@@ -37,11 +37,26 @@ Referer = str
 Row = Tuple[Timestamp, Page, Referer]
 
 
-def iter_log() -> Iterable[Row]:
+def iter_log(delta: Optional[timedelta]=None) -> Iterable[Row]:
     import sqlite3
+
+    DQ = "cast(strftime('%s', datetime('now')) as integer) - timestamp"
+    if delta is None:
+        LQ = ""
+    else:
+        print(delta.total_seconds())
+        LQ = f"WHERE {DQ} < " + str(delta.total_seconds())
+
     conn = sqlite3.connect('visits.sqlite')
     with conn:
-        yield from conn.execute('SELECT timestamp, page, referer FROM visits ORDER BY timestamp ASC')
+        # 'now'
+        res = conn.execute(f'''
+SELECT timestamp, page, referer
+FROM visits
+{LQ}
+ORDER BY timestamp ASC
+''')
+        yield from res
 
 
 
@@ -94,8 +109,7 @@ def run(*, access_log: Path, exclude: Optional[Path]=None, delta: Optional[timed
     total = 0
     def it():
         nonlocal total
-        # TODO handle delta
-        for row in iter_log():
+        for row in iter_log(delta=delta):
             total += 1
             # TODO add it to the query? not sure
             if not is_boring(row):
