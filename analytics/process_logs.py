@@ -22,13 +22,13 @@ def parse_line(line: str) -> Optional[Dict]:
     return dd
 
 
-def iter_log(access_log: Path, columns=None, delta: Optional[timedelta]=None):
+# TODO don't need this anymore?
+def _process_nginx_logs(access_log: Path, columns=None, delta: Optional[timedelta]=None):
     """
     Passing columns might help saving a bit on memory...
     """
     # constructing pandas frame directly wouldn't help much too: it's still quite a bit of memory anyway..
     NOW = datetime.now(tz=pytz.utc)
-
     # TODO not sure if tac should grep -v just in case... how would it behave wrt backpressure?
     rlog = Popen(f'tac {access_log}', shell=True, stdout=PIPE)
     try:

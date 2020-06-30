@@ -13,14 +13,12 @@ from typing import Set, Dict, Any, Optional
 
 import pandas as pd # type: ignore
 
-from process_logs import get_dataframe, iter_log
 
 # -1 for infinite
 # TODO percentile??
 
-from kython.klogging2 import LazyLogger
-
-logger = LazyLogger('referrers', level='debug')
+import logging
+logger = logging.getLogger('referers')
 
 
 less_prio = {
@@ -29,6 +27,23 @@ less_prio = {
     'news.ycombinator.com',
     # TODO add other hn readers? or keep in external config
 }
+
+
+from typing import Iterable, Tuple
+Timestamp = float
+Page = str
+Referer = str
+
+Row = Tuple[Timestamp, Page, Referer]
+
+
+def iter_log() -> Iterable[Row]:
+    import sqlite3
+    conn = sqlite3.connect('visits.sqlite')
+    with conn:
+        yield from conn.execute('SELECT timestamp, page, referer FROM visits ORDER BY timestamp ASC')
+
+
 
 def run(*, access_log: Path, exclude: Optional[Path]=None, delta: Optional[timedelta]=None):
     excluded: Set[str] = set()
@@ -50,8 +65,10 @@ def run(*, access_log: Path, exclude: Optional[Path]=None, delta: Optional[timed
     # meh
     EXCLUDED_RE = re.compile('|'.join(e for e in excluded)) if len(excluded) > 0 else None
 
-    def is_boring(row):
-        url = row.get('url', None)
+    # TODO not sure if should use pandas?
+
+    def is_boring(row: Row) -> bool:
+        url = row[1]
         if url is None:
             return True
         if url.startswith('/comments/'):
@@ -62,7 +79,7 @@ def run(*, access_log: Path, exclude: Optional[Path]=None, delta: Optional[timed
 
 
         # TODO filter reddit/hn somehow? or just sort to display in the bottom?
-        ref = row.get('referrer', None)
+        ref = row[2]
         if ref is None:
             return False
         if ref == '-':
@@ -71,14 +88,16 @@ def run(*, access_log: Path, exclude: Optional[Path]=None, delta: Optional[timed
             return True
         return False
 
-    cols = ['dt', 'referrer', 'url']
+    cols = ('dt', 'page', 'referer')
 
 
     total = 0
     def it():
         nonlocal total
-        for row in iter_log(access_log, columns=cols, delta=delta):
+        # TODO handle delta
+        for row in iter_log():
             total += 1
+            # TODO add it to the query? not sure
             if not is_boring(row):
                 yield row
 
@@ -134,16 +153,16 @@ def main():
         with html.open('w') as fo:
             fo.write('<script src="https://cdn.jsdelivr.net/npm/sorttable@1.0.2/sorttable.min.js"></script>')
 
-            rt['referrer'] = rt['referrer'].map(lambda u: f'<a href="{u}">{u}</a>')
+            rt['referer'] = rt['referer'].map(lambda u: f'<a href="{u}">{u}</a>')
 
-            refs = rt['referrer'].value_counts()
+            refs = rt['referer'].value_counts()
 
             # print(refs.quantile(axis='columns')) # 0.1))
             q90 = refs.quantile(0.90)
             print(f'q90: {q90}')
             # TODO FIXME percentile??
             def style(ser):
-                if ser.name != 'referrer':
+                if ser.name != 'referer':
                     return ['' for _ in ser]
                 else:
                     return ['font-weight:bold' if refs[val] < q90 else ''  for _, val in ser.items()]
@@ -157,7 +176,7 @@ def main():
             gc = gcount.to_html().replace('class="dataframe"', 'class="dataframe sortable"')
             fo.write(gc)
             rf = refs.to_frame()
-            rf = rf[rf.referrer > q90]
+            rf = rf[rf.referer > q90]
             print(rf)
             fo.write(rf.to_html())
     else:
