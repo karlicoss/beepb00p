@@ -37,15 +37,26 @@ Referer = str
 Row = Tuple[Timestamp, Page, Referer]
 
 
+_BORING = {
+    '/rss.xml'    ,
+    '/atom.xml'   ,
+    '/favicon.ico',
+    '/robots.txt' ,
+    '/apple-touch-icon.png',
+    '/apple-touch-icon-precomposed.png',
+}
+
 def iter_log(delta: Optional[timedelta]=None) -> Iterable[Row]:
     import sqlite3
+
+    BQ = 'page NOT IN (' + ', '.join(f'"{x}"' for x in _BORING) + ')'
 
     DQ = "cast(strftime('%s', datetime('now')) as integer) - timestamp"
     if delta is None:
         LQ = ""
     else:
         print(delta.total_seconds())
-        LQ = f"WHERE {DQ} < " + str(delta.total_seconds())
+        LQ = f"AND {DQ} < " + str(delta.total_seconds())
 
     conn = sqlite3.connect('visits.sqlite')
     with conn:
@@ -53,7 +64,15 @@ def iter_log(delta: Optional[timedelta]=None) -> Iterable[Row]:
         res = conn.execute(f'''
 SELECT timestamp, page, referer
 FROM visits
-{LQ}
+WHERE
+     {BQ}
+ AND page NOT LIKE '/css/%'
+ AND page NOT LIKE '%.css'
+ AND page NOT LIKE '%.js'
+ AND page NOT LIKE '/comments/%'
+ AND page NOT LIKE '%.svg'
+ AND page NOT LIKE '%robot-face%'
+     {LQ}
 ORDER BY timestamp ASC
 ''')
         yield from res
@@ -86,12 +105,6 @@ def run(*, access_log: Path, exclude: Optional[Path]=None, delta: Optional[timed
         url = row[1]
         if url is None:
             return True
-        if url.startswith('/comments/'):
-            # isso; whatever...
-            return True
-        if url in {'/robot-face.jpg', '/robot-face.png'}:
-            return True
-
 
         # TODO filter reddit/hn somehow? or just sort to display in the bottom?
         ref = row[2]
