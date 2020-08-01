@@ -1,0 +1,13 @@
+pytz
+more_itertools
+Jinja2
+orgparse
+notebook # jupyter
+ruamel.yaml # for metadata
+beautifulsoup4
+html5lib
+
+# vvv could be optional?
+feedgen
+logzero
+

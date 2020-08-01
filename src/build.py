@@ -25,7 +25,10 @@ import orgparse # type: ignore
 ROOT    = Path(__file__).absolute().parent.parent
 inputs  = ROOT / 'inputs'
 content = ROOT / 'content'
-output  = Path('site') # TODO relative to ROOT??
+
+
+outs = os.environ.get('BLOG_OUTPUT', 'site')
+output = ROOT / outs
 
 tz = pytz.utc # TODO ugh this is what Hakyll assumed
 ###
@@ -629,7 +632,7 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Results:
     # TODO might need to move everything into the same dir??
     opath.write_text(full)
 
-    check_call(['tree', '--noreport', dir_])
+    check_call(['find', dir_])
     yield post
 
 
@@ -691,6 +694,7 @@ def get_filtered(inputs: Tuple[Path]) -> Tuple[Path]:
 
 
 def get_inputs() -> Tuple[Path]: # TODO use ...?
+    assert content.exists(), content
     inputs = tuple(sorted({
         *[c.relative_to(content) for c in chain(
             content.rglob('*.md'),

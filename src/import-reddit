@@ -9,6 +9,9 @@ from kython.kompress import open as kopen
 
 OUTPUT_DIR = Path(__file__).absolute().parent.parent / 'content' / 'generated'
 
+# TODO ugh. just check out the post into the repository?
+# too complicated, considering I've only had one such post
+# on the other hand, it's a cool experiment *in principle*. so maybe use hpi to compile it?
 POSTS = {
     'ayt5cu': 'takeout-data-gone.md',
 }
