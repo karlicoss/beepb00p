@@ -2,7 +2,7 @@
 """
 Render referrers as a HTML table so I can see where my stuff is posted.
 """
-from datetime import timedelta
+from datetime import timedelta, datetime
 from itertools import islice
 from pathlib import Path
 from pprint import pprint
@@ -30,7 +30,7 @@ less_prio = {
 
 
 from typing import Iterable, Tuple
-Timestamp = float
+Timestamp = datetime
 Page = str
 Referer = str
 
@@ -44,9 +44,14 @@ _BORING = {
     '/robots.txt' ,
     '/apple-touch-icon.png',
     '/apple-touch-icon-precomposed.png',
+    '/exobrain/searchindex.json',
+    # todo UGH. get rid of this font..
+    '/exobrain/FontAwesome/fonts/fontawesome-webfont.woff2?v=4.7.0',
+    # todo ugh
+    '/notset',
 }
 
-def iter_log(delta: Optional[timedelta]=None) -> Iterable[Row]:
+def iter_log(access_log: Path, delta: Optional[timedelta]=None) -> Iterable[Row]:
     import sqlite3
 
     BQ = 'page NOT IN (' + ', '.join(f'"{x}"' for x in _BORING) + ')'
@@ -58,7 +63,7 @@ def iter_log(delta: Optional[timedelta]=None) -> Iterable[Row]:
         print(delta.total_seconds())
         LQ = f"AND {DQ} < " + str(delta.total_seconds())
 
-    conn = sqlite3.connect('visits.sqlite')
+    conn = sqlite3.connect(f'file:{access_log}?immutable=1', uri=True)
     with conn:
         # 'now'
         res = conn.execute(f'''
@@ -72,10 +77,14 @@ WHERE
  AND page NOT LIKE '/comments/%'
  AND page NOT LIKE '%.svg'
  AND page NOT LIKE '%robot-face%'
+ AND referer NOT LIKE 'https://beepb00p.xyz%'
      {LQ}
-ORDER BY timestamp ASC
+ORDER BY timestamp DESC
 ''')
-        yield from res
+# todo not sure about excluding beepb00p.xyz here?
+        for ts, page, referer in res:
+            dt = datetime.utcfromtimestamp(ts)
+            yield (dt, page, referer)
 
 
 
@@ -108,9 +117,7 @@ def run(*, access_log: Path, exclude: Optional[Path]=None, delta: Optional[timed
 
         # TODO filter reddit/hn somehow? or just sort to display in the bottom?
         ref = row[2]
-        if ref is None:
-            return False
-        if ref == '-':
+        if ref in {""}:
             return True
         if EXCLUDED_RE is not None and EXCLUDED_RE.search(ref):
             return True
@@ -122,27 +129,27 @@ def run(*, access_log: Path, exclude: Optional[Path]=None, delta: Optional[timed
     total = 0
     def it():
         nonlocal total
-        for row in iter_log(delta=delta):
+        for row in iter_log(access_log=access_log, delta=delta):
             total += 1
             # TODO add it to the query? not sure
             if not is_boring(row):
                 yield row
 
-    df = pd.DataFrame(it(), columns=cols + ['error'])
+    df = pd.DataFrame(it(), columns=cols) #  + ['error'])
     logger.info('dataframe: %d non-boring lines (total %d)', len(df), total)
-    df = df[~df['error'].notnull()] # TODO not sure if makes more sense to filter straightaway...
+    # df = df[~df['error'].notnull()] # TODO not sure if makes more sense to filter straightaway...
     logger.info('after filtering errors: %d lines', len(df))
 
     # TODO dynamic sorting for pandas would be nice?
-    df = df.sort_values(by=[
-        # 'refferer',
-        'dt',
-    ], ascending=False)[[
-        'dt',
-        'url',
-        'referrer',
-    ]]
-    gc = df.groupby(['url', 'referrer']).count()
+    # df = df.sort_values(by=[
+    #     # 'refferer',
+    #     'dt',
+    # ], ascending=False)[[
+    #     'dt',
+    #     'page',
+    #     'referer',
+    # ]]
+    gc = df.groupby(['page', 'referer']).count()
     gc = gc[gc['dt'] >= 5]
     gc = gc.sort_values(by=['dt'])
     return df, gc
@@ -151,10 +158,10 @@ def run(*, access_log: Path, exclude: Optional[Path]=None, delta: Optional[timed
 def main():
     import argparse
     p = argparse.ArgumentParser()
-    p.add_argument('--access-log', type=Path, required=True)
+    p.add_argument('--access-log', type=Path, required=True, help='log sqlite database')
     p.add_argument('--html', type=Path)
     p.add_argument('--exclude', type=Path)
-    p.add_argument('--last', type=str, help='3d or 10h')
+    p.add_argument('--last', type=str, help='example: 3d or 10h')
     args = p.parse_args()
     html = args.html
 
@@ -186,7 +193,7 @@ def main():
 
             # print(refs.quantile(axis='columns')) # 0.1))
             q90 = refs.quantile(0.90)
-            print(f'q90: {q90}')
+            print(f'90th quantile: {q90} visits')
             # TODO FIXME percentile??
             def style(ser):
                 if ser.name != 'referer':
