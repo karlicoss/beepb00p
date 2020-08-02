@@ -83,6 +83,7 @@ ORDER BY timestamp DESC
 ''')
 # todo not sure about excluding beepb00p.xyz here?
         for ts, page, referer in res:
+            # todo not sure which timezone to use?
             dt = datetime.utcfromtimestamp(ts)
             yield (dt, page, referer)
 
@@ -185,7 +186,18 @@ def main():
     # TODO ugh. need some wort of iterative html rendering.. it takes 10% memeory as well
     if html is not None:
         with html.open('w') as fo:
-            fo.write('<script src="https://cdn.jsdelivr.net/npm/sorttable@1.0.2/sorttable.min.js"></script>')
+            fo.write('''
+            <html>
+            <head>
+                <script src="https://cdn.jsdelivr.net/npm/sorttable@1.0.2/sorttable.min.js"></script>
+                <style>
+                /* col0: dt, col1, col2: url, referrers. meh, but works */
+                td.col0 { white-space: nowrap; }
+                td.col1,td.col2 { word-break: break-all; }
+                </style>
+            </head>
+            <body>
+            '''.strip())
 
             rt['referer'] = rt['referer'].map(lambda u: f'<a href="{u}">{u}</a>')
 
@@ -201,6 +213,7 @@ def main():
                 else:
                     return ['font-weight:bold' if refs[val] < q90 else ''  for _, val in ser.items()]
 
+            rt['dt'] = rt['dt'].dt.strftime('%Y-%m-%d %H:%M')
 
             rts = rt.style.apply(style).render()
             # rts = rt.to_html()
@@ -213,6 +226,8 @@ def main():
             rf = rf[rf.referer > q90]
             print(rf)
             fo.write(rf.to_html())
+
+            fo.write('</body></html>')
     else:
         print(rt)
         print(gcount)
