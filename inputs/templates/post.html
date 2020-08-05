@@ -47,7 +47,12 @@ TODO shit, htmlize messes with a and body tags...
                 href="/tags.html{{ '#' + tag.name if tag.exists else ''}}">#{{ tag.name }}</a>
             {%- endfor %}
         </div>
+        {% if comment %}
+        TODO ugh. not sure if date should be mandatory or defensive?
+        {% endif      %}
+        {%- if date %}
         <time datetime="{{ date.isoformat() }}">{{ date.strftime('%d %B %Y') }}</time>
+        {%- endif %}
     </section>
     {% endif %}
 
