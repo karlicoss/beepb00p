@@ -16,8 +16,28 @@ import build
 INPUTS = build.get_inputs()
 
 # todo would be nice to cache?
-METAS = [(path.stem, build.org_meta(build.content / path)) for path in INPUTS if path.suffix == '.org']
+METAS = [
+    (path.stem, build.org_meta(build.content / path))
+    for path in INPUTS
+    if path.suffix == '.org' and path.stem not in (
+            # todo for fucks sake... fix it properly...
+            'axol',
+            'myinfra',
+            'blog-graph',
+            'contemp-art',
+            'ideas',
+            'kython',
+            'least-action-lie',
+            'site',
+            'notes',
+            'test',
+            'scrapyroo',
+            'tags',
+            # todo would be nice to link to it actually?
+    )
+]
 
+# TODO uhh... this is a bit circular? also need to exclude special?
 
 # todo ok, upid is kinda irrelevant, only useful for comments
 # not sure what to do...
@@ -44,15 +64,19 @@ for (url, date, summary) in [
 
 EXISTING = {x: m for x, m in METAS}
 
-def meta(name: str):
-    u = name
+def maybe_meta(name: str):
     # TODO meeeh. pretty horrible
-    if u not in EXISTING:
-        x = u.replace('_', '-')
-        if x in EXISTING:
-            u = x
-    assert u in EXISTING, u
-    return EXISTING[u]
+    for u in [name, name.replace('_', '-'), name.replace('-', '_')]:
+        r = EXISTING.get(u)
+        if r is not None:
+            return r
+    return None
+
+
+def meta(name: str):
+    m = maybe_meta(name)
+    assert m is not None
+    return m
 
 
 def upid(name: str) -> str:

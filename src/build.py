@@ -46,6 +46,18 @@ class Tag:
         return self.name in blog_tags()
 
 
+def in_graph(stem: str) -> bool:
+    # meh... should couple tighter?
+    import sys
+    ipath =  str(Path(__file__).absolute().parent.parent / 'misc')
+    if ipath not in sys.path:
+        sys.path.insert(0, ipath)
+    import index as I
+    # meh. also need to cache it?
+    m = I.maybe_meta(stem)
+    return m is not None
+
+
 @dataclass(unsafe_hash=True)
 class Post:
     title: str
@@ -475,9 +487,16 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Results:
     # TODO need to be raw??
     ctx['pingback'] = pingback
 
+    # meh...
+    post_upid: Optional[str] = None
+
     def set_issoid(upid: Optional[str]) -> None:
         if upid is None:
             return
+        nonlocal post_upid
+        if post_upid is not None:
+            assert post_upid != upid, (post_upid, upid)
+        post_upid = upid
         ctx['upid'  ] = upid
         ctx['issoid'] = f'isso_{upid}'
 
@@ -593,6 +612,8 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Results:
     # strip private stuff
     body = ''.join(line for line in body.splitlines(keepends=True) if 'NOEXPORT' not in line)
 
+    # meeeeh
+    ctx['in_graph'] = in_graph(apath.stem)
 
     # TODO for org-mode, need to be able to stop here and emit whatever we compiled?
     post_t = template('post.html')
@@ -619,8 +640,8 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Results:
         special=special,
         has_math=ctx.get('has_math', False),
         feed=True,
+        upid=post_upid, # TODO not sure if works for all??
     )
-
 
     #
     if 'name="keywords"' not in full:
