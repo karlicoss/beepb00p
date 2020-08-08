@@ -410,7 +410,7 @@ def post_process_html(html: str, *, check_ids: bool, active_tags: Sequence[str])
             active = tag_name in active_tags
             # todo not sure if should keep tag's class?
             tag.name = 'a'
-            link = './tags.html' + (f'#{tag_name}' if active else '')
+            link = '/tags.html' + (f'#{tag_name}' if active else '')
             tag['href'] = link
             tag['class'] = tag.get('class', []) + ['tag-active' if active else 'tag-inactive']
 
