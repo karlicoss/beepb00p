@@ -61,11 +61,13 @@ def iter_log(access_log: Path, delta: Optional[timedelta]=None) -> Iterable[Row]
 
     LQ = get_delta_sql(delta)
 
+    # TODO ugh, not sure why stuff like "/./tags.html" ends up in logs??
+    normalise_page = 'REPLACE(page, "./", "")'
     conn = sqlite3.connect(f'file:{access_log}?immutable=1', uri=True)
     with conn:
         # 'now'
         res = conn.execute(f'''
-SELECT timestamp, page, referer
+SELECT timestamp, {normalise_page}, referer
 FROM visits
 WHERE
      {BQ}
@@ -116,8 +118,6 @@ def run(*, access_log: Path, exclude: Optional[Path]=None, delta: Optional[timed
 
         # TODO filter reddit/hn somehow? or just sort to display in the bottom?
         ref = row[2]
-        if ref in {""}:
-            return True
         if EXCLUDED_RE is not None and EXCLUDED_RE.search(ref):
             return True
         return False
@@ -148,9 +148,15 @@ def run(*, access_log: Path, exclude: Optional[Path]=None, delta: Optional[timed
     #     'page',
     #     'referer',
     # ]]
+
     gc = df.groupby(['page', 'referer']).count()
+    # todo also quantile?
     gc = gc[gc['dt'] >= 5]
     gc = gc.sort_values(by=['dt'])
+
+    # we don't want them to display in the detailed log
+    df = df[df['referer'] != '']
+
     return df, gc
 
 
@@ -207,12 +213,17 @@ def main():
             # rts = rt.to_html()
             # rts = rts.replace('class="dataframe"', 'class="dataframe sortable"')
             rts = rts.replace('<table ', '<table border=1 class="dataframe sortable"')
+            # detailed
             fo.write(rts)
+
             gc = gcount.to_html().replace('class="dataframe"', 'class="dataframe sortable"')
+            # breakdown for each post + referrer
             fo.write(gc)
+
             rf = refs.to_frame()
             rf = rf[rf.referer > q90]
             print(rf)
+            # total stats across all referrers
             fo.write(rf.to_html())
 
             fo.write('</body></html>')
