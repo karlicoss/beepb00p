@@ -14,6 +14,9 @@ from typing import Set, Dict, Any, Optional
 import pandas as pd # type: ignore
 
 
+from logs.common import get_delta, get_delta_sql
+
+
 # -1 for infinite
 # TODO percentile??
 
@@ -56,12 +59,7 @@ def iter_log(access_log: Path, delta: Optional[timedelta]=None) -> Iterable[Row]
 
     BQ = 'page NOT IN (' + ', '.join(f'"{x}"' for x in _BORING) + ')'
 
-    DQ = "cast(strftime('%s', datetime('now')) as integer) - timestamp"
-    if delta is None:
-        LQ = ""
-    else:
-        print(delta.total_seconds())
-        LQ = f"AND {DQ} < " + str(delta.total_seconds())
+    LQ = get_delta_sql(delta)
 
     conn = sqlite3.connect(f'file:{access_log}?immutable=1', uri=True)
     with conn:
@@ -167,18 +165,8 @@ def main():
     html = args.html
 
     # TODO fix last in crontabs
-    # TODO ugh I'm sure there was smth default for it??
 
-    lasts = args.last
-    if lasts is None:
-        delta = None
-    else:
-        if lasts.endswith('d'):
-            delta = timedelta(days=int(lasts[:-1]))
-        elif lasts.endswith('h'):
-            delta = timedelta(hours=int(lasts[:-1]))
-        else:
-            raise RuntimeError(lasts)
+    delta = get_delta(args.last)
 
     rt, gcount  = run(access_log=args.access_log, exclude=args.exclude, delta=delta)
 
