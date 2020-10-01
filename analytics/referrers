@@ -139,6 +139,18 @@ def run(*, access_log: Path, exclude: Optional[Path]=None, delta: Optional[timed
     # df = df[~df['error'].notnull()] # TODO not sure if makes more sense to filter straightaway...
     logger.info('after filtering errors: %d lines', len(df))
 
+
+
+    dd = df.copy()
+    dd['dt'] = dd['dt'].dt.date
+    dd = dd[dd['page'].str.match(r'/[\w-]+.html')] # exclude exobrain stuff
+    dd = dd.groupby(['dt', 'page']).count().reset_index()
+    dd = dd.pivot(index='dt', columns='page', values='referer')
+    dd = dd.fillna(0).astype(int)
+    # std is a proxy for 'trends'
+    order = [name for name, value in sorted(dd.std(axis=0).iteritems(), key=lambda p: -p[1])]
+    dd = dd[order]
+
     # TODO dynamic sorting for pandas would be nice?
     # df = df.sort_values(by=[
     #     # 'refferer',
@@ -157,7 +169,8 @@ def run(*, access_log: Path, exclude: Optional[Path]=None, delta: Optional[timed
     # we don't want them to display in the detailed log
     df = df[df['referer'] != '']
 
-    return df, gc
+    # meh
+    return df, gc, dd
 
 
 def main():
@@ -174,7 +187,7 @@ def main():
 
     delta = get_delta(args.last)
 
-    rt, gcount  = run(access_log=args.access_log, exclude=args.exclude, delta=delta)
+    rt, gcount, trends  = run(access_log=args.access_log, exclude=args.exclude, delta=delta)
 
     logger.info('rendering...')
     # TODO ugh. need some wort of iterative html rendering.. it takes 10% memeory as well
@@ -225,6 +238,9 @@ def main():
             print(rf)
             # total stats across all referrers
             fo.write(rf.to_html())
+
+            # TODO maybe worth rendering it separately, for all days
+            fo.write(trends.to_html())
 
             fo.write('</body></html>')
     else:
