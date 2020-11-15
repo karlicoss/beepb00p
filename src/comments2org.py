@@ -14,7 +14,10 @@ from orger.common import todo
 class IssoComments(InteractiveView):
     def get_items(self):
         db = self.cmdline_args.db
-        for c in dataset.connect(f'sqlite:///{db}')['comments'].all():
+        # https://www.sqlite.org/draft/uri.html#uriimmutable
+        import sqlite3
+        creator = lambda: sqlite3.connect(f'file:{db}?immutable=1', uri=True)
+        for c in dataset.connect('sqlite:///', engine_kwargs={'creator': creator})['comments'].all():
             author = c['author']
             if author == 'karlicoss':
                 continue # ignore my own comments

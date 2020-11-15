@@ -20,16 +20,20 @@ def errors_with(lines):
         else:
             yield row
 
-def errors(args):
-    with Popen(['linkchecker', '-o', 'csv', *args], stdout=PIPE) as p:
+def errors(*args):
+    print(args)
+    with Popen([
+        'linkchecker', 
+        '-o', 'csv',
+        *args,
+    ], stdout=PIPE) as p:
         yield from errors_with(p.stdout)
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument('rest', nargs=argparse.REMAINDER)
-    args = p.parse_args()
+    args, rest = p.parse_known_args()
     err = False
-    for error in errors(args.rest):
+    for error in errors(*rest):
         err = True
         print("ERROR! ", error) # TODO pretty print?
     if err:
