@@ -39,25 +39,11 @@ Referer = str
 
 Row = Tuple[Timestamp, Page, Referer]
 
-
-_BORING = {
-    '/rss.xml'    ,
-    '/atom.xml'   ,
-    '/favicon.ico',
-    '/robots.txt' ,
-    '/apple-touch-icon.png',
-    '/apple-touch-icon-precomposed.png',
-    '/exobrain/searchindex.json',
-    # todo UGH. get rid of this font..
-    '/exobrain/FontAwesome/fonts/fontawesome-webfont.woff2?v=4.7.0',
-    # todo ugh
-    '/notset',
-}
+from boring import WHERE_NOT_BORING
 
 def iter_log(access_log: Path, delta: Optional[timedelta]=None) -> Iterable[Row]:
     import sqlite3
 
-    BQ = 'page NOT IN (' + ', '.join(f'"{x}"' for x in _BORING) + ')'
 
     LQ = get_delta_sql(delta)
 
@@ -70,14 +56,7 @@ def iter_log(access_log: Path, delta: Optional[timedelta]=None) -> Iterable[Row]
 SELECT timestamp, {normalise_page}, referer
 FROM visits
 WHERE
-     {BQ}
- AND page NOT LIKE '/css/%'
- AND page NOT LIKE '%.css'
- AND page NOT LIKE '%.js'
- AND page NOT LIKE '/comments/%'
- AND page NOT LIKE '%.svg'
- AND page NOT LIKE '%robot-face%'
- AND referer NOT LIKE 'https://beepb00p.xyz%'
+     {WHERE_NOT_BORING}
      {LQ}
 ORDER BY timestamp DESC
 ''')
