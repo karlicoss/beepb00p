@@ -19,22 +19,15 @@ from dataclasses import dataclass
 
 import pytz # type: ignore
 
-import orgparse # type: ignore
-
-### TODO keep this in config?
-ROOT    = Path(__file__).absolute().parent.parent
-inputs  = ROOT / 'inputs'
-content = ROOT / 'content'
+import orgparse
 
 
-outs = os.environ.get('BLOG_OUTPUT', 'site')
-output = ROOT / outs
+ROOT  = Path(__file__).absolute().parent.parent
+META  = ROOT / 'meta'
 
-tz = pytz.utc # TODO ugh this is what Hakyll assumed
-###
+input : Path = cast(Path, None) # set in main
+output: Path = cast(Path, None) # set in main
 
-
-templates = inputs / 'templates'
 
 
 @dataclass(unsafe_hash=True)
@@ -227,7 +220,7 @@ def compile_ipynb_body(*, compile_script: Path, path: Path, dir_: Path) -> None:
 
     # meh
     # itemid = path.absolute().relative_to(content.absolute().parent)
-    itemid = 'content/' + path.name
+    itemid = 'content/' + path.name # TODO ??
     # TODO meeeeeh.
     res = run(
         [
@@ -265,7 +258,7 @@ def _move(from_: Path, ext: str) -> None:
         # assert not to.exists(), to
 
         to.parent.mkdir(exist_ok=True) # meh
-        shutil.move(f, to)
+        shutil.move(str(f), to)
 
 # TODO hmm. iterable is not very cachable, exhausts the iterator..
 Results = Iterable[Union[Post, Exception]]
@@ -451,8 +444,8 @@ def org_meta(apath: Path) -> Post:
 def _compile_post_aux(deps: Deps, dir_: Path) -> Results:
     path = deps.path.path
     if path.is_absolute():
-        path = path.relative_to(content) # meh
-    apath = content / path
+        path = path.relative_to(input) # meh
+    apath = input / path
     # TODO not sure which path should really be used..
 
     suffix = path.suffix
@@ -674,6 +667,7 @@ def relativize_urls(path: Path, full: str) -> str:
 
 # TODO should use Path with mtime etc
 
+templates = META / 'templates'
 
 from jinja2 import Template # type: ignore
 def template(name: str) -> Template:
@@ -715,13 +709,13 @@ def get_filtered(inputs: Tuple[Path]) -> Tuple[Path]:
 
 
 def get_inputs() -> Tuple[Path]: # TODO use ...?
-    assert content.exists(), content
+    assert input.exists(), input
     inputs = tuple(sorted({
-        *[c.relative_to(content) for c in chain(
-            content.rglob('*.md'),
+        *[c.relative_to(input) for c in chain(
+            input.rglob('*.md'),
             # TODO make more defensive??
-            [x for x in content.rglob('*.org') if 'drafts' not in x.parts],
-            content.rglob('*.ipynb'),
+            [x for x in input.rglob('*.org') if 'drafts' not in x.parts],
+            input.rglob('*.ipynb'),
         )],
     }))
     return get_filtered(inputs)
@@ -745,7 +739,7 @@ def blog_tags() -> Sequence[str]:
                 tag = ch2.properties.get('CUSTOM_ID')
                 if tag is not None:
                     yield tag
-    return aux(mpath(content / 'tags.org'))
+    return aux(mpath(input / 'tags.org'))
 
 
 # TODO make a 'parallel' function??
@@ -766,6 +760,7 @@ def throw() -> NoReturn:
     raise AssertionError("shoudln't happen!")
 
 
+tz = pytz.utc # todo ugh this is what Hakyll assumed
 def feed(posts: Tuple[Post], kind: str) -> FeedGenerator:
     log.debug('generading %s feed', kind)
     fg = FeedGenerator()
@@ -852,21 +847,21 @@ def compile_all(max_workers: Optional[int]=None) -> Iterable[Exception]:
         shutil.copy(from_, top)
 
     # TODO fuck. doesn't follow symlinks...
-    copy(inputs / 'meta/robots.txt'    , 'robots.txt')
-    copy(inputs / 'meta/robot-face.png', 'robot-face.png')
-    for f in (inputs / 'css').rglob('*.css'):
-        copy(f, f.relative_to(inputs))
-    for f in (inputs / 'images').rglob('*.svg'):
-        copy(f, f.relative_to(inputs))
+    copy(META / 'meta/robots.txt'    , 'robots.txt')
+    copy(META / 'meta/robot-face.png', 'robot-face.png')
+    for f in (META / 'css').rglob('*.css'):
+        copy(f, f.relative_to(META))
+    for f in (META / 'images').rglob('*.svg'):
+        copy(f, f.relative_to(META))
     # eh. apparently glob(recursive=True) always follows symlinks??
-    for p in chain.from_iterable(glob(f'{content}/**/*.{x}', recursive=True) for x in ('jpg', 'svg', 'png')):
+    for p in chain.from_iterable(glob(f'{input}/**/*.{x}', recursive=True) for x in ('jpg', 'svg', 'png')):
         f = Path(p)
-        copy(f, f.relative_to(content))
+        copy(f, f.relative_to(input))
 
     posts = []
     from concurrent.futures import ThreadPoolExecutor
     with ThreadPoolExecutor(max_workers=max_workers) as pool:
-        for rpost in pool.map(compile_post, map(lambda p: mpath(content / p), get_inputs())):
+        for rpost in pool.map(compile_post, map(lambda p: mpath(input / p), get_inputs())):
             for post in rpost:
                 if isinstance(post, Exception):
                     ex = post
@@ -920,7 +915,13 @@ def main() -> None:
     p.add_argument('--filter', action='append', required=False, type=str, help='glob to filter the inputs')
     p.add_argument('--serve' , action='store_true') # TODO host/port?
     p.add_argument('--watch' , action='store_true')
+    p.add_argument('--input' , type=Path, default=ROOT / 'input' , required=False)
+    p.add_argument('--output', type=Path, default=ROOT / 'output', required=False)
     args = p.parse_args()
+
+    global input, output
+    input  = args.input.absolute()
+    output = args.output.absolute()
 
     debug = args.debug
     setup_logging(level=getattr(logging, 'DEBUG' if debug else 'INFO'))

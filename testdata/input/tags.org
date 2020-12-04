@@ -1,0 +1,5 @@
+#+TITLE: tags
+#+DATE: [2020-12-04 Fri]
+
+tags are required by the build script
+TODO could make it optional?
