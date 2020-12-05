@@ -676,14 +676,15 @@ def relativize_urls(path: Path, full: str) -> str:
 templates = META / 'templates'
 
 from jinja2 import Template # type: ignore
-def template(name: str) -> Template:
-    @cache
-    def aux(name: str, key: Tuple[MPath, ...]):
-        log.debug('reloading templates')
-        ts = _templates()
-        return ts.get_template(name)
 
-    return aux(name=name, key=tuple(map(mpath, sorted(templates.glob('*.html')))))
+@cache
+def _template_aux(name: str, key: Tuple[MPath, ...]):
+    log.debug('reloading templates %s', key)
+    ts = _templates()
+    return ts.get_template(name)
+
+def template(name: str) -> Template:
+    return _template_aux(name=name, key=tuple(map(mpath, sorted(templates.glob('*.html')))))
 
 
 def _templates():
@@ -958,7 +959,6 @@ def main() -> None:
                     sys.exit(1)
                 break
             time.sleep(1)
-
 
 
 def setup_logging(level):
