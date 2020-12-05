@@ -83,6 +83,10 @@ class MPath:
     path: Path
     mtime: float
 
+    def __repr__(self) -> str:
+        # TODO add mtime back? not sure
+        return f'{{path={self.path}}}'
+
 
 def mpath(path: PathIsh):
     # TODO ugh. if dataclass is frozen, we can't assign mtime in __init__???
@@ -373,7 +377,7 @@ def _compile_with_deps(deps: Deps, dir_: Path) -> Results:
     log.info('compiling %s', path)
     # TODO rpath is d??
     yield from _compile_post_aux(deps, dir_=dir_)
-    log.info('compiled %s', path)
+    log.info('compiled  %s', path)
 
     _move(dir_, 'html')
     _move(dir_, 'png')
@@ -646,7 +650,9 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Results:
     # TODO might need to move everything into the same dir??
     opath.write_text(full)
 
-    check_call(['find', dir_])
+    ltag = post.upid or f'<unnamed ({path.name})>'
+    outfiles = list(sorted(str(p.relative_to(dir_)) for p in dir_.rglob('*')))
+    log.info('[%s]: %s', ltag, ' '.join(outfiles))
     yield post
 
 
@@ -958,7 +964,7 @@ def main() -> None:
 def setup_logging(level):
     # TODO make optional?
     import logzero # type: ignore
-    format = '%(color)s[%(levelname)1.1s %(asctime)s %(module)s:%(lineno)4d %(threadName)s]%(end_color)s %(message)s'
+    format = '%(color)s[%(levelname)1.1s %(asctime)s %(filename)s:%(lineno)-4d %(threadName)s]%(end_color)s %(message)s'
     logzero.setup_logger(log.name, level=level, formatter=logzero.LogFormatter(fmt=format))
 
 
