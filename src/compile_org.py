@@ -7,7 +7,7 @@ from subprocess import check_call, check_output, run
 from pathlib import Path
 from itertools import chain
 import shutil
-from typing import Tuple, List, Optional, Sequence, Union, Iterable
+from typing import Tuple, List, Optional, Sequence, Union, Iterable, TextIO
 
 from more_itertools import ilen
 
@@ -81,19 +81,19 @@ EXIT CODE:
 
     active_tags = () if len(args.active_tags) == 0 else args.active_tags.split(',')
 
-    inf: Path = args.input
+    inf: Optional[Path] = args.input
     deps = []
     if inf is not None:
         # TODO FIXME meh. later, parse '#+include' properly??
         # TODO might need to be recursive...
         if inf.name == 'hpi.org':
             deps.extend([inf.parent / 'my-data.org'])
-        org_data = inf.read_text()
+        input = inf.open()
     else:
-        org_data = sys.stdin.read()
+        input = sys.stdin
     output, ierrs = process(
         format=args.format,
-        org_data=org_data,
+        input=input,
         outdir=args.output_dir,
         check_ids=args.check_ids,
         active_tags=active_tags,
@@ -155,17 +155,41 @@ def post_process_org(output: str) -> str:
 
     return '\n'.join(lines)
 
+# TODO maybe get rid of the whole tmp dir thing...
+# just make the sources read-only when running build script? wonder if it's possible
+# e.g. maybe mount --bind
 
 def process(
         *,
-        org_data: str,
+        input: Union[str, TextIO],
         outdir: Optional[Path]=None,
         check_ids: bool=True,
         active_tags: Sequence[str]=(),
         format: str='html',
         deps: Sequence[Path]=(),
 ) -> Result:
+    fdir: Optional[Path]
+    # todo not sure if it's really useful..
+    if isinstance(input, str):
+        org_data = input
+        fdir = None
+    else:
+        org_data = input.read()
+        if input.name == '<stdin>':
+            fdir = None
+        else:
+            fdir = Path(input.name).parent
+
     org_data = filter_private(org_data)
+
+    if fdir is not None:
+        # make includes absolute, otherwise they won't work in the context of tmp dir
+        org_data = re.sub(
+            re.escape('#+include: "') + r'(?=[^/])',
+                      '#+include: "'  + str(fdir) + '/',
+            org_data,
+            flags=re.I,
+        )
 
     # evaluate in temporary directory for deterministic runs
     with tempfile.TemporaryDirectory() as td:
@@ -454,7 +478,7 @@ def test_org_aside(tmp_path: Path) -> None:
     assert 'on the right {{{aside(see' in src
 
     html, errs = process(
-        org_data=src,
+        input=src,
         outdir=tmp_path,
         check_ids=False,
     )
@@ -473,7 +497,7 @@ def test_org_section_links(tmp_path: Path) -> None:
     assert '* intrapage link to' in src
 
     html, errs = process(
-        org_data=src,
+        input=src,
         outdir=tmp_path,
         check_ids=False,
     )
@@ -491,7 +515,7 @@ def test_org_removes_useless_ids(tmp_path: Path) -> None:
     assert '* regular heading' in src
 
     html, errs = process(
-        org_data=src,
+        input=src,
         outdir=tmp_path,
         check_ids=False,
     )
@@ -510,7 +534,7 @@ def test_org_tag_handling(tmp_path: Path) -> None:
     assert 'heading with tags' in src
 
     html, errs = process(
-        org_data=src,
+        input=src,
         outdir=tmp_path,
         check_ids=False,
         active_tags=['tag2'],
@@ -528,3 +552,36 @@ def test_org_tag_handling(tmp_path: Path) -> None:
     # aft    = '<li><a href="#something"><span class="timestamp-wrapper"><span class="timestamp">[2019-09-02 19:45]</span></span> heading with tags</a><span class="tag"><a class="tag1 tag-inactive" href="./tags.html">tag1</a><a class="tag2 tag-inactive" href="./tags.html">tag2</a></span>'
 
     assert after in html
+
+
+def test_includes(tmp_path: Path) -> None:
+    i = tmp_path / 'input'
+    i.mkdir()
+    o = tmp_path / 'output'
+    o.mkdir()
+    a = i / 'a.org'
+    a.write_text('''
+* heading 1
+  :PROPERTIES:
+  :CUSTOM_ID: heading1
+  :END:
+  body1
+* heading 2
+  :PROPERTIES:
+  :CUSTOM_ID: heading2
+  :END:
+  body2
+''')
+    b = i / 'b.org'
+    b.write_text(f'''
+#+INCLUDE: "a.org::#heading2" :only-contents t
+between
+#+INCLUDE: "{a}::#heading1" :only-contents t
+'''.strip())
+    html, errs = process(
+        input=b.open(),
+        outdir=o,
+        check_ids=False,
+    )
+    assert ilen(errs) == 0
+    assert html == '<p>\n  body2\nbetween\n  body1\n</p>\n'
