@@ -1,5 +1,5 @@
 (setq --babel-mypy/exec-python "
-output=$(python3 $tfile 2>&1)
+output=$(python3 -B $tfile 2>&1)
 res=$?
 echo \"Python output [exit code $res]:\"
 printf '%s\n' \"$output\" | sed \"$sed_command\"
@@ -7,7 +7,8 @@ printf '%s\n' \"$output\" | sed \"$sed_command\"
 
 
 (setq --babel-mypy/exec-mypy "
-output=$(python3 -m mypy --pretty --show-error-context --show-error-codes --strict $tfile 2>&1)
+mkdir -p /tmp/babel-mypy-cache
+output=$(python3 -m mypy --cache-dir /tmp/babel-mypy-cache --pretty --show-error-context --show-error-codes --strict $tfile 2>&1)
 res=$?
 echo \"Mypy output [exit code $res]:\"
 printf '%s\n' \"$output\" | sed \"$sed_command\"
