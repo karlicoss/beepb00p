@@ -190,6 +190,12 @@ def process(
             org_data,
             flags=re.I,
         )
+        org_data = re.sub(
+            ' :dir ' + r'(?=[^/])',
+            ' :dir ' + str(fdir) + '/',
+            org_data,
+            flags=re.I,
+        )
 
     # evaluate in temporary directory for deterministic runs
     with tempfile.TemporaryDirectory() as td:
@@ -585,3 +591,32 @@ between
     )
     assert ilen(errs) == 0
     assert html == '<p>\n  body2\nbetween\n  body1\n</p>\n'
+
+
+def test_eval(tmp_path: Path) -> None:
+    i = tmp_path / 'input'
+    i.mkdir()
+    o = tmp_path / 'output'
+    o.mkdir()
+
+    py = i / 'py'
+    py.mkdir()
+    te = py / 'test_eval.py'
+    te.write_text('''
+data = 'abacaba'
+''')
+
+    f = i / 'test.org'
+    f.write_text('''
+#+begin_src python :exports results :results output drawer :dir py :python python3
+  import test_eval
+  print(test_eval.data)
+#+end_src
+'''.strip())
+    html, errs = process(
+        input=f.open(),
+        outdir=o,
+        check_ids=False,
+    )
+    assert ilen(errs) == 0
+    assert html == '<p>\nabacaba\n</p>\n'
