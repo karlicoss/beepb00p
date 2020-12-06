@@ -961,8 +961,7 @@ def main() -> None:
             time.sleep(1)
 
 
-def setup_logging(level):
-    # TODO make optional?
+def setup_logging(level) -> None:
     import logzero # type: ignore
     format = '%(color)s[%(levelname)1.1s %(asctime)s %(filename)s:%(lineno)-4d %(threadName)s]%(end_color)s %(message)s'
     logzero.setup_logger(log.name, level=level, formatter=logzero.LogFormatter(fmt=format))

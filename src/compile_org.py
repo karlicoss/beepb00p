@@ -223,7 +223,7 @@ def emacs(*args, **kwargs) -> None:
         'emacs',
         '--kill',
         '--batch',
-        # TODO --no-init-file??
+        '--no-init-file',
         *chain.from_iterable(['--directory', str(get_user_package_path(module))] for module in modules),
         *args,
     ], **kwargs)
@@ -442,12 +442,12 @@ if __name__ == '__main__':
 
 
 def get_test_src() -> str:
-    path = Path(__file__).absolute().parent.parent / 'content/sandbox/test.org'
+    path = Path(__file__).absolute().parent.parent / 'input/sandbox/test.org'
     return path.read_text()
 
 
 # TODO literate test docs
-def test_aside(tmp_path: Path) -> None:
+def test_org_aside(tmp_path: Path) -> None:
     src = get_test_src()
 
     # precondition
@@ -466,7 +466,7 @@ def test_aside(tmp_path: Path) -> None:
 
 
 # TODO also tests intrapage links by accident, but ok for now..
-def test_section_links(tmp_path: Path) -> None:
+def test_org_section_links(tmp_path: Path) -> None:
     src = get_test_src()
 
     # precondition
@@ -484,7 +484,7 @@ def test_section_links(tmp_path: Path) -> None:
     assert expected in html
 
 
-def test_removes_useless_ids(tmp_path: Path) -> None:
+def test_org_removes_useless_ids(tmp_path: Path) -> None:
     src = get_test_src()
 
     # precondition
@@ -503,7 +503,7 @@ def test_removes_useless_ids(tmp_path: Path) -> None:
     assert not re.search(r'id="text-org00', html)
 
 
-def test_tag_handling(tmp_path: Path) -> None:
+def test_org_tag_handling(tmp_path: Path) -> None:
     src = get_test_src()
 
     # precondition
@@ -524,7 +524,7 @@ def test_tag_handling(tmp_path: Path) -> None:
     ## toc handling + adding tag links
     ##                                                                                                                                           vvv NBSPS!!
     before = '<li><a href="#something"><span class="timestamp-wrapper"><span class="timestamp">[2019-09-02 19:45]</span></span> heading with tags   <span class="tag"><span class="tag1">tag1</span> <span class="tag2">tag2</span></span></a>'
-    after  = '<li><a href="#something"><span class="timestamp-wrapper"><span class="timestamp">[2019-09-02 19:45]</span></span> heading with tags</a><span class="tag"><a class="tag1 tag-inactive" href="./tags.html">tag1</a><a class="tag2 tag-active" href="./tags.html#tag2">tag2</a></span>'
+    after  = '<li><a href="#something"><span class="timestamp-wrapper"><span class="timestamp">[2019-09-02 19:45]</span></span> heading with tags</a><span class="tag"><a class="tag1 tag-inactive" href="/tags.html">tag1</a><a class="tag2 tag-active" href="/tags.html#tag2">tag2</a></span>'
     # aft    = '<li><a href="#something"><span class="timestamp-wrapper"><span class="timestamp">[2019-09-02 19:45]</span></span> heading with tags</a><span class="tag"><a class="tag1 tag-inactive" href="./tags.html">tag1</a><a class="tag2 tag-inactive" href="./tags.html">tag2</a></span>'
 
     assert after in html

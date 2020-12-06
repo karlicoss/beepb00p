@@ -53,7 +53,7 @@ def test_watch() -> None:
             if mtime(o) > mtime(i):
                 break
 
-
+from src.compile_org import *
 
 from contextlib import contextmanager
 @contextmanager
