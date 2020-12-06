@@ -399,29 +399,16 @@ def _compile_with_deps(deps: Deps, dir_: Path) -> Results:
 def org_meta(apath: Path) -> Post:
     # TODO extract get_meta method??
     o = orgparse.loads(apath.read_text())
-    # TODO need to make public?? also can remove from porg then..
-    fprops = o._special_comments
-
-    def fprop(name: str) -> Optional[str]:
-        vals = fprops.get(name)
-        if vals is None:
-            return None
-        return the(vals)
-
-    ttl     = fprop('TITLE'); assert ttl is not None
-    summ    = fprop('SUMMARY')
-    upid    = fprop('UPID')
-    ftags   = fprop('FILETAGS')
-    dates   = fprop('DATE')
-    draftp  = fprop('DRAFT')
-
-
+    ttl_ = o.get_file_property('TITLE'); assert ttl_ is not None
+    ttl: str = ttl_
+    summ    = o.get_file_property('SUMMARY')
+    upid    = o.get_file_property('UPID')
+    ftags   = o.get_file_property_list('FILETAGS') or []
+    dates   = o.get_file_property('DATE')
+    draftp  = o.get_file_property('DRAFT')
     draft  = False if draftp  is None else True
 
-    if ftags is not None: # todo maybe should always be set?..
-        tags = tuple(Tag(x) for x in ftags.split(':') if len(x) > 0)
-    else:
-        tags = ()
+    tags = tuple(Tag(x) for x in ftags)
 
     date: Optional[datetime]
     if dates is not None:
@@ -711,7 +698,7 @@ def get_filtered(inputs: Tuple[Path]) -> Tuple[Path]:
             log.debug('filtered out %s', x)
 
     if len(filtered) == 0:
-        log.warning('no files are filtered by %s', FILTER)
+        log.warning('no files among %s are filtered by %s', list(map(str, inputs)), FILTER)
     return tuple(filtered)
 
 
@@ -861,6 +848,7 @@ def compile_all(max_workers: Optional[int]=None) -> Iterable[Exception]:
     for f in (META / 'images').rglob('*.svg'):
         copy(f, f.relative_to(META))
     # eh. apparently glob(recursive=True) always follows symlinks??
+    # TODO make these proper dependensies? dunno
     for p in chain.from_iterable(glob(f'{input}/**/*.{x}', recursive=True) for x in ('jpg', 'svg', 'png')):
         f = Path(p)
         copy(f, f.relative_to(input))
