@@ -23,6 +23,8 @@ DEFAULT_ORG_P_MARGIN = '16px'
 
 ED = Path('~/.emacs.d').expanduser()
 
+
+use_system = True # todo meh, not sure
 def uses_doom() -> bool:
     return (ED / 'bin/doom').exists() # otherwise assumes spacemacs
 
@@ -37,7 +39,10 @@ def get_user_package_path(module: str) -> Path:
         head = check_output(['emacs', '--version']).decode('utf8').splitlines()[0]
         return head[len("GNU Emacs "):]
 
-    if uses_doom():
+    if use_system:
+        pp = Path('/usr/share/emacs/site-lisp/elpa/')
+        matches = list(x for x in pp.glob(module + '-[0-9]*') if x.is_dir())
+    elif uses_doom():
         m = ED / '.local/straight/build' / module
         assert m.exists(), m
         matches = [m]
@@ -245,7 +250,7 @@ def process(
 
 def emacs(*args, **kwargs) -> None:
     modules = [
-        'org-mode', # present for doom, but for spacemacs I've used a custom hack..
+        'org', # present for doom, but for spacemacs I've used a custom hack..
         'htmlize', 'dash', 's',
     ]
 

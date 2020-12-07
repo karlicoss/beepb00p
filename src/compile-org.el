@@ -200,7 +200,7 @@
 
 (require 'subr-x) ; ugh, for string-join...
 ;; see https://github.com/karlicoss/dotfiles-emacs
-(load-file "~/.dotfiles/emacs/babel-mypy.el")
+(load-file (concat (file-name-directory load-file-name) "babel-mypy.el"))
 ;;;
 
 
