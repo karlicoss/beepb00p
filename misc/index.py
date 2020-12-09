@@ -9,8 +9,7 @@ dotpy.init(__name__) # TODO extremely meh
 
 from dotpy import *
 
-
-import build
+from . import build
 
 
 INPUTS = build.get_inputs()
@@ -75,7 +74,7 @@ def maybe_meta(name: str):
 
 def meta(name: str):
     m = maybe_meta(name)
-    assert m is not None
+    assert m is not None, name
     return m
 
 

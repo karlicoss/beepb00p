@@ -15,6 +15,7 @@ import shutil
 import sys
 from tempfile import TemporaryDirectory
 from typing import cast, Dict, Any, List, Optional, Union, Tuple, Iterable, Iterator, Sequence
+import dataclasses
 from dataclasses import dataclass
 
 import pytz # type: ignore
@@ -22,12 +23,11 @@ import pytz # type: ignore
 import orgparse
 
 
-ROOT  = Path(__file__).absolute().parent.parent
+ROOT  = Path(__file__).absolute().resolve().parent.parent
 META  = ROOT / 'meta'
 
 input : Path = cast(Path, None) # set in main
 output: Path = cast(Path, None) # set in main
-
 
 
 @dataclass(unsafe_hash=True)
@@ -37,18 +37,6 @@ class Tag:
     @property
     def exists(self) -> bool:
         return self.name in blog_tags()
-
-
-def in_graph(stem: str) -> bool:
-    # meh... should couple tighter?
-    import sys
-    ipath =  str(Path(__file__).absolute().parent.parent / 'misc')
-    if ipath not in sys.path:
-        sys.path.insert(0, ipath)
-    import index as I
-    # meh. also need to cache it?
-    m = I.maybe_meta(stem)
-    return m is not None
 
 
 @dataclass(unsafe_hash=True)
@@ -71,6 +59,21 @@ class Post:
         if d is None:
             return None
         return d.strftime('%d %B %Y')
+
+
+def in_graph(meta: Post) -> bool:
+    # dunno, I guess this sort of gives less coupling...
+    # otherwise can't compile a singe post properly
+    svg = (ROOT / 'misc/index.svg').read_text()
+    return f'id="{meta.upid}"' in svg
+
+    import sys
+    # ugh. when this is executed as python3 -m, is doesn't set the subpackage?? ends up in importing twice
+    sys.modules['beepb00p.build'] = sys.modules[__name__]
+    from . import index as I
+    # meh. also need to cache it?
+    # m = I.maybe_meta(stem) # TODO
+    # return m is not None
 
 
 PathIsh = Union[Path, str]
@@ -589,36 +592,12 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Results:
             f.rename(to)
             # TODO remove empty f.parent??
 
-    body_file = opath.parent / 'body'
-    body = body_file.read_text()
-    body_file.unlink()
-
-    # strip private stuff
-    body = ''.join(line for line in body.splitlines(keepends=True) if 'NOEXPORT' not in line)
-
-    # meeeeh
-    ctx['in_graph'] = in_graph(apath.stem)
-
-    # TODO for org-mode, need to be able to stop here and emit whatever we compiled?
-    post_t = template('post.html')
-    pbody = post_t.render(
-        body=body,
-        **ctx,
-    )
-    full_t = template('default.html')
-    full = full_t.render(
-        body=pbody,
-        **ctx,
-    )
-
-    full = relativize_urls(path=path, full=full)
-
     post = Post(
         title  =ctx.get('title', 'ERROR: NO TITLE'),
         summary=ctx.get('summary'),
         date   =date,
         tags   =ctx['tags'],
-        body   =full,
+        body   ='TODO',
         draft  =ctx.get('draft') is not None,
         url    =ctx['url'],
         special=special,
@@ -626,6 +605,29 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Results:
         feed=True,
         upid=post_upid, # TODO not sure if works for all??
     )
+
+    body_file = opath.parent / 'body'
+    body = body_file.read_text()
+    body_file.unlink()
+
+    # strip private stuff
+    body = ''.join(line for line in body.splitlines(keepends=True) if 'NOEXPORT' not in line)
+
+    ctx['in_graph'] = in_graph(post)
+
+    # TODO for org-mode, need to be able to stop here and emit whatever we compiled?
+    post_t = template('post.html')
+    full_t = template('default.html')
+    pbody = post_t.render(
+        body=body,
+        **ctx,
+    )
+    full = full_t.render(
+        body=pbody,
+        **ctx,
+    )
+    full = relativize_urls(path=path, full=full)
+    post = dataclasses.replace(post, body=full)
 
     #
     if 'name="keywords"' not in full:
