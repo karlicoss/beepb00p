@@ -30,6 +30,12 @@ input : Path = cast(Path, None) # set in main
 output: Path = cast(Path, None) # set in main
 
 
+###
+# use these dirs, otherwise it craps into notebook output
+os.environ['MPLCONFIGDIR'] = '/tmp/beepb00p/matplotlib'
+os.environ['SEABORN_DATA'] = '/tmp/beepb00p/seaborn'
+###
+
 @dataclass(unsafe_hash=True)
 class Tag:
     name: str
@@ -712,7 +718,7 @@ def get_inputs() -> Tuple[Path]: # TODO use ...?
             # TODO make more defensive??
             [x for x in input.rglob('*.org') if 'drafts' not in x.parts],
             input.rglob('*.ipynb'),
-        )],
+        ) if 'ext' not in c.parts], # ugh. otherwise picking up files from it
     }))
     return get_filtered(inputs)
 
