@@ -11,12 +11,13 @@ from dotpy import *
 
 from . import build
 
-
+# meeh
+build.input = build.ROOT / 'input'
 INPUTS = build.get_inputs()
 
 # todo would be nice to cache?
 METAS = [
-    (path.stem, build.org_meta(build.content / path))
+    (path.stem, build.org_meta(build.input / path))
     for path in INPUTS
     if path.suffix == '.org' and path.stem not in (
             # todo for fucks sake... fix it properly...
@@ -40,16 +41,16 @@ METAS = [
 
 # todo ok, upid is kinda irrelevant, only useful for comments
 # not sure what to do...
-for (url, date, summary) in [
-        ('takeout_data_gone'  , '08 March 2019'   , ''),
-        ('grasp'              , '09 February 2019', 'How to capture infromation from your browser and stay sane'),
-        ('heartbeats_vs_kcals', '03 August 2019'  , ''),
-        ('exercise_bike_model', '08 December 2019', 'How I found my exercise machine to violate laws of physics'),
+for (upid, date, summary) in [
+        ('takeout_data_gone'        , '08 March 2019'   , ''),
+        ('org_grasp'                , '09 February 2019', 'How to capture infromation from your browser and stay sane'),
+        ('endomondo_kcal_heartbeats', '03 August 2019'  , ''),
+        ('exercise_bike_model'      , '08 December 2019', 'How I found my exercise machine to violate laws of physics'),
 ]:
-    METAS.append((url, build.Post(
+    METAS.append((upid, build.Post(
         date=date,
         summary=summary,
-        upid=url, # TODO FIXME not sure about this
+        upid=upid,
         title='',
         body='',
         draft=False,
@@ -223,6 +224,10 @@ takeout_data_gone = P('Google Takeouts silently removes old data')
 annotating  = P('How to annotate everything')
 pkm_search  = P('Building personal search infrastructure')
 
+## aliases (need to match upids)
+org_grasp = grasp
+endomondo_kcal_heartbeats = heartbeats_vs_kcals
+##
 
 G = digraph(
     '''
