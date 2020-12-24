@@ -22,6 +22,8 @@ html {
         margin-right: auto;
         /* */
 
+        /* otherwise, unset (so the corresponding margins will be set to 0)  */
+        --sidenote-width: var(--aside-width);
 
         /* debugging */
         /* color: red; */
@@ -31,13 +33,6 @@ html {
     a.headerlink {
         margin-left: -1em;
     }
-
-    /* TODO not sure about this vvv */
-    /*
-    header {
-        width: calc(var(--width) - var(--aside-width));
-    }
-    */
 }
 
 /*
@@ -54,13 +49,16 @@ a:link {
   border-bottom: 0.1rem solid;
   font-size: 2em;
 
+  /* use margin to display border correctly */
+  margin-right: var(--sidenote-width);
+
   display: flex;
   flex-wrap: wrap; /* default is nowrap; makes it responsive */
   column-gap: 0.3em;
 }
 #topnav > a {
   color: black; /* default links are blue */
-  font-weight: bold;
+  /* font-weight: bold; */
   text-transform: uppercase;
 }
 #topnav > a:hover {
@@ -71,6 +69,9 @@ a:link {
   border-top: 0.1rem solid;
   padding-top: 1em;
   font-size: 0.75em;
+
+  /* use margin to display border correctly */
+  margin-right: var(--sidenote-width);
 
   display: flex;
   flex-wrap: wrap;
@@ -152,7 +153,6 @@ article .content {
     article .content {
         --sn-position   : absolute;
         --sn-right      : 0;
-        --sn-width      : var(--aside-width);
         --sn-display    : inline;
     }
 
@@ -173,8 +173,9 @@ article .content {
 }
 
 article .content > * {
-    padding-right: var(--sn-width);
+    padding-right: var(--sidenote-width);
 }
+
 
 /* TODO highlight sidenotes maybe? */
 article .content aside.sidenote {
@@ -182,7 +183,7 @@ article .content aside.sidenote {
     position: var(--sn-position);
     right   : var(--sn-right);
 
-    width   : var(--sn-width);
+    width   : var(--sidenote-width);
 
     /* TODO maybe decorate somehow on mobile devices... */
     /* for horizontal padding between text and note */
@@ -198,6 +199,13 @@ article .content aside.sidenote {
     display: var(--sn-display);
 }
 
+/* TODO not sure if article should contain footer and comments?? */
+article .footer {
+  margin-right: var(--sidenote-width);
+}
+article .comments {
+  margin-right: var(--sidenote-width);
+}
 
 a.headerlink {
     text-decoration: none;
