@@ -67,11 +67,11 @@ a:link {
   column-gap: 0.5em;
 }
 
+/* now, post-specific stuff */
 
 time {
     font-family: "Lucida Console", Monaco, monospace;
 }
-
 
 .post-tag + .post-tag {
     margin-left: 0.5em;
@@ -96,11 +96,13 @@ time {
   color: black;
 }
 
-section.post-title h1 {
+#post-title h1 {
+  /* default margin is too large */
   margin-bottom: 0em;
 }
 
-section.post-title .summary {
+#post-title .summary {
+  /* ???  */
   -webkit-margin-before:0em;
   -webkit-margin-after:0em;
 
@@ -119,11 +121,6 @@ h1 {
 
 h2 {
   font-size: 1.4rem;
-}
-
-article .footer time {
-  /* font-size: 1.4rem; */
-  color: #555;
 }
 
 
@@ -207,13 +204,6 @@ a.headerlink:hover {
 */
 /* */
 
-
-#isso-root .avatar {
-    display: none;
-}
-
-
-
 /* highlight inline code produced by org-mode */
 /* TODO support for ipynb as well? */
 code.inline {
@@ -241,6 +231,14 @@ a.link-up:after {
 }
 /* end */
 
+
+#post-footer time {
+  color: #555;
+}
+
+#isso-root .avatar {
+  display: none;
+}
 
 .debug-usage {
     animation:debug 0.8s infinite;

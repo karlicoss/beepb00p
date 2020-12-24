@@ -33,11 +33,11 @@ blockquote {
 
 
 /* hack to get around emacs always adding title to org mode export.. */
-.content .title {
+#post-content .title {
     display: none;
 }
 
-.content .tag {
+#post-content .tag {
     float: right;
 }
 
