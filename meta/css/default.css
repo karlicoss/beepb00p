@@ -57,41 +57,21 @@ a:hover {
 }
 
 
-/* not sure about this one.. */
-header {
+#topnav {
+   /* just to separate from the content */
    border-bottom: 0.1rem solid;
-   padding: 1rem 0;
-}
+   font-size: 2em;
 
-a.fat {
+   display: flex;
+   flex-wrap: wrap; /* default is nowrap; makes it responsive */
+   column-gap: 0.3em;
+}
+#topnav > a {
+    color: black; /* default links are blue */
     font-weight: bold;
-    color: black;
     text-transform: uppercase;
 }
 
-/* START nav bar stuff */
-nav {
-    /* TODO what's that for?? seems to work without it...*/
-    overflow: auto;
-
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-}
-
-nav {
-  font-size: 1.8rem;
-}
-
-nav .nav-left {
-  float: left;
-}
-
-nav .nav-right {
-  float: right;
-}
-
-/* END nav bar stuff */
 
 footer {
   margin-top: 1.5rem;

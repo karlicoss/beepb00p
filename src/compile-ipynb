@@ -42,6 +42,8 @@ def run(tdir: Path, args, *rest):
         *rest,
     ])
 
+    # TODO use .files?/
+    # https://github.com/jupyter/nbconvert/blob/f66ec517275f7c61bb5a36a5d3496ba73005d659/nbconvert/nbconvertapp.py#L182-L185
     ff = tdir   / f'{stem}_files'
     tt = outdir / f'{stem}_files'
     if tt.exists():
