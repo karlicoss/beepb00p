@@ -1,29 +1,25 @@
 :root {
     --link-color: #0000EE;
     --visited-link-color: #551A8B;
-    --width: 80rem;
+    --width: 60rem; /* todo rename to main-width?? */
     --aside-width: 20rem;
 }
 
 
 html {
-  font-size: 100%;
   font-family: "Source Serif Pro", serif;
+
+  /* otherwise scrollbar impacts the content */
+  overflow-y: scroll;
 }
 
-/* TODO why 80? is this --width + --aside-width? looks like coinsidence though...  */
+/* 80 = --width + --aside-width */
 @media (min-width: 80rem) {
     body {
-        /* TODO how to choose good width?? */
         width: var(--width);
-
         /* auto margin centers the content. not sure if it's the right way to do it... */
         margin-left:  auto;
         margin-right: auto;
-        /* */
-
-        /* otherwise, unset (so the corresponding margins will be set to 0)  */
-        --sidenote-width: var(--aside-width);
 
         /* debugging */
         /* color: red; */
@@ -49,16 +45,12 @@ a:link {
   border-bottom: 0.1rem solid;
   font-size: 2em;
 
-  /* use margin to display border correctly */
-  margin-right: var(--sidenote-width);
-
   display: flex;
   flex-wrap: wrap; /* default is nowrap; makes it responsive */
   column-gap: 0.3em;
 }
 #topnav > a {
   color: black; /* default links are blue */
-  /* font-weight: bold; */
   text-transform: uppercase;
 }
 #topnav > a:hover {
@@ -69,9 +61,6 @@ a:link {
   border-top: 0.1rem solid;
   padding-top: 1em;
   font-size: 0.75em;
-
-  /* use margin to display border correctly */
-  margin-right: var(--sidenote-width);
 
   display: flex;
   flex-wrap: wrap;
@@ -144,68 +133,59 @@ img {
 }
 
 
-article .content {
-    position: relative;
-}
-
-
+/* 80 = --width + --aside-width */
 @media (min-width: 80rem) {
-    article .content {
-        --sn-position   : absolute;
-        --sn-right      : 0;
-        --sn-display    : inline;
-    }
+  /* when wide enough, display as a side note */
+  article {
+    --sidenote-display  : inline;
 
-    .before-aside {
-        /* hacky way of forcing aside to display on the same line.... */
-        display: inline-block;
-    }
-    li .before-aside {
-        /* for li, that breaks the list marker alignment...  I guess that's a relatively small price to pay for now... */
-        display: initial;
-    }
+    /* if wide enough, display at a fixed position on the right */
+    position: relative;
+    --sidenote-position : absolute;
+    --sidenote-left     : var(--width);
+
+    /* set width, otherwise they wrap at the word boundary */
+    --sidenote-width    : var(--aside-width);
+  }
+
+  .before-aside {
+    /* hacky way of forcing aside to display on the same line....
+     * without it, it displays on the same line as the last
+     * (can see on multiline paragraphs). probably can be fixed in a better way?
+     * e.g. can reorder aside and the preceding element.. but this is a bit misleading then
+     */
+    display: inline-block;
+  }
+  li .before-aside {
+    /* for li, that breaks the list marker alignment...  I guess that's a relatively small price to pay for now... */
+    display: initial;
+  }
 }
-
 @media (max-width: 80rem) {
-    article .content {
-        --sn-display    : block;
-    }
+  article {
+    --sidenote-display  : block;
+  }
 }
+article aside.sidenote {
+  /* todo highlight sidenotes maybe? */
+  /* to match with corresponding <p> */
+  /* TODO is this really necessary?? */
+  display : var(--sidenote-display);
 
-article .content > * {
-    padding-right: var(--sidenote-width);
-}
+  /* makes it work in conjucion with position: relative in article */
+  position: var(--sidenote-position);
+  left    : var(--sidenote-left);
+  width   : var(--sidenote-width);
 
+  padding-left : 2em; /* for horizontal padding between text and note */
+  padding-right: 1em; /* so it's not too close to the screen edge */
+  box-sizing: border-box; /* without it doesn't wrap around?? */
 
-/* TODO highlight sidenotes maybe? */
-article .content aside.sidenote {
-    /* makes it work in conjucion with position: relative in article */
-    position: var(--sn-position);
-    right   : var(--sn-right);
-
-    width   : var(--sidenote-width);
-
-    /* TODO maybe decorate somehow on mobile devices... */
-    /* for horizontal padding between text and note */
-    padding-left: 2em;
-    box-sizing: border-box;
-
-
-    text-align: left;
-    font-size: 0.8em;
-    color: gray;
-
-    /* to match with corresponding <p> */
-    display: var(--sn-display);
+  font-size: 0.8em;
+  color: gray;
 }
 
 /* TODO not sure if article should contain footer and comments?? */
-article .footer {
-  margin-right: var(--sidenote-width);
-}
-article .comments {
-  margin-right: var(--sidenote-width);
-}
 
 a.headerlink {
     text-decoration: none;
