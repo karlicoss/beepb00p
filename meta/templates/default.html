@@ -72,15 +72,12 @@
     <!-- TODO [2019-09-21 14:04] would be nice to get rebuild time somehow in context -->
     <!-- TODO [2019-09-21 14:06] add a link to stable version of the same page -->
     {% endif %}
-    <!-- TODO make semantic -->
-    <footer>
-        <span style="float:left">
-        <a href="https://twitter.com/karlicoss">🐦 me @twitter</a>
-        ·
-        <a href="https://github.com/karlicoss">💻 me @github</a>
-        </span>
 
-        <a href="http://creativecommons.org/licenses/by/4.0">CC BY 4.0</a>
+    <footer id="bottomfooter">
+        <a href="https://twitter.com/karlicoss">🐦 me @twitter</a>
+        <a href="https://github.com/karlicoss" >💻 me @github</a>
+        <a href="http://creativecommons.org/licenses/by/4.0"
+           style="margin-left:auto">CC BY 4.0</a>
         {%- if is_stable %}
         {%- else %}
         Unstable version

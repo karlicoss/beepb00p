@@ -48,37 +48,33 @@ a:link {
     text-decoration: none;
 }
 
-a:hover {
-/*      text-decoration: overline; */
-     /* color: yellow; */
-
-    /* mm, this is nice, but annoying because it infrates and may impact content around the link */
-    /* font-weight: bold; */
-}
-
 
 #topnav {
-   /* just to separate from the content */
-   border-bottom: 0.1rem solid;
-   font-size: 2em;
+  /* just to separate from the content */
+  border-bottom: 0.1rem solid;
+  font-size: 2em;
 
-   display: flex;
-   flex-wrap: wrap; /* default is nowrap; makes it responsive */
-   column-gap: 0.3em;
+  display: flex;
+  flex-wrap: wrap; /* default is nowrap; makes it responsive */
+  column-gap: 0.3em;
 }
 #topnav > a {
-    color: black; /* default links are blue */
-    font-weight: bold;
-    text-transform: uppercase;
+  color: black; /* default links are blue */
+  font-weight: bold;
+  text-transform: uppercase;
+}
+#topnav > a:hover {
+  color: blue; /* hmm, not sure about this.. a bit misleading, usually unvisited are blue */
 }
 
+#bottomfooter {
+  border-top: 0.1rem solid;
+  padding-top: 1em;
+  font-size: 0.75em;
 
-footer {
-  margin-top: 1.5rem;
-  padding: 1rem 0;
-  border-top: 0.1rem solid #000;
-  font-size: 0.75rem;
-  text-align: right;
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 0.5em;
 }
 
 
