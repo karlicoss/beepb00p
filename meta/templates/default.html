@@ -43,9 +43,22 @@
     <!-- ugh. Facebook really wants jpg? -->
     <!-- also Facebook displays it with black background, but whatever, fuck it. -->
     <meta property="og:image" content="https://beepb00p.xyz/robot-face.jpg" />
+
+    <script>
+    {% include "default.js" %}
+    </script>
 </head>
 
 <body>
+    <!-- TODO not sure what to do on mobile devices? -->
+    <!-- https://www.gwern.net/ -->
+    <!-- could use position: fix so it's displayed  -->
+    <div style="position:fixed; top: 0; right:0; opacity: 0.3">
+        <!-- TODO headerlinks etc? -->
+        settings:
+        <div>show timestamps<input type="checkbox" id="settings-timestamps"/></div>
+    </div>
+
     <nav id="topnav">
         <a href="/"          >Home</a>
         <a href="/ideas.html">Ideas</a>
