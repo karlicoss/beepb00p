@@ -29,11 +29,34 @@ META  = ROOT / 'meta'
 input : Path = cast(Path, None) # set in main
 output: Path = cast(Path, None) # set in main
 
-
+# global temporary directory
+TMP_DIR: Path = cast(Path, None)
 ###
 # use these dirs, otherwise it craps into notebook output
 os.environ['MPLCONFIGDIR'] = '/tmp/beepb00p/matplotlib'
 os.environ['SEABORN_DATA'] = '/tmp/beepb00p/seaborn'
+###
+
+log = logging.getLogger('blog')
+
+### common utils
+PathIsh = Union[Path, str]
+
+from typing import NoReturn
+def throw() -> NoReturn:
+    raise AssertionError("shoudln't happen!")
+
+from more_itertools import make_decorator
+tuplify = make_decorator(wrapping_func=tuple)
+
+def indent(s: str, spaces: int=2) -> str:
+    return ''.join(' ' * spaces + s for s in s.splitlines(keepends=True))
+
+# todo there must be something builtin??
+def sanitize(path: Path) -> str:
+    pp = str(path)
+    pp = pp.replace('/', '_')
+    return pp
 ###
 
 @dataclass(unsafe_hash=True)
@@ -81,12 +104,6 @@ def in_graph(meta: Post) -> bool:
     # m = I.maybe_meta(stem) # TODO
     # return m is not None
 
-
-PathIsh = Union[Path, str]
-
-log = logging.getLogger('blog')
-
-
 @dataclass(frozen=True)
 class MPath:
     path: Path
@@ -106,27 +123,10 @@ def mpath(path: PathIsh):
         mtime=p.stat().st_mtime,
     )
 
-# global temporary directory
-TMP_DIR: Path = cast(Path, None)
-
-
 # TODO use wraps??
 cache = lambda f: lru_cache(maxsize=None)(f)
 
-# TODO better name?..
-# TODO there must be something builtin??
-def sanitize(path: Path) -> str:
-    pp = str(path)
-    pp = pp.replace('/', '_')
-    return pp
-
-
 def compile_org_body(*, compile_script: Path, path: Path, dir_: Path, active_tags: Sequence[str], check_ids: bool=False) -> Iterable[Exception]:
-    log.debug('compiling %s %s', compile_script, path)
-    log.debug('running %s %s', compile_script, dir_)
-
-    # TODO not sure that compile-org should.
-    # unless I copy files separately in the 'sandbox'?
     res = run(
         [
             compile_script,
@@ -157,11 +157,6 @@ def compile_org_body(*, compile_script: Path, path: Path, dir_: Path, active_tag
     # TODO output determined externally?
     # TODO some inputs
 
-
-def indent(s: str, spaces: int=2) -> str:
-    return ''.join(' ' * spaces + s for s in s.splitlines(keepends=True))
-
-
 Meta = Dict[str, Any]
 
 # pip install ruamel.yaml -- temporary...
@@ -179,8 +174,6 @@ def metadata(path: Path) -> Meta:
 
 
 def compile_md_body(*, path: Path, dir_: Path) -> None:
-    log.debug('compiling %', path)
-
     res = run(
         ['pandoc', '--to', 'html'],
         input=path.read_bytes(),
@@ -192,7 +185,7 @@ def compile_md_body(*, path: Path, dir_: Path) -> None:
 
 
 def compile_ipynb_body(*, compile_script: Path, path: Path, dir_: Path) -> None:
-    meta = metadata(path)
+    meta = metadata(path) # TOOD instead, pass meta to all methods??
 
     # TODO make this an attribute of the notebook somehow? e.g. tag
     allow_errors = meta.get('allow_errors', False)
@@ -216,15 +209,6 @@ def compile_ipynb_body(*, compile_script: Path, path: Path, dir_: Path) -> None:
     # TODO remove duplicats
     out = res.stdout.decode('utf8')
     (dir_ / 'body').write_text(out)
-
-
-# TODO use more_itertools?
-def the(things):
-    ss = set(things)
-    assert len(ss) == 1, ss
-    [x] = ss
-    return x
-
 
 
 def _move(from_: Path, ext: str) -> None:
@@ -260,51 +244,54 @@ def compile_post(path: MPath) -> Results:
 class BaseDeps:
     path: MPath
 
-
 @dataclass(frozen=True)
 class OrgDeps(BaseDeps):
     compile_org: MPath
     misc: Tuple[MPath, ...]
     active_tags: Tuple[str, ...]
 
-
-def org_deps(path: MPath) -> OrgDeps:
-    return OrgDeps(
-        path = path,
-        compile_org = mpath(ROOT / 'src/compile_org.py'),
-        misc = (
-            mpath(ROOT / 'src/compile-org.el'),
-        ),
-        # todo active tags should be in base?
-        # NOTE: damn, this is super neat... maybe write about it
-        active_tags=tuple(blog_tags()),
-    )
-
+    @classmethod
+    def make(cls, path: MPath) -> 'OrgDeps':
+        return OrgDeps(
+            path = path,
+            compile_org = mpath(ROOT / 'src/compile_org.py'),
+            misc = (
+                mpath(ROOT / 'src/compile-org.el'),
+            ),
+            # todo active tags should be in base?
+            # NOTE: damn, this is super neat... maybe write about it
+            active_tags=tuple(blog_tags()),
+        )
 
 @dataclass(frozen=True)
 class MdDeps(BaseDeps):
-    pass
-    # TODO pandoc dependency??
-
-
-def md_deps(path: MPath) -> MdDeps:
-    return MdDeps(
-        path=path,
-    )
-
+    # todo pandoc dependency??
+    @classmethod
+    def make(cls, path: MPath) -> 'MdDeps':
+        return MdDeps(
+            path=path,
+        )
 
 @dataclass(frozen=True)
 class IpynbDeps(BaseDeps):
     compile_ipynb: MPath
 
-def ipynb_deps(path: MPath) -> IpynbDeps:
-    return IpynbDeps(
-        path = path,
-        compile_ipynb = mpath(ROOT / 'src/compile-ipynb'),
-    )
-
-
+    @classmethod
+    def make(cls, path: MPath) -> 'IpynbDeps':
+        return IpynbDeps(
+            path = path,
+            compile_ipynb = mpath(ROOT / 'src/compile-ipynb'),
+        )
 Deps = Union[OrgDeps, MdDeps, IpynbDeps]
+
+def _compile_post(mpath: MPath) -> Results:
+    deps: Deps = {
+        '.org'  : OrgDeps  .make,
+        '.ipynb': IpynbDeps.make,
+        '.md'   : MdDeps   .make,
+    }[mpath.path.suffix](mpath)
+    with compile_in_dir(mpath.path) as dir_:
+        yield from _compile_with_deps(deps, dir_=dir_)
 
 
 @contextmanager
@@ -318,32 +305,11 @@ def compile_in_dir(path: Path) -> Iterator[Path]:
         if d.exists():
             shutil.rmtree(d)
 
-
-def _compile_post(mpath: MPath) -> Results:
-    suf = mpath.path.suffix
-    deps: Deps
-    if   suf == '.org':
-        deps = org_deps(mpath)
-    elif suf == '.ipynb':
-        deps = ipynb_deps(mpath)
-    elif suf == '.md':
-        deps = md_deps(mpath)
-    else:
-        raise RuntimeError(mpath)
-
-    with compile_in_dir(mpath.path) as dir_:
-        yield from _compile_with_deps(deps, dir_=dir_)
-
-
-from more_itertools import make_decorator
-tupler = make_decorator(wrapping_func=tuple)
 # needed to make sure the iterator is replayable (because it's cached)
 
 # todo could use for dictify/listify
-
-
 @cache
-@tupler()
+@tuplify()
 def _compile_with_deps(deps: Deps, dir_: Path) -> Results:
     path = deps.path
 
@@ -368,7 +334,6 @@ def _compile_with_deps(deps: Deps, dir_: Path) -> Results:
     if len(remaining) > 0:
         raise RuntimeError(f'remaining files: {remaining}')
     dir_.rmdir()
-
 
 
 def org_meta(apath: Path) -> Post:
@@ -491,6 +456,7 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Results:
     ctx['type_special'] = special
     ctx['is_stable'] = True
 
+    log.debug('compiling %', deps.path.path)
     if isinstance(deps, OrgDeps):
         ctx['style_org'] = True
 
@@ -612,6 +578,7 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Results:
     yield post
 
 
+# todo what's up with this??
 def relativize_urls(path: Path, full: str) -> str:
     depth = len(path.parts)
     rel = '.' * depth
@@ -649,7 +616,6 @@ def _templates():
     return env
 
 
-
 FILTER = None
 
 @cache
@@ -684,10 +650,6 @@ def get_inputs() -> Tuple[Path]: # TODO use ...?
     return get_filtered(inputs)
 
 
-from more_itertools import make_decorator
-tuplify = make_decorator(wrapping_func=tuple)
-
-
 def blog_tags() -> Sequence[str]:
     @cache
     @tuplify()
@@ -716,11 +678,6 @@ def feeds(posts: Tuple[Post]) -> None:
     rss  = feed(posts, 'rss')
     (output / 'atom.xml').write_text(atom.atom_str(pretty=True).decode('utf8'))
     (output / 'rss.xml' ).write_text(rss .rss_str (pretty=True).decode('utf8'))
-
-
-from typing import NoReturn
-def throw() -> NoReturn:
-    raise AssertionError("shoudln't happen!")
 
 
 tz = pytz.utc # todo ugh this is what Hakyll assumed
