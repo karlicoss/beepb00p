@@ -99,6 +99,20 @@ class Post:
     feed: bool
     upid: Optional[str]=None # TODO FIXME
 
+    def check(self) -> None:
+        s = self
+        assert isinstance(s.title  , str)
+        assert isinstance(s.summary, (str, type(None)))
+        assert isinstance(s.date , (datetime, type(None)))
+        assert isinstance(s.draft   , bool)
+        assert isinstance(s.special , bool)
+        assert isinstance(s.has_math, bool)
+        for t in s.tags:
+            assert isinstance(t, Tag)
+        assert isinstance(s.url , str)
+        assert isinstance(s.feed, bool)
+        assert isinstance(s.upid, (str, type(None)))
+
     @property
     def date_human(self) -> Optional[str]:
         d = self.date
@@ -356,19 +370,16 @@ def _compile_with_deps(deps: Deps, dir_: Path) -> Results:
     dir_.rmdir()
 
 
-def org_meta(apath: Path) -> Post:
+def org_meta(apath: Path) -> Meta:
     # TODO extract get_meta method??
     o = orgparse.loads(apath.read_text())
     ttl_ = o.get_file_property('TITLE'); assert ttl_ is not None
     ttl: str = ttl_
     summ    = o.get_file_property('SUMMARY')
     upid    = o.get_file_property('UPID')
-    ftags   = o.get_file_property_list('FILETAGS') or []
+    tags    = o.get_file_property_list('FILETAGS') or []
     dates   = o.get_file_property('DATE')
-    draftp  = o.get_file_property('DRAFT')
-    draft  = False if draftp  is None else True
-
-    tags = tuple(Tag(x) for x in ftags)
+    draft   = False if (draftp := o.get_file_property('DRAFT')) is None else True
 
     date: Optional[datetime]
     if dates is not None:
@@ -376,20 +387,16 @@ def org_meta(apath: Path) -> Post:
         date = datetime.strptime(dates, '%Y-%m-%d %a')
     else:
         date = None
-
-    return Post(
+    d = dict(
         title=ttl,
         summary=summ,
         date=date,
-        body='',
         draft=draft,
-        special=False,
-        has_math=False,
         tags=tags,
-        url='/' + str(apath.with_suffix('.html').name), # TODO not sure...
-        feed=True,
+        # url='/' + str(apath.with_suffix('.html').name), # TODO not sure...
         upid=upid, # todo perhaps should always have upid?
     )
+    return d
 
 
 def _compile_post_aux(deps: Deps, dir_: Path) -> Results:
@@ -402,7 +409,6 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Results:
     suffix = path.suffix
 
     meta = metadata(apath)
-
     # TODO maybe instead, use symlinks?
     hpath = meta.get('html_path')
     if hpath is None:
@@ -410,97 +416,26 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Results:
     else:
         path = Path(hpath)
 
-    ctx: Dict[str, Any] = {}
     #
     # TODO where to extract URL from
-    ctx['url'] = '/' + str(path.with_suffix('.html'))
+    meta['url'] = '/' + str(path.with_suffix('.html'))
 
-    # TODO FIXME check_ids??
     pb: List[str] = meta.get('pingback', [])
-    # TODO meh
+    # TODO meh. just make it native dict?
     pingback = [{
         'title': x.split()[0],
         'url'  : x.split()[1],
     } for x in pb]
-
-    # TODO need to be raw??
-    ctx['pingback'] = pingback
-
-    # meh...
-    post_upid: Optional[str] = None
-
-    def set_issoid(upid: Optional[str]) -> None:
-        if upid is None:
-            return
-        nonlocal post_upid
-        if post_upid is not None:
-            assert post_upid != upid, (post_upid, upid)
-        post_upid = upid
-        ctx['upid'  ] = upid
-        ctx['issoid'] = f'isso_{upid}'
-
-    def set_summary(summ: Optional[str]) -> None:
-        if summ is None:
-            return
-        ctx['summary'] = summ
-
-    def set_tags(tags: Optional[Sequence[str]]) -> None:
-        if tags is None:
-            tags = []
-        ctx['tags'] = tuple(map(Tag, tags))
-
-    def set_title(title: Optional[str]) -> None:
-        if title is None:
-            return
-        ctx['title'] = title
-
-    date = None
-    def set_date(datish: Optional[Union[str, datetime]]) -> None:
-        if datish is None:
-            return
-
-        nonlocal date # meh
-        date = datetime.strptime(datish, '%B %d, %Y') if isinstance(datish, str) else datish
-        ctx['date'] = date
-
-    # TODO fucking yaml and implicit casts
-    check_ids = meta.get('check_ids')
-
-    set_title  (meta.get('title'))
-    set_issoid (meta.get('upid'))
-    set_summary(meta.get('summary'))
-    set_tags   (meta.get('tags'))
-    set_date   (meta.get('date'))
-
-    special = meta.get('special', False)
-    ctx['type_special'] = special
-    ctx['is_stable'] = True
+    meta['pingback'] = pingback
 
     log.debug('compiling %', deps.path.path)
     if isinstance(deps, OrgDeps):
         ometa = org_meta(apath)
-        # TODO after making generic metadata method, just ditch set_ things
-        set_title(ometa.title)
-        if ometa.summary is not None:
-            set_summary(ometa.summary)
+        meta = dict(**meta, **ometa) # will throw if repeating
+        draft = meta['draft']
+        check_ids = meta.get('check_ids', draft is False)
 
-        if ometa.upid is not None:
-            set_issoid(ometa.upid)
-
-        dt = ometa.date
-        if dt is not None:
-            set_date(dt)
-
-        tags = ometa.tags
-        if len(tags) > 0: # todo not sure..
-            set_tags([t.name for t in tags])
-
-        meta.update({'draft': True} if ometa.draft else {})
-        # TODO right.. I guess we want drafts to have default
-        if check_ids is None:
-            check_ids = ometa.draft is False
-
-        berrors = compile_org_body(
+        yield from compile_org_body(
             # TODO let it figure it out from deps??
             compile_script=deps.compile_org.path,
             path=deps.path.path,
@@ -508,16 +443,14 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Results:
             active_tags=deps.active_tags,
             check_ids=check_ids,
         )
-        yield from berrors
     elif isinstance(deps, IpynbDeps):
-        # TODO make a mode to export to python?
+        # todo make a mode to export to python?
         compile_ipynb_body(
             compile_script=deps.compile_ipynb.path,
             path=deps.path.path,
             dir_=dir_,
         )
         # todo maybe just assume all ipynb has math?
-        ctx['has_math']     = meta.get('has_math'    , False)
     elif isinstance(deps, MdDeps):
         compile_md_body(
             path=deps.path.path,
@@ -526,10 +459,50 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Results:
     else:
         raise RuntimeError(deps)
 
-    ctx['draft'] = meta.get('draft')
+    # todo maybe get them from Post dataclass?
+    defaults = {
+        'draft'    : False,
+        'special'  : False,
+        'has_math' : False,
+        'feed'     : True,
+        'is_stable': True,
+    }
+    meta = {**defaults, **meta}
+
+    # meh, this needs to be some sort of function converting Meta to Post??
+    if 'tags' in meta:
+        meta['tags'] = tuple(map(Tag, meta['tags']))
+
+    if 'date' in meta:
+        datish = meta['date']
+        meta['date'] = datetime.strptime(datish, '%B %d, %Y') if isinstance(datish, str) else datish
+
+    # TODO hmm. it might contain check_ids.. should I just include it in Post?
+    post = Post(**{f.name: None for f in dataclasses.fields(Post)})
+    # from pprint import pprint
+    # pprint(meta)
+    for k, v in meta.items():
+        if k in {
+                'keywords',
+                'pingback',
+                'check_ids',
+                'is_stable',
+        }:
+            continue
+        assert hasattr(post, k), k
+        setattr(post, k, v)
+    post.check()
+
+    ctx: Dict[str, Any] = {}
+    for f in dataclasses.fields(Post):
+        k = f.name
+        assert k not in ctx, (k, ctx)
+        ctx[k] = getattr(post, k)
+    del ctx['body']
+    ctx['in_graph'] = in_graph(post)
+    ctx['ext'] = deps.ext
 
     opath = dir_ / path
-
     if opath.parent != dir_:
         # ugh. need to move hierarchy down to preserve relative paths..
         outs_files = list(x for x in dir_.rglob('*') if not x.is_dir())
@@ -541,30 +514,13 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Results:
             f.rename(to)
             # TODO remove empty f.parent??
 
-    post = Post(
-        title  =ctx.get('title', 'ERROR: NO TITLE'),
-        summary=ctx.get('summary'),
-        date   =date,
-        tags   =ctx['tags'],
-        body   ='TODO',
-        draft  =ctx.get('draft') is not None,
-        url    =ctx['url'],
-        special=special,
-        has_math=ctx.get('has_math', False),
-        feed=True,
-        upid=post_upid, # TODO not sure if works for all??
-    )
-
     body_file = opath.parent / 'body'
     body = body_file.read_text()
     body_file.unlink()
 
     # strip private stuff
     body = ''.join(line for line in body.splitlines(keepends=True) if 'NOEXPORT' not in line)
-
-    ctx['in_graph'] = in_graph(post)
-    ctx['ext'] = deps.ext
-
+    #
     # TODO for org-mode, need to be able to stop here and emit whatever we compiled?
     post_t = template('post.html')
     full_t = template('default.html')

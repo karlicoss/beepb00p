@@ -1,3 +1,4 @@
+{% if upid -%}
 <script data-isso="https://beepb00p.xyz/comments/"
         data-isso-reply-to-self="true"
         src="https://beepb00p.xyz/comments/js/embed.min.js">
@@ -5,5 +6,5 @@
 
 <section
     id="isso-thread"
-    data-isso-id="{{ issoid }}"
-></section>
+    data-isso-id="isso_{{ upid }}"
+></section>{% endif -%}
