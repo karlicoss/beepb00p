@@ -121,10 +121,8 @@ def sanitize(path: Path) -> str:
     return pp
 
 
-def compile_org_body(*, compile_script: Path, path: Path, dir_: Path, active_tags: Sequence[str], check_ids: bool=False) -> List[Exception]:
-    errors: List[Exception] = []
+def compile_org_body(*, compile_script: Path, path: Path, dir_: Path, active_tags: Sequence[str], check_ids: bool=False) -> Iterable[Exception]:
     log.debug('compiling %s %s', compile_script, path)
-    # TODO each thread should prob. capture logs...
     log.debug('running %s %s', compile_script, dir_)
 
     # TODO not sure that compile-org should.
@@ -143,42 +141,21 @@ def compile_org_body(*, compile_script: Path, path: Path, dir_: Path, active_tag
     )
     out = res.stdout.decode('utf8')
     err = res.stderr.decode('utf8')
-    if res.returncode > 0:
-        log.error(err)
+    if len(err) > 0:
+        (log.error if res.returncode > 0 else log.debug)('%s: emacs output \n%s', path, indent(err))
 
+    if res.returncode > 0:
         if res.returncode == 1:
             # non-fatal error. carry on..
             # TODO add a strict mode? I guess we only want to allow
-            errors.append(RuntimeError(f'error compiling {path}'))
+            yield RuntimeError(f'error compiling {path}')
         else:
             res.check_returncode()
 
     (dir_ / 'body').write_text(out)
-
-
-    # TODO filter this in emacs/compile-org?
-    filtered = []
-    for line in err.splitlines():
-        if any(re.match(p, line) for p in [
-                "Created .* link",
-                r"Loading .*\.\.\.$",
-                "Can.t guess python.indent.offset",
-                "executing.*code block",
-                "Code block evaluation complete",
-                "Setting up indent",
-                "Indentation variables are",
-                "Indentation setup for shell",
-        ]):
-            continue
-        filtered.append(line)
-    if len(filtered) > 0:
-        err = '\n'.join(filtered)
-        log.debug('%s: emacs output \n%s', path, indent(err))
-
     # TODO how to clean stale stuff that's not needed in output dir?
     # TODO output determined externally?
     # TODO some inputs
-    return errors
 
 
 def indent(s: str, spaces: int=2) -> str:

@@ -3,7 +3,7 @@ import argparse
 import re
 import sys
 import tempfile
-from subprocess import check_call, check_output, run
+from subprocess import check_call, check_output, run, Popen, PIPE
 from pathlib import Path
 from itertools import chain
 import shutil
@@ -105,9 +105,8 @@ EXIT CODE:
         deps=deps,
     )
     logger = get_logger()
-    errs = list(ierrs)
     code = 0
-    for e in errs:
+    for e in ierrs:
         logger.exception(e)
         code = EXIT_WARNING
 
@@ -248,13 +247,13 @@ def process(
         return (output, errs)
 
 
-def emacs(*args, **kwargs) -> None:
+def emacs(*args, **kwargs) -> Popen:
     modules = [
         'org', # present for doom, but for spacemacs I've used a custom hack..
         'htmlize', 'dash', 's',
     ]
 
-    check_call([
+    return Popen([
         'emacs',
         '--kill',
         '--batch',
@@ -280,11 +279,31 @@ def org_to_html(*, tdir: Path, org_data: str, format: str='html') -> Tuple[str, 
     (setq compileorg/output-format         "{format}")
 )'''
 
-    emacs(
+    # TODO
+    p = emacs(
         str(inp_org),
         '--eval', compile_command,
         '--load', compile_org_el,
+        stderr=PIPE,
     )
+    with p:
+        perr = p.stderr
+        assert perr is not None
+        for line in perr:
+            l = line.decode('utf8')
+            if any(re.match(x, l) for x in [
+                    "Created .* link",
+                    r"Loading .*\.\.\.$",
+                    "Can.t guess python.indent.offset",
+                    "executing.*code block",
+                    "Code block evaluation complete",
+                    "Setting up indent",
+                    "Indentation variables are",
+                    "Indentation setup for shell",
+            ]):
+                continue
+            sys.stderr.write(l)
+    assert p.returncode == 0, p
 
     files = list(sorted(tdir.iterdir()))
     files.remove(inp_org)
