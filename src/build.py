@@ -164,17 +164,6 @@ def indent(s: str, spaces: int=2) -> str:
 
 Meta = Dict[str, Any]
 
-
-def pandoc_meta(path: Path) -> Meta:
-    # wow, that's quite horrible...
-    with TemporaryDirectory() as td:
-        t = Path(td) / 'meta.tpl'
-        t.write_text('$meta-json$')
-        res = check_output(['pandoc', '--template', t, path])
-        import json
-        return json.loads(res.decode('utf8'))
-
-
 # pip install ruamel.yaml -- temporary...
 # just use json later?
 def metadata(path: Path) -> Meta:
@@ -429,12 +418,7 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Results:
 
     meta = metadata(apath)
 
-    # TODO not sure which meta should win??
-    # TODO shit. need to add meta to dependencies?
-    if suffix == '.md':
-        pmeta = pandoc_meta(apath)
-        meta.update(**pmeta)
-
+    # TODO maybe instead, use symlinks?
     hpath = meta.get('html_path')
     if hpath is None:
         path = path.with_suffix('.html')
