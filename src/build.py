@@ -145,7 +145,7 @@ class MPath:
         return f'{{path={self.path}}}'
 
 
-def mpath(path: PathIsh):
+def mpath(path: PathIsh) -> MPath:
     # TODO ugh. if dataclass is frozen, we can't assign mtime in __init__???
     # https://docs.python.org/3/library/dataclasses.html#frozen-instances
     p = Path(path)
@@ -184,18 +184,14 @@ def compile_org_body(*, compile_script: Path, path: Path, dir_: Path, active_tag
             res.check_returncode()
 
     (dir_ / 'body').write_text(out)
-    # TODO how to clean stale stuff that's not needed in output dir?
-    # TODO output determined externally?
-    # TODO some inputs
 
 Meta = Dict[str, Any]
 
-# pip install ruamel.yaml -- temporary...
-# just use json later?
 def metadata(path: Path) -> Meta:
     meta = path.with_suffix(path.suffix + '.metadata')
     if not meta.exists():
         return {}
+    # todo just use json later?
     from ruamel.yaml import YAML # type: ignore
     yaml = YAML(typ='safe')
     res = yaml.load(meta)
@@ -216,9 +212,8 @@ def compile_md_body(*, path: Path, dir_: Path) -> None:
 
 
 def compile_ipynb_body(*, compile_script: Path, path: Path, dir_: Path) -> None:
-    meta = metadata(path) # TOOD instead, pass meta to all methods??
-
-    # TODO make this an attribute of the notebook somehow? e.g. tag
+    meta = metadata(path) # todo instead, take in Post?
+    # todo make this an attribute of the notebook somehow? e.g. tag
     allow_errors = meta.get('allow_errors', False)
 
     # meh
@@ -377,9 +372,11 @@ def org_meta(apath: Path) -> Meta:
     ttl: str = ttl_
     summ    = o.get_file_property('SUMMARY')
     upid    = o.get_file_property('UPID')
-    tags    = o.get_file_property_list('FILETAGS') or []
+    tags    = o.get_file_property_list('FILETAGS')
+    if len(tags) == 0:
+        tags = None
     dates   = o.get_file_property('DATE')
-    draft   = False if (draftp := o.get_file_property('DRAFT')) is None else True
+    draft   = None if (draftp := o.get_file_property('DRAFT')) is None else True
 
     date: Optional[datetime]
     if dates is not None:
@@ -416,27 +413,63 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Results:
     else:
         path = Path(hpath)
 
-    #
     # TODO where to extract URL from
     meta['url'] = '/' + str(path.with_suffix('.html'))
 
     pb: List[str] = meta.get('pingback', [])
-    # TODO meh. just make it native dict?
+    # todo meh. just make it native dict?
     pingback = [{
         'title': x.split()[0],
         'url'  : x.split()[1],
     } for x in pb]
     meta['pingback'] = pingback
 
-    log.debug('compiling %', deps.path.path)
     if isinstance(deps, OrgDeps):
-        ometa = org_meta(apath)
+        ometa = {k: v for k, v in org_meta(apath).items() if v is not None}
         meta = dict(**meta, **ometa) # will throw if repeating
-        draft = meta['draft']
-        check_ids = meta.get('check_ids', draft is False)
 
+    meta['draft'] = md if isinstance((md := meta.get('draft', False)), bool) else md is not None
+
+    # meh, this needs to be some sort of function converting Meta to Post??
+    if 'tags' in meta:
+        meta['tags'] = tuple(map(Tag, meta['tags']))
+
+    if 'date' in meta:
+        meta['date'] = datetime.strptime(datish, '%B %d, %Y') if isinstance((datish := meta['date']), str) else datish
+
+    # todo maybe get them from Post dataclass?
+    defaults = {
+        'draft'    : False,
+        'special'  : False,
+        'has_math' : False,
+        'feed'     : True,
+        'is_stable': True,
+        'tags'     : (),
+    }
+    meta = {**defaults, **meta}
+
+    post = Post(**{f.name: None for f in dataclasses.fields(Post)})
+    for k, v in meta.items():
+        if k in {
+                'keywords',
+                'pingback',
+                'check_ids',
+                'is_stable',
+                'allow_errors',
+                'html_path',
+        }:
+            continue
+        assert hasattr(post, k), k
+        setattr(post, k, v)
+    post.check()
+    meta['ext'] = deps.ext
+    meta['in_graph'] = in_graph(post)
+
+    ltag = post.upid or f'<unnamed ({path.name})>'
+    log.debug('[%s]: compiling %s', ltag, deps.path.path)
+    if isinstance(deps, OrgDeps):
+        check_ids = meta.get('check_ids', post.draft is False)
         yield from compile_org_body(
-            # TODO let it figure it out from deps??
             compile_script=deps.compile_org.path,
             path=deps.path.path,
             dir_=dir_,
@@ -450,7 +483,7 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Results:
             path=deps.path.path,
             dir_=dir_,
         )
-        # todo maybe just assume all ipynb has math?
+        # todo assume all ipynb has math?
     elif isinstance(deps, MdDeps):
         compile_md_body(
             path=deps.path.path,
@@ -458,49 +491,6 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Results:
         )
     else:
         raise RuntimeError(deps)
-
-    # todo maybe get them from Post dataclass?
-    defaults = {
-        'draft'    : False,
-        'special'  : False,
-        'has_math' : False,
-        'feed'     : True,
-        'is_stable': True,
-    }
-    meta = {**defaults, **meta}
-
-    # meh, this needs to be some sort of function converting Meta to Post??
-    if 'tags' in meta:
-        meta['tags'] = tuple(map(Tag, meta['tags']))
-
-    if 'date' in meta:
-        datish = meta['date']
-        meta['date'] = datetime.strptime(datish, '%B %d, %Y') if isinstance(datish, str) else datish
-
-    # TODO hmm. it might contain check_ids.. should I just include it in Post?
-    post = Post(**{f.name: None for f in dataclasses.fields(Post)})
-    # from pprint import pprint
-    # pprint(meta)
-    for k, v in meta.items():
-        if k in {
-                'keywords',
-                'pingback',
-                'check_ids',
-                'is_stable',
-        }:
-            continue
-        assert hasattr(post, k), k
-        setattr(post, k, v)
-    post.check()
-
-    ctx: Dict[str, Any] = {}
-    for f in dataclasses.fields(Post):
-        k = f.name
-        assert k not in ctx, (k, ctx)
-        ctx[k] = getattr(post, k)
-    del ctx['body']
-    ctx['in_graph'] = in_graph(post)
-    ctx['ext'] = deps.ext
 
     opath = dir_ / path
     if opath.parent != dir_:
@@ -526,28 +516,21 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Results:
     full_t = template('default.html')
     pbody = post_t.render(
         body=body,
-        **ctx,
+        **meta,
     )
     full = full_t.render(
         body=pbody,
-        **ctx,
+        **meta,
     )
     full = relativize_urls(path=path, html=full)
     post = dataclasses.replace(post, body=full)
-
-    #
-    if 'name="keywords"' not in full:
-        loc = '<meta content="English" name="language"/>'
-        assert loc in full, full
-        full = full.replace(loc, loc + '\n' + '<meta name="keywords" content>')
 
     opath.parent.mkdir(exist_ok=True)
     # TODO might need to move everything into the same dir??
     opath.write_text(full)
 
-    ltag = post.upid or f'<unnamed ({path.name})>'
     outfiles = list(sorted(str(p.relative_to(dir_)) for p in dir_.rglob('*')))
-    log.info('[%s]: %s', ltag, ' '.join(outfiles))
+    log.info('[%s]: outputs: %s', ltag, ' '.join(outfiles))
     yield post
 
 # TODO should use Path with mtime etc
@@ -564,7 +547,6 @@ def _template_aux(name: str, key: Tuple[MPath, ...]):
 
 def template(name: str) -> Template:
     return _template_aux(name=name, key=tuple(map(mpath, sorted(templates.glob('*.html')))))
-
 
 def _templates():
     from jinja2 import FileSystemLoader, Environment # type: ignore
@@ -638,7 +620,7 @@ def feeds(posts: Tuple[Post]) -> None:
 
 tz = pytz.utc # todo ugh this is what Hakyll assumed
 def feed(posts: Tuple[Post], kind: str) -> FeedGenerator:
-    log.debug('generading %s feed', kind)
+    log.debug('generating %s feed', kind)
     fg = FeedGenerator()
     fg.title('beepb00p')
     fg.author(name='karlicoss', email='karlicoss@gmail.com')
