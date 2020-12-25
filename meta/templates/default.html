@@ -8,9 +8,9 @@
 
     <title>{{ title }} | beepb00p</title>
     <link rel="canonical" href="https://beepb00p.xyz{{ url }}" />
-    {% if tags %}
+    {% if tags -%}
     <meta name="keywords"  content="{% for tag in tags %}{{ tag.name }}{{ " " if not loop.last }}{% endfor %}">
-    {% endif %}
+    {% endif -%}
     <!-- TODO concat with keywords tags; also need to make comma separated? -->
 
     <!-- can test it with https://telegram.me/webpagebot -->
@@ -42,12 +42,27 @@
     <link rel="stylesheet" href="/assets/css/posts-list.css" />
     <link rel="stylesheet" href="/assets/css/links.css" />
 
-    {% if has_math %}
-    {% include "mathjax.html" %}
-    {% endif %}
+    {% if ext == ".org" -%}
+    <!-- <link rel="stylesheet" href="/assets/css/org.css" /> -->
+    {% if comment -%}
+    TODO hmm only add htmlize on demand?
+    TODO shit, htmlize messes with a and body tags...
+    {% endif -%}
+    <link rel="stylesheet" href="/assets/css/htmlize.css" />
+    <link rel="stylesheet" href="/assets/css/org-default.css" />
+    <link rel="stylesheet" href="/assets/css/org-extra.css" />
+    {% endif -%}
+    {% if ext == ".ipynb" -%}
+    <link rel="stylesheet" href="/assets/css/ipynb.css" />
+    <link rel="stylesheet" href="/assets/css/ipynb-syntax.css" />
+    {% endif -%}
+
+    {% if has_math -%}
+    {% include "mathjax.html" -%}
+    {% endif -%}
 
     <script>
-    {% include "default.js" %}
+    {% include "default.js" -%}
     </script>
 </head>
 
@@ -92,7 +107,7 @@
         {%- if is_stable %}
         {%- else %}
         Unstable version
-        {%- endif %}
+        {%- endif -%}
     </footer>
 </body>
 </html>

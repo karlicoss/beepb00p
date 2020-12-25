@@ -57,6 +57,23 @@ def sanitize(path: Path) -> str:
     pp = str(path)
     pp = pp.replace('/', '_')
     return pp
+
+# this is so site works on a subpath (e.g. domain.com/blog )
+# not sure about that... ideally this would be applied at the very end, against all outputs..
+def relativize_urls(*, path: Path, html: str) -> str:
+    assert not path.is_absolute(), path
+    depth = len(path.parts)
+    rel = '.' * depth
+    from bs4 import BeautifulSoup as bs # type: ignore
+    soup = bs(html, 'html5lib')  # TODO lxml parser?
+    # a bit meh..
+    for a in chain(soup.findAll('a'), soup.findAll('link')):
+        href = a.get('href', None)
+        if href is None:
+            continue
+        if href.startswith('/'):
+            a['href'] = rel + href
+    return str(soup)
 ###
 
 @dataclass(unsafe_hash=True)
@@ -242,10 +259,12 @@ def compile_post(path: MPath) -> Results:
 
 @dataclass(init=False, frozen=True)
 class BaseDeps:
+    ext: str = dataclasses.field(init=False)
     path: MPath
 
 @dataclass(frozen=True)
 class OrgDeps(BaseDeps):
+    ext = '.org'
     compile_org: MPath
     misc: Tuple[MPath, ...]
     active_tags: Tuple[str, ...]
@@ -265,6 +284,7 @@ class OrgDeps(BaseDeps):
 
 @dataclass(frozen=True)
 class MdDeps(BaseDeps):
+    ext = '.md'
     # todo pandoc dependency??
     @classmethod
     def make(cls, path: MPath) -> 'MdDeps':
@@ -274,21 +294,21 @@ class MdDeps(BaseDeps):
 
 @dataclass(frozen=True)
 class IpynbDeps(BaseDeps):
+    ext = '.ipynb'
     compile_ipynb: MPath
 
     @classmethod
     def make(cls, path: MPath) -> 'IpynbDeps':
         return IpynbDeps(
-            path = path,
-            compile_ipynb = mpath(ROOT / 'src/compile-ipynb'),
+            path=path,
+            compile_ipynb=mpath(ROOT / 'src/compile-ipynb'),
         )
 Deps = Union[OrgDeps, MdDeps, IpynbDeps]
 
 def _compile_post(mpath: MPath) -> Results:
     deps: Deps = {
-        '.org'  : OrgDeps  .make,
-        '.ipynb': IpynbDeps.make,
-        '.md'   : MdDeps   .make,
+        C.ext: C.make
+        for C in (OrgDeps, IpynbDeps, MdDeps)
     }[mpath.path.suffix](mpath)
     with compile_in_dir(mpath.path) as dir_:
         yield from _compile_with_deps(deps, dir_=dir_)
@@ -458,8 +478,6 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Results:
 
     log.debug('compiling %', deps.path.path)
     if isinstance(deps, OrgDeps):
-        ctx['style_org'] = True
-
         ometa = org_meta(apath)
         # TODO after making generic metadata method, just ditch set_ things
         set_title(ometa.title)
@@ -492,17 +510,15 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Results:
         )
         yield from berrors
     elif isinstance(deps, IpynbDeps):
-        ctx['style_ipynb'] = True
         # TODO make a mode to export to python?
         compile_ipynb_body(
             compile_script=deps.compile_ipynb.path,
             path=deps.path.path,
             dir_=dir_,
         )
-
+        # todo maybe just assume all ipynb has math?
         ctx['has_math']     = meta.get('has_math'    , False)
     elif isinstance(deps, MdDeps):
-        ctx['style_md'] = True
         compile_md_body(
             path=deps.path.path,
             dir_=dir_,
@@ -547,6 +563,7 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Results:
     body = ''.join(line for line in body.splitlines(keepends=True) if 'NOEXPORT' not in line)
 
     ctx['in_graph'] = in_graph(post)
+    ctx['ext'] = deps.ext
 
     # TODO for org-mode, need to be able to stop here and emit whatever we compiled?
     post_t = template('post.html')
@@ -559,7 +576,7 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Results:
         body=pbody,
         **ctx,
     )
-    full = relativize_urls(path=path, full=full)
+    full = relativize_urls(path=path, html=full)
     post = dataclasses.replace(post, body=full)
 
     #
@@ -576,23 +593,6 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Results:
     outfiles = list(sorted(str(p.relative_to(dir_)) for p in dir_.rglob('*')))
     log.info('[%s]: %s', ltag, ' '.join(outfiles))
     yield post
-
-
-# todo what's up with this??
-def relativize_urls(path: Path, full: str) -> str:
-    depth = len(path.parts)
-    rel = '.' * depth
-    from bs4 import BeautifulSoup as bs # type: ignore
-    soup = bs(full, 'html5lib')  # TODO lxml parser?
-    from itertools import chain
-    # a bit meh..
-    for a in chain(soup.findAll('a'), soup.findAll('link')):
-        href = a.get('href', None)
-        if href is None:
-            continue
-        if href.startswith('/'):
-            a['href'] = rel + href
-    return str(soup)
 
 # TODO should use Path with mtime etc
 
@@ -737,7 +737,7 @@ def posts_list(posts: Tuple[Post], name: str, title: str) -> None:
     )
 
     path = Path(name)
-    full = relativize_urls(path, full)
+    full = relativize_urls(path=path, html=full)
 
     (output / path).write_text(full)
 

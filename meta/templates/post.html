@@ -1,20 +1,3 @@
-{% if style_ipynb %}
-<link rel="stylesheet" href="/assets/css/ipynb.css" />
-<link rel="stylesheet" href="/assets/css/ipynb-syntax.css" />
-{% endif %}
-{% if style_org %}
-<!-- <link rel="stylesheet" href="/assets/css/org.css" /> -->
-{% if comment %}
-TODO hmm only add htmlize on demand?
-TODO shit, htmlize messes with a and body tags...
-{% endif %}
-<link rel="stylesheet" href="/assets/css/htmlize.css" />
-<link rel="stylesheet" href="/assets/css/org-default.css" />
-<link rel="stylesheet" href="/assets/css/org-extra.css" />
-{% endif %}
-{% if style_md %}
-{% endif %}
-
 <article>
     {% if draft %}
     <div>THIS IS A DRAFT! It will appear on the main page once finished!</div>
@@ -71,5 +54,4 @@ TODO shit, htmlize messes with a and body tags...
     <section id="post-comments">
     {% include "isso.html" %}
     </section>
-
 </article>
