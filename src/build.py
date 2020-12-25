@@ -849,16 +849,24 @@ def compile_all(max_workers: Optional[int]=None) -> Iterable[Exception]:
         shutil.copy(from_, top)
 
     # TODO fuck. doesn't follow symlinks...
+    # TODO just keep them in the target repository instead.. fuck this copying
+    assets = Path('assets')
     copy(META / 'meta/robots.txt'    , 'robots.txt')
-    copy(META / 'meta/robot-face.png', 'robot-face.png')
+    copy(META / 'meta/robot-face.png', assets / 'favicon.png')
     for f in (META / 'css').rglob('*.css'):
-        copy(f, f.relative_to(META))
+        copy(f, assets / f.relative_to(META))
     for f in (META / 'images').rglob('*.svg'):
-        copy(f, f.relative_to(META))
+        copy(f, assets / f.relative_to(META))
     # eh. apparently glob(recursive=True) always follows symlinks??
     # TODO make these proper dependensies? dunno
-    for p in chain.from_iterable(glob(f'{input}/**/*.{x}', recursive=True) for x in ('jpg', 'svg', 'png')):
+    for p in chain.from_iterable(
+            glob(f'{input}/**/*.{x}', recursive=True)
+            for x in ('jpg', 'svg', 'png')
+    ):
         f = Path(p)
+        if 'ext' in f.parts:
+            # todo ugh... hack, need to remove..
+            continue
         copy(f, f.relative_to(input))
 
     posts = []

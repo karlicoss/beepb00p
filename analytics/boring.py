@@ -14,7 +14,7 @@ _BORING = {
 
 
 WHERE_NOT_BORING = 'page NOT IN (' + ', '.join(f'"{x}"' for x in _BORING) + ')' + '''
-AND page NOT LIKE '/css/%'
+AND page NOT LIKE '%/css/%'
 AND page NOT LIKE '%.css'
 AND page NOT LIKE '%.js'
 AND page NOT LIKE '/comments/%'

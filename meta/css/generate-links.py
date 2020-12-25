@@ -50,8 +50,8 @@ _UNVISITED_ {
 
     margin-left: 0.1em;
 
-    -webkit-mask-image: url('../images/links/ICON.svg');
-            mask-image: url('../images/links/ICON.svg');
+    -webkit-mask-image: url('/assets/images/links/ICON.svg');
+            mask-image: url('/assets/images/links/ICON.svg');
 
     background-color: var(--link-color);
 }
