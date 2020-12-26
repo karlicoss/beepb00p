@@ -40,6 +40,10 @@ a:link {
 }
 
 
+#settings {
+  z-index: -1;
+}
+
 #topnav {
   /* just to separate from the content */
   border-bottom: 0.1rem solid;
