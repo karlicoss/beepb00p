@@ -675,24 +675,39 @@ def feed(posts: Tuple[Post], kind: str) -> FeedGenerator:
 @cache
 def posts_list(posts: Tuple[Post], name: str, title: str) -> None:
     log.debug('compiling %s', name)
-
-    it = template(name)
-
-    pbody = it.render(posts=posts)
-
-    ctx: Dict[str, Any] = {}
-    ctx['is_stable'] = True
-    ctx['title'] = title
-    ctx['url'] = f'/{name}'
-
-    full_t = template('default.html')
-    full = full_t.render(
-        body=pbody,
-        **ctx,
-    )
-
-    path = Path(name)
-    full = relativize_urls(path=path, html=full)
+    if FORMAT == 'html':
+        name = name + '.html'
+        ctx: Dict[str, Any] = {}
+        ctx['is_stable'] = True
+        ctx['title'] = title
+        ctx['url'] = f'/{name}'
+        it = template(name)
+        pbody = it.render(posts=posts)
+        full_t = template('default.html')
+        full = full_t.render(
+            body=pbody,
+            **ctx,
+        )
+        path = Path(name)
+        full = relativize_urls(path=path, html=full)
+    elif FORMAT == 'raw':
+        path = Path(name).with_suffix('.org')
+        lines = []
+        # TODO also link to blog?
+        maxwidth = 80
+        for p in posts:
+            pp = Path(p.url[1:]).with_suffix('.org') # TODO ugh. need to keep orig path in the meta??
+            d = p.date; assert d is not None
+            tags = p.tags
+            tagss = '' if len(tags) == 0 else ('   :' + ':'.join(t.name for t in tags) + ':')
+            link = f'[[file:{pp}][{p.title}]]' + ' ' * max(0, maxwidth - len(p.title))
+            lines.append(f'* [{d.strftime("%Y-%m-%d %a")}] {link}{tagss}')
+            summary = p.summary
+            if len(summary) > 0:
+                lines.append('  ' + summary)
+        full = '\n'.join(lines)
+    else:
+        throw()
 
     (output / path).write_text(full)
 
@@ -760,13 +775,12 @@ def compile_all(max_workers: Optional[int]=None) -> Iterable[Exception]:
 
     for_index  = tuple(p for p in posts if not p.draft and not p.special)
     for_drafts = tuple(p for p in posts if p.draft)
-    posts_list(for_index , 'index.html' , 'Home')
-    # TODO sort by date???
-    posts_list(for_drafts, 'drafts.html', 'Drafts')
+    posts_list(for_index , 'index' , 'Home')
+    posts_list(for_drafts, 'drafts', 'Drafts')
 
-    for_feed = tuple((p for p in for_index if p.feed))[:9] # TODO FIXME add full feed?
-    # TODO eh? not sure if necessary..
-    feeds(for_feed)
+    if FORMAT == 'html':
+        for_feed = tuple((p for p in for_index if p.feed))[:9] # TODO FIXME add full feed?
+        feeds(for_feed)
 
 
 def clean() -> None:
