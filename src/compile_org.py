@@ -369,6 +369,7 @@ def post_process_html(html: str, *, check_ids: bool, active_tags: Sequence[str])
     # to
     # <h? id=someid><a href='#someid'></a>...</h?>
     # TODO title?
+    # TODO need to check code blocks? they are using <pre> e.g. in mypy error handling
     existing = set()
     for lvl in [2, 3, 4, 5]: # todo meh
         htag = f'h{lvl}'
@@ -448,14 +449,14 @@ def post_process_html(html: str, *, check_ids: bool, active_tags: Sequence[str])
     ###
 
 
-    ### remove id="outline-container-*
+    ### remove id="outline-container-* and id="text-*
     ### these are simply useless and just clutter the HTML and diffs
     ### <hN> tags already have ids
     for div in soup.find_all('div'):
         id_ = div.get('id')
         if id_ is None:
             continue
-        if re.match('(outline-container-|text-org00)', id_):
+        if re.match('(outline-container-|text-)', id_):
             del div.attrs['id']
     ###
     # TODO to be fair, paragraph ids make sense, but if they are unstable, they do more harm
@@ -570,6 +571,8 @@ def test_org_removes_useless_ids(tmp_path: Path) -> None:
     assert not re.search(r'id="outline-container-', html)
     assert not re.search(r'id="text-org00', html)
 
+    assert 'id="spacing"' in html
+    assert 'id="text-spacing"' not in html
 
 def test_org_tag_handling(tmp_path: Path) -> None:
     src = get_test_src()
