@@ -24,7 +24,6 @@
     grid-column-start: 1;
     grid-column-end: 2;
     grid-row-start: span 2;
-
 }
 
 .posts-list .post a.post-link {
@@ -33,7 +32,9 @@
 
 .posts-list .post .summary {
     padding-left: 0.5em;
+
     font-size: 0.9em;
+    color: #555;
 }
 
 .posts-list .post time {
@@ -44,9 +45,9 @@
 
     text-align: right;
 
+    white-space: nowrap; /* prevent breakin date up */
     font-size: 0.8em;
-
-    white-space: nowrap;
+    color: #555;
 }
 
 
