@@ -358,15 +358,25 @@ def post_process_html(html: str, *, check_ids: bool, active_tags: Sequence[str])
 
     TOC = 'table-of-contents'
 
+    #### remove id=NONE (doesn't seem possible to suppress in org-mode, and for some outlines it's better not to have ID than to have an unstable one)
+    for n in soup.find_all(id='NONE'):
+        del n.attrs['id']
+    ####
+
     #### Add paragraph anchors to the headings
     # convert all
     # <h? id=someid>...</h?>
     # to
     # <h? id=someid><a href='#someid'></a>...</h?>
     # TODO title?
-    for lvl in [2, 3]:
+    existing = set()
+    for lvl in [2, 3, 4, 5]: # todo meh
         htag = f'h{lvl}'
         for hh in soup.find_all(htag):
+            hid = hh.get('id')
+            if hid is None:
+                continue
+
             parent = hh.parent
 
             if parent.name != 'div':
@@ -378,13 +388,17 @@ def post_process_html(html: str, *, check_ids: bool, active_tags: Sequence[str])
             pcls = parent.attrs['class']
             if f'outline-{lvl}' not in pcls:
                 continue
-
-            hid = hh.attrs['id']
+            # TODO remote text- ids, they are pointless
 
             if check_ids:
                 DEFAULT_ORG_ID = r'org[\da-f]{7}'
                 if re.fullmatch(DEFAULT_ORG_ID, hid):
                     errors.append(RuntimeError(f"Please define an ID for {hh}"))
+
+                # TODO this should be checked externally
+                if hid in existing:
+                    errors.append(RuntimeError(f'diplicate ID {hid}'))
+                existing.add(hid)
 
             newa = soup.new_tag('a', attrs={
                 'href' : '#' + hid,
