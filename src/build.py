@@ -14,7 +14,7 @@ from datetime import datetime
 import shutil
 import sys
 from tempfile import TemporaryDirectory
-from typing import cast, Dict, Any, List, Optional, Union, Tuple, Iterable, Iterator, Sequence
+from typing import cast, Dict, Any, List, Optional, Union, Tuple, Iterable, Iterator, Sequence, Literal
 import dataclasses
 from dataclasses import dataclass
 
@@ -23,14 +23,20 @@ import pytz # type: ignore
 import orgparse
 
 
+Format = Literal['html', 'raw'] # todo 'plain'?
+
+
+### global vars, set in main
+input  : Path = cast(Path, None)
+output : Path = cast(Path, None)
+TMP_DIR: Path = cast(Path, None)
+FILTER: Optional[str] = None
+FORMAT: Format = 'html'
+###
+
 ROOT  = Path(__file__).absolute().resolve().parent.parent
 META  = ROOT / 'meta'
 
-input : Path = cast(Path, None) # set in main
-output: Path = cast(Path, None) # set in main
-
-# global temporary directory
-TMP_DIR: Path = cast(Path, None)
 ###
 # use these dirs, otherwise it craps into notebook output
 os.environ['MPLCONFIGDIR'] = '/tmp/beepb00p/matplotlib'
@@ -157,7 +163,8 @@ def mpath(path: PathIsh) -> MPath:
 # TODO use wraps??
 cache = lambda f: lru_cache(maxsize=None)(f)
 
-def compile_org_body(*, compile_script: Path, path: Path, dir_: Path, active_tags: Sequence[str], check_ids: bool=False) -> Iterable[Exception]:
+
+def compile_org_body(*, compile_script: Path, path: Path, fmt: Format, dir_: Path, active_tags: Sequence[str], check_ids: bool=False) -> Iterable[Exception]:
     res = run(
         [
             compile_script,
@@ -165,7 +172,7 @@ def compile_org_body(*, compile_script: Path, path: Path, dir_: Path, active_tag
             '--input', path,
             '--output-dir', dir_,
             '--active-tags', ','.join(active_tags),
-            # '--org',  # TODO
+            {'html': '--html', 'raw': '--org'}[fmt],
         ],
         stdout=PIPE,
         stderr=PIPE,
@@ -353,8 +360,8 @@ def _compile_with_deps(deps: Deps, dir_: Path) -> Results:
     yield from _compile_post_aux(deps, dir_=dir_)
     log.info('compiled  %s', path)
 
-    _move(dir_, 'html')
-    _move(dir_, 'png')
+    for ext in ('html', 'org', 'png'):
+        _move(dir_, ext) # meh
 
     for root, dirs, files in os.walk(dir_, topdown=False):
         # remove all empty dirs. meh.
@@ -394,30 +401,21 @@ def org_meta(apath: Path) -> Meta:
         date=date,
         draft=draft,
         tags=tags,
-        # url='/' + str(apath.with_suffix('.html').name), # TODO not sure...
         upid=upid, # todo perhaps should always have upid?
     )
     return d
 
-def make_meta(deps: Deps) -> Tuple[Path, Meta, Post]:
+def make_meta(deps: Deps) -> Tuple[Meta, Post]:
     path = deps.path.path
     if path.is_absolute():
         path = path.relative_to(input) # meh
     apath = input / path
     # TODO not sure which path should really be used..
 
-    suffix = path.suffix
-
     meta = metadata(apath)
-    # TODO maybe instead, use symlinks?
-    hpath = meta.get('html_path')
-    if hpath is None:
-        path = path.with_suffix('.html')
-    else:
-        path = Path(hpath)
-
-    # TODO where to extract URL from
-    meta['url'] = '/' + str(path.with_suffix('.html'))
+    # todo maybe instead, use symlinks?
+    opath = path if (hpath := meta.get('html_path')) is None else Path(hpath)
+    meta['url'] = '/' + str(opath.with_suffix('.html'))
 
     pb: List[str] = meta.get('pingback', [])
     # todo meh. just make it native dict?
@@ -468,18 +466,19 @@ def make_meta(deps: Deps) -> Tuple[Path, Meta, Post]:
     post.check()
     meta['ext'] = deps.ext
     meta['in_graph'] = in_graph(post)
-    return path, meta, post
+    return meta, post
 
 def _compile_post_aux(deps: Deps, dir_: Path) -> Results:
-    path, meta, post = make_meta(deps)
-
-    ltag = post.upid or f'<unnamed ({path.name})>'
-    log.debug('[%s]: compiling %s', ltag, deps.path.path)
+    meta, post = make_meta(deps)
+    ipath = deps.path.path # absolute?
+    ltag = post.upid or f'<unnamed ({ipath.name})>'
+    log.debug('[%s]: compiling %s', ltag, ipath)
     if isinstance(deps, OrgDeps):
         check_ids = meta.get('check_ids', post.draft is False)
         yield from compile_org_body(
             compile_script=deps.compile_org.path,
-            path=deps.path.path,
+            path=ipath,
+            fmt=FORMAT,
             dir_=dir_,
             active_tags=deps.active_tags,
             check_ids=check_ids,
@@ -488,20 +487,27 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Results:
         # todo make a mode to export to python?
         compile_ipynb_body(
             compile_script=deps.compile_ipynb.path,
-            path=deps.path.path,
+            path=ipath,
             dir_=dir_,
         )
         # todo assume all ipynb has math?
     elif isinstance(deps, MdDeps):
         compile_md_body(
-            path=deps.path.path,
+            path=ipath,
             dir_=dir_,
         )
     else:
         raise RuntimeError(deps)
 
+    # post.url??
+    url_ = post.url
+    assert url_[0] == '/', url_
+    path = Path(url_[1:])
+    out_ext = {'html': '.html', 'raw': ipath.suffix}[FORMAT]
+    path = path.with_suffix(out_ext)
     opath = dir_ / path
-    if opath.parent != dir_:
+    # todo can I simplify this??
+    if ipath.parent != input:
         # ugh. need to move hierarchy down to preserve relative paths..
         outs_files = list(x for x in dir_.rglob('*') if not x.is_dir())
         for f in outs_files:
@@ -517,20 +523,25 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Results:
     body_file.unlink()
 
     # strip private stuff
+    # todo should strip away from the input? or both (since could be included?)
     body = ''.join(line for line in body.splitlines(keepends=True) if 'NOEXPORT' not in line)
-    #
+
     # TODO for org-mode, need to be able to stop here and emit whatever we compiled?
-    post_t = template('post.html')
-    full_t = template('default.html')
-    pbody = post_t.render(
-        body=body,
-        **meta,
-    )
-    full = full_t.render(
-        body=pbody,
-        **meta,
-    )
-    full = relativize_urls(path=path, html=full)
+    if FORMAT == 'html':
+        post_t = template('post.html')
+        full_t = template('default.html')
+        pbody = post_t.render(
+            body=body,
+            **meta,
+        )
+        full = full_t.render(
+            body=pbody,
+            **meta,
+        )
+        full = relativize_urls(path=path, html=full)
+    else:
+        full = body
+
     post = dataclasses.replace(post, body=full)
 
     opath.parent.mkdir(exist_ok=True)
@@ -562,10 +573,8 @@ def _templates():
     return env
 
 
-FILTER = None
-
 @cache
-def get_filtered(inputs: Tuple[Path]) -> Tuple[Path]:
+def get_filtered(inputs: Tuple[Path]) -> Tuple[Path, ...]:
     if FILTER is None:
         return inputs
    
@@ -792,6 +801,7 @@ def main() -> None:
     p.add_argument('--watch' , action='store_true')
     p.add_argument('--input' , type=Path, default=ROOT / 'input' , required=False)
     p.add_argument('--output', type=Path, default=ROOT / 'output', required=False)
+    p.add_argument('--format', type=str , default='html'         , required=False)
     args = p.parse_args()
 
     global input, output
@@ -806,8 +816,8 @@ def main() -> None:
 
     watch = args.watch or args.serve
 
-    global FILTER
-    FILTER = args.filter
+    global FILTER; FILTER = args.filter
+    global FORMAT; FORMAT = args.format
 
     clean()
     global TMP_DIR

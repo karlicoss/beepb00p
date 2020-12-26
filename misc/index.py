@@ -21,7 +21,7 @@ BASE_URL = 'https://beepb00p.xyz'
 ##
 
 METAS = [
-    build.make_meta(build._deps(build.mpath(build.input / path)))[2] for path in INPUTS
+    build.make_meta(build._deps(build.mpath(build.input / path)))[1] for path in INPUTS
 ]
 EXISTING = {
     (post.upid if post.upid is not None else throw()): post
