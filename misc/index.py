@@ -340,6 +340,9 @@ def node_css(node: Node) -> str:
 g.{cls}:target polygon,
 g.{cls}:target ~ .{cls}.edge path,
 g.{cls}:target ~ .{cls}.edge polygon {{stroke: red; stroke-width: 2px;}}
+g.{cls}:hover  polygon,
+g.{cls}:hover  ~ .{cls}.edge path,
+g.{cls}:hover  ~ .{cls}.edge polygon {{stroke: red; stroke-width: 2px;}}
 '''
 
 
