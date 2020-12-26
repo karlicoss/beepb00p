@@ -88,7 +88,7 @@ class Tag:
 @dataclass(unsafe_hash=True)
 class Post:
     title: str
-    summary: Optional[str]
+    summary: str
     date: Optional[datetime]
     body: str
     draft: bool
@@ -102,7 +102,7 @@ class Post:
     def check(self) -> None:
         s = self
         assert isinstance(s.title  , str)
-        assert isinstance(s.summary, (str, type(None)))
+        assert isinstance(s.summary, str)
         assert isinstance(s.date , (datetime, type(None)))
         assert isinstance(s.draft   , bool)
         assert isinstance(s.special , bool)
@@ -314,11 +314,15 @@ class IpynbDeps(BaseDeps):
         )
 Deps = Union[OrgDeps, MdDeps, IpynbDeps]
 
-def _compile_post(mpath: MPath) -> Results:
+def _deps(mpath: MPath) -> Deps:
     deps: Deps = {
-        C.ext: C.make
+        C.ext: C.make # type: ignore[attr-defined]
         for C in (OrgDeps, IpynbDeps, MdDeps)
     }[mpath.path.suffix](mpath)
+    return deps
+
+def _compile_post(mpath: MPath) -> Results:
+    deps = _deps(mpath)
     with compile_in_dir(mpath.path) as dir_:
         yield from _compile_with_deps(deps, dir_=dir_)
 
@@ -395,8 +399,7 @@ def org_meta(apath: Path) -> Meta:
     )
     return d
 
-
-def _compile_post_aux(deps: Deps, dir_: Path) -> Results:
+def make_meta(deps: Deps) -> Tuple[Path, Meta, Post]:
     path = deps.path.path
     if path.is_absolute():
         path = path.relative_to(input) # meh
@@ -445,10 +448,11 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Results:
         'feed'     : True,
         'is_stable': True,
         'tags'     : (),
+        'summary'  : '',
     }
     meta = {**defaults, **meta}
 
-    post = Post(**{f.name: None for f in dataclasses.fields(Post)})
+    post = Post(**{f.name: None for f in dataclasses.fields(Post)}) # type: ignore[arg-type]
     for k, v in meta.items():
         if k in {
                 'keywords',
@@ -464,6 +468,10 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Results:
     post.check()
     meta['ext'] = deps.ext
     meta['in_graph'] = in_graph(post)
+    return path, meta, post
+
+def _compile_post_aux(deps: Deps, dir_: Path) -> Results:
+    path, meta, post = make_meta(deps)
 
     ltag = post.upid or f'<unnamed ({path.name})>'
     log.debug('[%s]: compiling %s', ltag, deps.path.path)

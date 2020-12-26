@@ -5,7 +5,7 @@
     <div class="post">
         <a href="{{ item.url }}" class="post-link">
             <div class="title">{% if item.draft %}🚧{% endif %} {{ item.title }}</div>
-            {% if item.summary is not none%}<div class="summary">{{ item.summary }}</div>{% endif %}
+            {% if item.summary %}<div class="summary">{{ item.summary }}</div>{% endif %}
         </a>
 
         <time datetime="{{ item.date.isoformat() }}">{{ item.date_human }}</time>

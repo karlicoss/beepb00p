@@ -1,87 +1,46 @@
 #!/usr/bin/env python3
 from datetime import datetime
+from typing import List, Optional
 import textwrap
 
 import dotpy
 dotpy.init(__name__) # TODO extremely meh
 # TODO could use similar trick for dron?
-
-
 from dotpy import *
 
+
 from . import build
+from .build import throw
 
 # meeh
 build.input = build.ROOT / 'input'
 INPUTS = build.get_inputs()
 
-# todo would be nice to cache?
+##
+BASE_URL = 'https://beepb00p.xyz'
+##
+
 METAS = [
-    (path.stem, build.org_meta(build.input / path))
-    for path in INPUTS
-    if path.suffix == '.org' and path.stem not in (
-            # todo for fucks sake... fix it properly...
-            'axol',
-            'myinfra',
-            'blog-graph',
-            'contemp-art',
-            'ideas',
-            'kython',
-            'least-action-lie',
-            'site',
-            'notes',
-            'test',
-            'scrapyroo',
-            'tags',
-            # todo would be nice to link to it actually?
-    )
+    build.make_meta(build._deps(build.mpath(build.input / path)))[2] for path in INPUTS
 ]
-
-# TODO uhh... this is a bit circular? also need to exclude special?
-
-# todo ok, upid is kinda irrelevant, only useful for comments
-# not sure what to do...
-for (upid, date, summary) in [
-        ('takeout_data_gone'        , '08 March 2019'   , ''),
-        ('org_grasp'                , '09 February 2019', 'How to capture infromation from your browser and stay sane'),
-        ('endomondo_kcal_heartbeats', '03 August 2019'  , ''),
-        ('exercise_bike_model'      , '08 December 2019', 'How I found my exercise machine to violate laws of physics'),
-]:
-    METAS.append((upid, build.Post(
-        date=date,
-        summary=summary,
-        upid=upid,
-        title='',
-        body='',
-        draft=False,
-        has_math=False,
-        tags=(),
-        feed=True,
-        url='',
-        special=False,
-    )))
+EXISTING = {
+    (post.upid if post.upid is not None else throw()): post
+    for post in METAS
+}
 
 
-EXISTING = {x: m for x, m in METAS}
-
-def maybe_meta(name: str):
-    # TODO meeeh. pretty horrible
-    for u in [name, name.replace('_', '-'), name.replace('-', '_')]:
+def meta(python_name: str) -> build.Post:
+    # meeeh. pretty horrible... but python identifiers don't have dashes
+    for u in [python_name, python_name.replace('_', '-')]:
         r = EXISTING.get(u)
         if r is not None:
             return r
-    return None
+    raise RuntimeError(f'No corresponding post for {python_name}')
 
-
-def meta(name: str):
-    m = maybe_meta(name)
-    assert m is not None, name
-    return m
-
-
-def upid(name: str) -> str:
-    m = meta(name)
-    return m.upid
+def upid(python_name: str) -> str:
+    r = meta(python_name).upid
+    assert r is not None # ugh.. change type in Post?
+    return r
 
 
 # TODO MEH!
@@ -97,7 +56,7 @@ def P(label: str, tags: str='', **kwargs) -> Node:
         # todo links? not sure
         # todo font?
 
-        etags = [tag.name for tag in m.tags if tag.exists]
+        etags: List[Optional[str]] = [tag.name for tag in m.tags if tag.exists]
         assert len(etags) <= 3, etags # TODO
         etags = [None] * (3 - len(etags)) + etags
 
@@ -107,16 +66,14 @@ def P(label: str, tags: str='', **kwargs) -> Node:
             else:
                 return f'''
                 <td
-                   href="https://beepb00p.xyz/tags.html#{tag}"
+                   href="{BASE_URL}/tags.html#{tag}"
                    align="right"
                 ><font face="monospace" color="#aa5511">#{tag}</font></td>
                 '''
 
-
         mtags = ' '.join(make_tag(tag) for tag in etags)
         mdraft = '🚧wip🚧' if m.draft else ''
         # https://graphviz.gitlab.io/_pages/doc/info/shapes.html#html ok this is a good guide
-
 
         summary = m.summary
         lines = textwrap.wrap(summary, 50, break_long_words=False)
@@ -130,7 +87,7 @@ def P(label: str, tags: str='', **kwargs) -> Node:
 <tr>
   <td
     colspan="4"
-    href="https://beepb00p.xyz{post_url}"
+    href="{BASE_URL}{post_url}"
     title="{m.title}"
   >
    <font color="blue"     >{label}  </font><br/>
@@ -227,6 +184,10 @@ pkm_search  = P('Building personal search infrastructure')
 ## aliases (need to match upids)
 org_grasp = grasp
 endomondo_kcal_heartbeats = heartbeats_vs_kcals
+mypkg = hpi
+python_configs = configs_suck
+against_db = unnecessary_db
+pkm_annotating = annotating
 ##
 
 G = digraph(
