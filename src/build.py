@@ -692,16 +692,33 @@ def posts_list(posts: Tuple[Post], name: str, title: str) -> None:
         full = relativize_urls(path=path, html=full)
     elif FORMAT == 'raw':
         path = Path(name).with_suffix('.org')
-        lines = []
-        # TODO also link to blog?
+        header = '''
+This is a raw plaintext export for my blog, [[https://beepb00p.xyz][beepb00p.xyz]].
+
+Note that due to [[https://github.com/novoid/github-orgmode-tests][Github's inconsistencies]] at rendering org-mode, not everything might render correctly.
+
+You can also clone this repository and browse the blog in Emacs.
+
+Extra pages: [[file:ideas.org][IDEAS]] | [[file:tags.org][TAGS]] | [[file:site.org][SITE]]
+'''.strip()
+        # TODO cloudmacs instance?
+        lines = [header]
         maxwidth = 80
+        def fmt_tag(t: Tag) -> str:
+            ttl = f'=#{t.name}='
+            if t.exists:
+                return f'[[file:tags.org::#{t.name}][ {ttl} ]]' # ugh, spaces seem to be necessary for github??
+            else:
+                return ttl
         for p in posts:
             pp = Path(p.url[1:]).with_suffix('.org') # TODO ugh. need to keep orig path in the meta??
             d = p.date; assert d is not None
             tags = p.tags
-            tagss = '' if len(tags) == 0 else ('   :' + ':'.join(t.name for t in tags) + ':')
+            # ugh. fuck, actual tags don't work on github.
+            tagss = '' if len(tags) == 0 else ('   ' + ' '.join(map(fmt_tag, tags)))
             link = f'[[file:{pp}][{p.title}]]' + ' ' * max(0, maxwidth - len(p.title))
-            lines.append(f'* [{d.strftime("%Y-%m-%d %a")}] {link}{tagss}')
+            # use second level heading, otherwise github renders them too huge..
+            lines.append(f'** [{d.strftime("%Y-%m-%d %a")}] {link}{tagss}')
             summary = p.summary
             if len(summary) > 0:
                 lines.append('  ' + summary)
@@ -781,6 +798,8 @@ def compile_all(max_workers: Optional[int]=None) -> Iterable[Exception]:
     if FORMAT == 'html':
         for_feed = tuple((p for p in for_index if p.feed))[:9] # TODO FIXME add full feed?
         feeds(for_feed)
+    else:
+        (output / 'readme.org').symlink_to('index.org')
 
 
 def clean() -> None:

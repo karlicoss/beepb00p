@@ -118,13 +118,18 @@ HTML = str
 Result = Tuple[HTML, Iterable[Exception]]
 
 
+# see https://github.com/novoid/github-orgmode-tests
 def post_process_org(output: str) -> str:
     # eh, not sure what's up with empty drawer exports...
-    output = output.replace('nil:END:', ':END:')
+    # TODO contribute back to org-mode with this?
+    output = re.sub(r':PROPERTIES:\n\s*nil:END:\n', '', output, flags=re.MULTILINE)
+    assert 'nil:END:' not in output, output
 
     # ugh. seems that org-ruby can't handle it...
     output = output.replace('#+results:', '')
+    return output
 
+    # NOTE: stuff below is only needed for 'external' exports -- maybe control via a flag...
     lines = []
     # TODO use something more robust..
     # TODO control this behaviour? only need it for 'external' org-mode..

@@ -55,6 +55,8 @@
                                  ("question" . "@@html:<span style='color:darkorange'><strong>$0</strong></span>@@")))
 (setq org-export-with-author nil)
 
+(if (string= compileorg/output-format "org")
+    (setq org-export-with-properties '("CUSTOM_ID")))
 
 ;; necessary so it doesn't prompt us
 (setq org-confirm-babel-evaluate nil)
@@ -117,10 +119,8 @@
         (class (if (not desc) "class='post-tag'" "")))
     (pcase fmt
       ('html (format "<a %s href='%s'>%s</a>" class href title))
-      ;; TODO internal link?
-      ;; TODO use proper relative link
-      ;; TODO class??
-      ('org  (format "[[https://beepb00p.xyz%s][%s]]" href title))
+      ;; todo class??
+      ('org  (format "[[file:tags.org::#%s][%s]]" path title))
       (_     (error "%s" fmt)))))
 (org-add-link-type "tag" nil 'org-blog-tag-export)
 
