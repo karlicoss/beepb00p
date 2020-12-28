@@ -29,12 +29,13 @@ from compile_org import emacs
 
 root_dir = Path(__file__).absolute().parent.parent
 input_dir  = root_dir / 'input'
+input_dir  = input_dir.resolve() # ugh. otherwise relative links might end up weird during org-publish-cache-ctime-of-src
 public_dir = root_dir / 'public'
 output_dir = root_dir / 'markdown'  # TODO FIXME
 html_output_dir = root_dir / 'output'
 
 
-def clean_dir(path: Path):
+def clean_dir(path: Path) -> None:
     assert path.is_dir(), path
     for x in path.iterdir():
         if x.is_file():
@@ -43,7 +44,7 @@ def clean_dir(path: Path):
             rmtree(x)
 
 
-def clean():
+def clean() -> None:
     # todo ugh, need symlink watching tool here again...
     cachedir = Path('~/.org-timestamps').expanduser()
     # TODO not sure about removing all of it...
@@ -57,7 +58,7 @@ def clean():
         f.unlink()
 
 
-def main():
+def main() -> None:
     import argparse
     p = argparse.ArgumentParser()
     p.add_argument('--no-add', action='store_true')
@@ -65,7 +66,7 @@ def main():
 
     clean()
 
-    emacs(
+    eargs = [
         '--eval', f'''(progn
             (setq exobrain/input-dir  "{input_dir}")
             (setq exobrain/public-dir "{public_dir}")
@@ -73,8 +74,12 @@ def main():
         )''',
         '--load', root_dir / 'subprocess.el', # TODO
         '--load', root_dir / 'src/publish.el',
+        '-f', 'toggle-debug-on-error', # dumps stacktrace on error
         '-f', 'org-publish-all',
-    )
+    ]
+    with emacs(*eargs) as ep:
+        pass
+    assert ep.returncode == 0
 
     from check import check_org
     check_org(public_dir)
