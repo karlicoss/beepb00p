@@ -14,6 +14,13 @@
 ;; disable ~ files
 (setq make-backup-files nil)
 
+
+(require 'ox)
+(require 'ox-org)
+(require 'ox-md)
+(require 'ox-html)
+
+
 ;; TODO share with compile-org?
 (setq org-export-with-author nil)
 
@@ -32,21 +39,54 @@
       (format "[[file:%sREADME.org][%s]]" entry (directory-file-name entry))
       (org-publish-sitemap-default-entry entry style project)))
 
+;; fuck. default org-mode ids are non-deterministic (and even change inbetween emacs invocations)
+;; https://github.com/alphapapa/unpackaged.el#export-to-html-with-useful-anchors looks really good
+;; it worked, but then I moved some code around and it stopped for some reason...
+;; too exhausted to debug it, so will use it late
+;; sometimes I fucking hate emacs.
+(defun exobrain/org-export-get-reference (datum info)
+  (let* ((title (org-element-property :raw-value datum)))
+    (md5 title)))
+(advice-add #'org-export-get-reference :override #'exobrain/org-export-get-reference)
 
-;; TODO ugh. not all timestamps are detected correctly??
-;; TODO instead, map to dates only? check as well
-(defun my-timestamp (timestamp _contents _info)
-  "TS!!")
+;; (defun exobrain/before-org-org-headline (a b c)
+;;   (message "BEFORE HEADLINE"))
 
-(require 'ox)
-(require 'ox-org)
-(require 'ox-md)
+;; (defun exobrain/around-org-org-section (orig &rest args)
+;;   ;; (message "YYYYY %s XXXX %d" args (length args))
+;;   ;; fucking elisp, what's wrong with it??? why didn't (apply orig section contents info) work???
+;;   (cl-destructuring-bind (section contents info) args
+;;     (let* ((parent (org-export-get-parent-headline section))
+;;            (ref    (org-export-get-reference parent info)))
+;;       ;; TODO handle no parent?? (before first headline)
+;;       (progn (message "BEFORE SECTION %s" ref)
+;;              (if (and ref parent) (org-element-put-property parent :alalaa ref))
+;;              (apply orig args)))))
+;; ;; TODO plist-put info :key value ???
+
+
+(defun exobrain/org-org-property-drawer (drawer contents info)
+  ;; FIXME fuck, it seems that it doesn't get called if the property drawer is missing altoghether??. shit.
+  (let* ((parent (org-export-get-parent-headline drawer))
+         (ref    (org-export-get-reference parent info))
+         (res    (org-org-identity drawer contents info))
+         ;; fuck nested let statements too.
+         (cont2  (if (s-contains? ":ID:" contents)
+                     ;; if already has id don't do anything
+                     ;; I dunno why thought such tabulation is a good idea for if-else.. fucking hate this.
+                     contents
+                   ;; otherwise generate id
+                   (format "%s:ID: %s\n" contents ref))))
+    (org-org-identity drawer cont2 info)))
+
+;; (advice-add #'org-org-headline        :before #'exobrain/before-org-org-headline)
+;; (advice-add #'org-org-section         :around #'exobrain/around-org-org-section)
+;; (advice-add #'org-org-property-drawer :around #'exobrain/around-org-org-property-drawer)
 
 (org-export-define-derived-backend
- 'my-org 'org
- :translate-alist
- '(
-   (timestamp . my-timestamp)))
+ 'my-org
+ 'org
+ :translate-alist '((property-drawer . exobrain/org-org-property-drawer))) ;; default is identity
 
 
 (defun org-org-publish-to-my-org (plist filename pub-dir)
