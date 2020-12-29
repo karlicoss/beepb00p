@@ -662,7 +662,27 @@ data = 'abacaba'
     html, errs = process(
         input=f.open(),
         outdir=o,
-        check_ids=False,
     )
     assert ilen(errs) == 0
     assert html == '<p>\nabacaba\n</p>\n'
+
+
+def test_mypy(tmp_path: Path) -> None:
+    i = tmp_path / 'input'
+    i.mkdir()
+    o = tmp_path / 'output'
+    o.mkdir()
+    f = i / 'test.org'
+    f.write_text('''
+#+begin_src mypy :exports both
+def whatever(s: str) -> int:
+    return s + 1
+#+end_src
+    '''.strip())
+    html, errs = process(
+        input=f.open(),
+        outdir=o,
+    )
+    assert ilen(errs) == 0
+    # mypy is handled defensively, output is dumped as html
+    assert 'error: Unsupported operand types' in html
