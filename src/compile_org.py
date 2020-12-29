@@ -264,6 +264,7 @@ def emacs(*args, **kwargs) -> Popen:
         '--batch',
         '--no-init-file',
         *chain.from_iterable(['--directory', str(get_user_package_path(module))] for module in modules),
+        '--eval', '(setq-default shell-file-name "/bin/bash")',
         *args,
     ], **kwargs)
 
