@@ -41,6 +41,7 @@
 ;; https://github.com/nanjj/nanjj.github.io/blob/4338fa60b07788885d3d4c8b2c684360a67e8098/org-publish.org
 
 
+;; todo use advice instead
 (defun my/org-publish-sitemap-entry (entry style project)
   ;; mdbook doesn't like list item not being a link
   ;; and default sitemap entry function explicitly ignores directories
@@ -208,6 +209,12 @@ body {
 "))
 
 
+(defun exobrain/add-nav-sidebar (contents _backend info)
+  (if (string= (plist-get info :input-buffer) "SUMMARY.org")
+      contents
+    ;; eh. a bit crap that it ends up in the very end, but whatever
+    (format "%s\n#+HTML: <nav id='sidebar'>\n#+INCLUDE: SUMMARY.org\n#+HTML: </nav>" contents)))
+
 (setq
  org-publish-project-alist
  `(("exobrain-inputs-public"
@@ -231,15 +238,9 @@ body {
     :with-properties t
     :time-stamp-file nil
 
-    ;; TODO not sure if should use final-output??
-    :filter-body ,(cons #'exobrain/extra-filter org-export-filter-body-functions)
-    ;; :filter-final-output ,(cons #'filt org-export-filter-final-output-functions)
-    ;; TODO body??
-
-    ;; :makeindex
-    ;; :auto-index t
-    ; :index-filename "sitemap.org"
-    ; :index-title "Sitemap"
+    ;; todo not sure which filter should use?
+    :filter-body         ,(cons #'exobrain/extra-filter    org-export-filter-body-functions)
+    :filter-final-output ,(cons #'exobrain/add-nav-sidebar org-export-filter-final-output-functions)
 
     :with-todo-keywords t
     :with-tags          t
