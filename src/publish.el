@@ -20,9 +20,21 @@
 (require 'ox-md)
 (require 'ox-html)
 
+;; see https://github.com/emacsmirror/advice-patch
+(require 'advice-patch)
+;; whoa nice
+(advice-patch 'org-html-timestamp
+              "<span class=\"timestamp\">%s</span>"
+              "<span class=\"timestamp-wrapper\"><span class=\"timestamp\">%s</span></span>")
+
+
 
 ;; TODO share with compile-org?
 (setq org-export-with-author nil)
+(setq org-export-preserve-breaks t) ;; by default it collapses consecutive lines.. usually undesirable
+
+;; TODO shit. filetags don't get inherited??
+;; ugh... maybe could write a script to hack them back somehow..
 
 
 ;; examples of sitemap formatting
@@ -162,6 +174,7 @@
 
     :auto-sitemap t
     :sitemap-format-entry my/org-publish-sitemap-entry
+    ;; TODO maybe won't be needed if I use my own exporter?
     :sitemap-filename "SUMMARY.org"
 
     ;; shit. only isolated timestamps work...

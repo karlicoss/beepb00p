@@ -72,6 +72,7 @@ def main() -> None:
             (setq exobrain/public-dir "{public_dir}")
             (setq exobrain/output-dir "{output_dir}")
         )''',
+        '--directory', root_dir / 'src/advice-patch',
         '--load', root_dir / 'subprocess.el', # TODO
         '--load', root_dir / 'src/publish.el',
         '-f', 'toggle-debug-on-error', # dumps stacktrace on error
