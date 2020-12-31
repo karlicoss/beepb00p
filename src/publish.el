@@ -6,9 +6,9 @@
 ; TODO fucking hell, it doesn't seem capable of resolving symlinks
 
 (setq   exobrain/rootdir    default-directory)
-(defvar exobrain/input-dir  nil)
-(defvar exobrain/public-dir nil)
-(defvar exobrain/output-dir nil)
+(defvar exobrain/input-dir     nil)
+(defvar exobrain/public-dir    nil)
+(defvar exobrain/output-dir    nil)
 
 
 ;; disable ~ files
@@ -42,7 +42,7 @@
 
 
 ;; todo use advice instead
-(defun my/org-publish-sitemap-entry (entry style project)
+(defun exobrain/org-publish-sitemap-entry (entry style project)
   ;; mdbook doesn't like list item not being a link
   ;; and default sitemap entry function explicitly ignores directories
   (if (directory-name-p entry)
@@ -164,9 +164,68 @@
 (advice-add #'org-md-publish-to-md :around #'exobrain/org-md-publish-to-md)
 
 
+(defun exobrain/add-nav-sidebar (contents _backend info)
+  ;; ugh. what a mess
+  (if (string= (plist-get info :input-buffer) "SUMMARY.org")
+      contents
+    (let ((relroot (file-name-directory (file-relative-name exobrain/input-dir (plist-get info :input-file)))))
+      ;; eh. a bit crap that it ends up in the very end of the file, but whatever
+      (format "%s\n#+HTML: <nav id='sidebar'>\n#+INCLUDE: %s\n#+HTML: </nav>"
+              contents
+              ;; for fuck's sake, expand-file-name resolves the .. relatieve link, and there doesn't seem any other path combining function??
+              (format "%s%s" (if relroot (concat relroot "/") "") "SUMMARY.org")))))
+
+;; ugh. seems that it works during html conversion, but fails during org-org :(
+;; (let ((org-time-stamp-custom-formats
+;;        '("<%A, %B %d, %Y>" . "<%A, %B %d, %Y %H:%M:%S>"))
+;;       (org-display-custom-times 't))
+;;   (org-publish-all))
+(defun exobrain/override-org-timestamp-translate (timestamp &optional boundary)
+  "sets custom format to all my timestamps (strips off time, it's just too spammy)"
+  (let ((res (org-timestamp-format timestamp "[%Y-%m-%d]")))
+    (if boundary
+        (error "wtf if boundary?? %s %s" timestamp boundary)
+      res)))
+(advice-add #'org-timestamp-translate :override #'exobrain/override-org-timestamp-translate)
+
+
+(setq exobrain/project-preprocess-org
+      `("exobrain-preprocess-org"
+        :base-directory ,exobrain/input-dir
+        :base-extension "org" ;; do I even need base-extension?
+        :publishing-directory ,exobrain/public-dir
+        :recursive t
+        :publishing-function org-org-publish-to-my-org
+
+        :auto-sitemap t
+        :sitemap-format-entry exobrain/org-publish-sitemap-entry
+        ;; TODO maybe won't be needed if I use my own exporter?
+        :sitemap-filename "SUMMARY.org"
+        ;; TODO maybe include summary into org-mode file directly? & wrap somehow...
+
+        ;; shit. only impacts isolated timestamps... (i.e. not next to TODO keywords etc)
+        ;; https://github.com/bzg/org-mode/blob/817c0c81e8f6d1dc387956c8c5b026ced62c157c/lisp/ox.el#L1896
+        ;; or maybe doesn't impact anything at all?? has no effect if set to t, same in html export
+        :with-timestamps nil
+
+        :with-date nil
+        :with-properties t
+        :time-stamp-file nil
+
+        :filter-final-output ,(cons #'exobrain/add-nav-sidebar org-export-filter-final-output-functions)
+
+        :with-tags          t
+        :with-todo-keywords t
+
+        ;; TODO want to exclude certain tags from displaying in export
+        ;; not sure if that's possible without patching org-mode functions :(
+        ;; :exclude-tags       ("gr" "graspw")
+
+        :exclude "org.org"))
+
 ;; TODO reuse some props??
-(setq exobrain-md
-      `("exobrain"
+(setq exobrain/project-org2md
+      `("exobrain-org2md"
         :base-directory ,exobrain/public-dir
         :base-extension "org"
         :publishing-directory ,exobrain/output-dir
@@ -177,7 +236,7 @@
         :with-todo-keywords t
         :with-priority      t))
 
-(setq exobrain-html
+(setq exobrain/project-org2html
       `("exobrain-html"
         :base-directory ,exobrain/public-dir
         :base-extension "org"
@@ -209,78 +268,8 @@ body {
 "))
 
 
-(defun exobrain/add-nav-sidebar (contents _backend info)
-  ;; ugh. what a mess
-  (if (string= (plist-get info :input-buffer) "SUMMARY.org")
-      contents
-    (let ((relroot (file-name-directory (file-relative-name exobrain/input-dir (plist-get info :input-file)))))
-      ;; eh. a bit crap that it ends up in the very end of the file, but whatever
-      (format "%s\n#+HTML: <nav id='sidebar'>\n#+INCLUDE: %s\n#+HTML: </nav>"
-              contents
-              ;; for fuck's sake, expand-file-name resolves the .. relatieve link, and there doesn't seem any other path combining function??
-              (format "%s%s" (if relroot (concat relroot "/") "") "SUMMARY.org")))))
-
-;; ugh. seems that it works during html conversion, but fails during org-org :(
-;; (let ((org-time-stamp-custom-formats
-;;        '("<%A, %B %d, %Y>" . "<%A, %B %d, %Y %H:%M:%S>"))
-;;       (org-display-custom-times 't))
-;;   (org-publish-all))
-(defun exobrain/override-org-timestamp-translate (timestamp &optional boundary)
-  "sets custom format to all my timestamps (strips off time, it's just too spammy)"
-  (let ((res (org-timestamp-format timestamp "[%Y-%m-%d]")))
-    (if boundary
-        (error "wtf if boundary?? %s %s" timestamp boundary)
-      res)))
-(advice-add #'org-timestamp-translate :override #'exobrain/override-org-timestamp-translate)
-
-
-(setq
- org-publish-project-alist
- `(("exobrain-inputs-public"
-    :base-directory ,exobrain/input-dir
-    :base-extension "org"
-    :publishing-directory ,exobrain/public-dir
-    :recursive t
-    :publishing-function org-org-publish-to-my-org
-
-    :auto-sitemap t
-    :sitemap-format-entry my/org-publish-sitemap-entry
-    ;; TODO maybe won't be needed if I use my own exporter?
-    :sitemap-filename "SUMMARY.org"
-    ;; TODO maybe include summary into org-mode file directly? & wrap somehow...
-
-    ;; shit. only impacts isolated timestamps... (i.e. not next to TODO keywords etc)
-    ;; https://github.com/bzg/org-mode/blob/817c0c81e8f6d1dc387956c8c5b026ced62c157c/lisp/ox.el#L1896
-    ;; or maybe doesn't impact anything at all?? has no effect if set to t, same in html export
-    :with-timestamps nil
-
-    :with-date nil
-    :with-properties t
-    :time-stamp-file nil
-
-    :filter-final-output ,(cons #'exobrain/add-nav-sidebar org-export-filter-final-output-functions)
-
-    :with-todo-keywords t
-    :with-tags          t
-
-    ;; TODO want to exclude certain tags from displaying in export
-    ;; not sure if that's possible without patching org-mode functions :(
-    ;; :exclude-tags       ("gr" "graspw")
-
-    :exclude "org.org")
-   ,exobrain-md))
-
-
-
-    ; TODO????
-
 ; TODO shit. refuses to work.
+; TODO is it necessary??
 (setq org-html-postamble-format "")
 
-
-; TODO https://orgmode.org/worg/org-tutorials/org-publish-html-tutorial.html
-
-
 ;; TODO after intermediate, run santity check
-;;
-;;TODO for exobrain, makes sense to generate all ids automatically? just warn they aren't really stable

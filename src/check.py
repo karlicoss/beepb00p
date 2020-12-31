@@ -65,18 +65,18 @@ def check_aux(path: Path) -> List[str]:
 
 def check_org(path: Path):
     # TODO not sure about org?
-    org_files = list(sorted(path.glob('**/*.org')))
+    org_files = list(sorted(path.rglob('*.org')))
 
     from concurrent.futures import ProcessPoolExecutor as Pool
     with Pool() as pool:
-        for res in pool.map(check_aux, org_files):
-            for f in res:
+        for f, res in zip(org_files, pool.map(check_aux, org_files)):
+            for x in res:
                 # TODO collect errors, report once?
-                raise Failed(f)
+                raise Failed(f, x)
 
 
 def main():
-    check_org(Path('intermediate'))
+    raise RuntimeError
 
 
 if __name__ == '__main__':

@@ -57,7 +57,7 @@ def clean() -> None:
     clean_dir(output_dir)
 
     # TODO what about empty dirs?
-    for f in public_dir.glob('**/*.org'):
+    for f in public_dir.rglob('*.org'):
         f.unlink()
 
 
@@ -78,12 +78,20 @@ def main() -> None:
         '--directory', root_dir / 'src/advice-patch',
         '--load', root_dir / 'src/publish.el',
         '-f', 'toggle-debug-on-error', # dumps stacktrace on error
-        '-f', 'org-publish-all',
+        # adjust this variable to change the pipeline
+        '--eval', '''
+(let ((org-publish-project-alist `(
+        ,exobrain/project-preprocess-org
+        ,exobrain/project-org2html
+       )))
+  (org-publish-all))
+'''.strip(),
     ]
     with emacs(*eargs) as ep:
         pass
     assert ep.returncode == 0
 
+    # TODO call check_org after preprocess-org instead??
     from check import check_org
     check_org(public_dir)
 
