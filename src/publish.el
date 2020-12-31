@@ -163,6 +163,51 @@
 (advice-add #'org-md-publish-to-md :around #'exobrain/org-md-publish-to-md)
 
 
+;; TODO reuse some props??
+(setq exobrain-md
+      `("exobrain"
+        :base-directory ,exobrain/public-dir
+        :base-extension "org"
+        :publishing-directory ,exobrain/output-dir
+        :recursive t
+        :publishing-function org-md-publish-to-md
+
+        :with-tags          t
+        :with-todo-keywords t
+        :with-priority      t))
+
+(setq exobrain-html
+      `("exobrain-html"
+        :base-directory ,exobrain/public-dir
+        :base-extension "org"
+        :publishing-directory ,exobrain/output-dir
+        :recursive t
+        :publishing-function org-html-publish-to-html
+
+        :with-tags          t
+        :with-todo-keywords t
+        :with-priority      t
+
+        :html-head "
+<style>
+#sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+
+  /* todo scroll? */
+  padding-right: 1em;
+  border: 2px solid;
+}
+body {
+  width: 1000px;
+  margin: auto;
+}
+</style> 
+"))
+
+
 (setq
  org-publish-project-alist
  `(("exobrain-inputs-public"
@@ -176,13 +221,14 @@
     :sitemap-format-entry my/org-publish-sitemap-entry
     ;; TODO maybe won't be needed if I use my own exporter?
     :sitemap-filename "SUMMARY.org"
+    ;; TODO maybe include summary into org-mode file directly? & wrap somehow...
 
     ;; shit. only isolated timestamps work...
     ;; https://github.com/bzg/org-mode/blob/817c0c81e8f6d1dc387956c8c5b026ced62c157c/lisp/ox.el#L1896
     ;; :with-timestamps nil
 
     :with-date nil
-    :with-properties nil
+    :with-properties t
     :time-stamp-file nil
 
     ;; TODO not sure if should use final-output??
@@ -202,17 +248,10 @@
     ;; not sure if that's possible without patching org-mode functions :(
     ;; :exclude-tags       ("gr" "graspw")
 
-    :exclude "org.org") ;; TODO ??
-   ("exobrain"
-    :base-directory ,exobrain/public-dir
-    :base-extension "org"
-    :publishing-directory ,exobrain/output-dir
-    :recursive t
-    :publishing-function org-md-publish-to-md
+    :exclude "org.org")
+   ,exobrain-md))
 
-    :with-tags          t
-    :with-todo-keywords t
-    :with-priority      t)))
+
 
     ; TODO????
 
