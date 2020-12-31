@@ -208,11 +208,17 @@ body {
 </style> 
 "))
 
+
 (defun exobrain/add-nav-sidebar (contents _backend info)
+  ;; ugh. what a mess
   (if (string= (plist-get info :input-buffer) "SUMMARY.org")
       contents
-    ;; eh. a bit crap that it ends up in the very end, but whatever
-    (format "%s\n#+HTML: <nav id='sidebar'>\n#+INCLUDE: SUMMARY.org\n#+HTML: </nav>" contents)))
+    (let ((relroot (file-name-directory (file-relative-name exobrain/input-dir (plist-get info :input-file)))))
+      ;; eh. a bit crap that it ends up in the very end of the file, but whatever
+      (format "%s\n#+HTML: <nav id='sidebar'>\n#+INCLUDE: %s\n#+HTML: </nav>"
+              contents
+              ;; for fuck's sake, expand-file-name resolves the .. relatieve link, and there doesn't seem any other path combining function??
+              (format "%s%s" (if relroot (concat relroot "/") "") "SUMMARY.org")))))
 
 ;; ugh. seems that it works during html conversion, but fails during org-org :(
 ;; (let ((org-time-stamp-custom-formats

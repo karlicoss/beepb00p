@@ -29,10 +29,13 @@ from compile_org import emacs
 
 root_dir = Path(__file__).absolute().parent.parent
 input_dir  = root_dir / 'input'
-input_dir  = input_dir.resolve() # ugh. otherwise relative links might end up weird during org-publish-cache-ctime-of-src
 public_dir = root_dir / 'public'
 output_dir = root_dir / 'markdown'  # TODO FIXME
 html_output_dir = root_dir / 'output'
+
+input_dir   = input_dir .resolve() # ugh. otherwise relative links might end up weird during org-publish-cache-ctime-of-src
+public_dir  = public_dir.resolve()
+output_dir  = output_dir.resolve()
 
 
 def clean_dir(path: Path) -> None:
