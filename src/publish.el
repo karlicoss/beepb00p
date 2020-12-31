@@ -208,12 +208,25 @@ body {
 </style> 
 "))
 
-
 (defun exobrain/add-nav-sidebar (contents _backend info)
   (if (string= (plist-get info :input-buffer) "SUMMARY.org")
       contents
     ;; eh. a bit crap that it ends up in the very end, but whatever
     (format "%s\n#+HTML: <nav id='sidebar'>\n#+INCLUDE: SUMMARY.org\n#+HTML: </nav>" contents)))
+
+;; ugh. seems that it works during html conversion, but fails during org-org :(
+;; (let ((org-time-stamp-custom-formats
+;;        '("<%A, %B %d, %Y>" . "<%A, %B %d, %Y %H:%M:%S>"))
+;;       (org-display-custom-times 't))
+;;   (org-publish-all))
+(defun exobrain/override-org-timestamp-translate (timestamp &optional boundary)
+  "sets custom format to all my timestamps (strips off time, it's just too spammy)"
+  (let ((res (org-timestamp-format timestamp "[%Y-%m-%d]")))
+    (if boundary
+        (error "wtf if boundary?? %s %s" timestamp boundary)
+      res)))
+(advice-add #'org-timestamp-translate :override #'exobrain/override-org-timestamp-translate)
+
 
 (setq
  org-publish-project-alist
@@ -230,16 +243,15 @@ body {
     :sitemap-filename "SUMMARY.org"
     ;; TODO maybe include summary into org-mode file directly? & wrap somehow...
 
-    ;; shit. only isolated timestamps work...
+    ;; shit. only impacts isolated timestamps... (i.e. not next to TODO keywords etc)
     ;; https://github.com/bzg/org-mode/blob/817c0c81e8f6d1dc387956c8c5b026ced62c157c/lisp/ox.el#L1896
-    ;; :with-timestamps nil
+    ;; or maybe doesn't impact anything at all?? has no effect if set to t, same in html export
+    :with-timestamps nil
 
     :with-date nil
     :with-properties t
     :time-stamp-file nil
 
-    ;; todo not sure which filter should use?
-    :filter-body         ,(cons #'exobrain/extra-filter    org-export-filter-body-functions)
     :filter-final-output ,(cons #'exobrain/add-nav-sidebar org-export-filter-final-output-functions)
 
     :with-todo-keywords t
