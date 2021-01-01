@@ -141,9 +141,14 @@
 ;; and only then starts combining etc
 ;; so by the time the hook fires, we don't get a chance to modify the org abstract tree
 (defun exobrain/before-org-export-data (data info)
-  (if (and (org-export-get-parent-headline data) ;; should have parent, otherwise it's the 0 level heading?
-           (eq 'section (org-element-type data)))
-      (exobrain/ensure-properties-drawer data)))
+  (when (and (org-export-get-parent-headline data)
+             (eq 'section (org-element-type data)))
+        (exobrain/ensure-properties-drawer data))
+
+  ;; ugh. need to remove empty space, otherwise the emitted drawer appears after the whitespace..
+  ;; also can't move it into 'section handler, seems that it's too late by that time
+  (when (eq 'headline (org-element-type data))
+    (org-element-put-property data :pre-blank 0)))
 
 (advice-add #'org-export-data :before #'exobrain/before-org-export-data)
 
