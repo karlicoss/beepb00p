@@ -173,13 +173,6 @@
    :input output
    :cwd exobrain/rootdir))
 
-(defun exobrain/md-org-make-tag-string (tags)
-  (apply #'s-concat
-   (-map
-    (lambda (tag) (s-wrap tag "<span class='tag'>" "</span>"))
-    tags)))
-
-
 ;; fucking hell, it's defsubst https://www.gnu.org/software/emacs/manual/html_node/elisp/Inline-Functions.html
 ;; that's why advice doesn't work
 ;; I hate elisp.
@@ -211,14 +204,15 @@
                   fst)))
          (title (concat kwd " " snd)))
     (funcall orig style level title anchor tags)))
-
 (advice-add #'org-md--headline-title :around #'exobrain/org-md--headline-title)
 
-(defun exobrain/org-md-publish-to-md (orig-fun plist filename pub-dir)
-  ;; fucking hell. I just hate elisp so much
-  (cl-letf (((symbol-function 'org-make-tag-string) 'exobrain/md-org-make-tag-string))
-    (funcall orig-fun plist filename pub-dir)))
+(defun exobrain/md-org-make-tag-string (tags)
+  (let ((stags (--map (format "<span class='tag'>%s</span>" it) tags)))
+    (apply #'s-concat stags)))
 
+(defun exobrain/org-md-publish-to-md (orig &rest args)
+  (cl-letf (((symbol-function 'org-make-tag-string) 'exobrain/md-org-make-tag-string))
+    (apply orig args)))
 (advice-add #'org-md-publish-to-md :around #'exobrain/org-md-publish-to-md)
 
 
@@ -228,6 +222,7 @@
       contents
     (let ((relroot (file-name-directory (file-relative-name exobrain/input-dir (plist-get info :input-file)))))
       ;; eh. a bit crap that it ends up in the very end of the file, but whatever
+      ;; todo ugh. annoying that it ends up in md source..
       (format "%s\n#+HTML: <nav id='sidebar'>\n#+INCLUDE: %s\n#+HTML: </nav>"
               contents
               ;; for fuck's sake, expand-file-name resolves the .. relatieve link, and there doesn't seem any other path combining function??
@@ -297,7 +292,9 @@
         :recursive t
         :publishing-function org-md-publish-to-md
 
-        ,@exobrain/export-settings))
+        ,@exobrain/export-settings
+
+        :with-properties ("CREATED")))
 
 (setq exobrain/project-org2html
       `("exobrain-html"

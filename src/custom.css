@@ -55,6 +55,8 @@ h1, h2 {
     padding: 2px;
     font-size: 80%;
     font-weight: normal;
+
+    margin-left: 0.2em; /* otherwise, overlap */
 }
 
 
@@ -74,4 +76,9 @@ h1, h2 {
 
 .cancel {
     color: purple;
+}
+
+
+#content #sidebar {
+  display: none;
 }
