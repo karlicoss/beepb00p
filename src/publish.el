@@ -64,34 +64,21 @@
 ;; sometimes I fucking hate emacs.
 (defun exobrain/org-export-get-reference (datum info)
   (let* ((title (org-element-property :raw-value datum)))
+    (cl-assert title)
     (md5 title)))
 (advice-add #'org-export-get-reference :override #'exobrain/org-export-get-reference)
 
-;; (defun exobrain/before-org-org-headline (a b c)
-;;   (message "BEFORE HEADLINE"))
-
-;; (defun exobrain/around-org-org-section (orig &rest args)
-;;   ;; (message "YYYYY %s XXXX %d" args (length args))
-;;   ;; fucking elisp, what's wrong with it??? why didn't (apply orig section contents info) work???
-;;   (cl-destructuring-bind (section contents info) args
-;;     (let* ((parent (org-export-get-parent-headline section))
-;;            (ref    (org-export-get-reference parent info)))
-;;       ;; TODO handle no parent?? (before first headline)
-;;       (progn (message "BEFORE SECTION %s" ref)
-;;              (if (and ref parent) (org-element-put-property parent :alalaa ref))
-;;              (apply orig args)))))
-;; ;; TODO plist-put info :key value ???
-
-
 (defun exobrain/org-org-property-drawer (drawer contents info)
-  ;; FIXME fuck, it seems that it doesn't get called if the property drawer is missing altoghether??. shit.
-  ;; TODO switch to a proper check...
-  (unless (s-contains? ":ID:" contents)
+  (unless (s-contains? ":ID:"
+                       (or contents "")) ;; contents is empty when we add a fake empty drawer
     (let* ((parent (org-export-get-parent-headline drawer))
+           (_      (cl-assert parent)) ;; fucking hell..
            (ref    (org-export-get-reference parent info)))
       (setcdr
        (last drawer)
        ;; meh..
+       ;; TODO use org-element-insert-before?
+       ;; org org-element-adopt-elements?
        (list (list 'node-property (list
                                    :key "ID"
                                    :value ref))))))
@@ -104,10 +91,36 @@
                     "")))
     (format ":PROPERTIES:\n%s:END:" result)))
 
-;; (advice-add #'org-org-section         :before #'exobrain/before-org-org-section)
-;; (advice-add #'org-org-headline        :before #'exobrain/before-org-org-headline)
-;; (advice-add #'org-org-section         :around #'exobrain/around-org-org-section)
-;; (advice-add #'org-org-property-drawer :around #'exobrain/around-org-org-property-drawer)
+;; todo what is org-element-map?
+;; todo plist-get vs org-element-property??? I guess plist is for pure plists?
+
+(defun exobrain/ensure-properties-drawer (section)
+  (let* ((hasproperties (-any?
+                         (lambda (x) (eq 'property-drawer (org-element-type x)))
+                         (org-element-contents section))))
+    (unless hasproperties
+      (org-element-insert-before
+       (list 'property-drawer (list
+                               :begin 0
+                               :end 0
+                               :contents-begin 0
+                               :contents-end 0
+                               :post-blank 0
+                               :post-affiliated 0))
+       ;; for fucks sake, is it seriosly the way to insert in front??
+       (car (org-element-contents section))))))
+
+;; right. so, we can't use normal org-publish hooks for this..
+;; if you look at org-export-data code, it seems that traverses the tree at first
+;; and only then starts combining etc
+;; so by the time the hook fires, we don't get a chance to modify the org abstract tree
+(defun exobrain/before-org-export-data (data info)
+  (if (and (org-export-get-parent-headline data) ;; should have parent, otherwise it's the 0 level heading?
+           (eq 'section (org-element-type data)))
+      (exobrain/ensure-properties-drawer data)))
+
+(advice-add #'org-export-data :before #'exobrain/before-org-export-data)
+
 
 (org-export-define-derived-backend
  'my-org
