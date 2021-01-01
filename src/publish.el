@@ -74,14 +74,9 @@
     (let* ((parent (org-export-get-parent-headline drawer))
            (_      (cl-assert parent)) ;; fucking hell..
            (ref    (org-export-get-reference parent info)))
-      (setcdr
-       (last drawer)
-       ;; meh..
-       ;; TODO use org-element-insert-before?
-       ;; org org-element-adopt-elements?
-       (list (list 'node-property (list
-                                   :key "ID"
-                                   :value ref))))))
+      (org-element-adopt-elements drawer
+        (org-element-create 'node-property
+                            `(:key "ID" :value ,ref)))))
   (let* ((children (org-element-contents drawer))
          (result   (mapconcat
                     ;; TODO I wonder if this should happen by default instead of identity 'plaintext' mapping
@@ -99,16 +94,16 @@
                          (lambda (x) (eq 'property-drawer (org-element-type x)))
                          (org-element-contents section))))
     (unless hasproperties
-      (org-element-insert-before
-       (list 'property-drawer (list
-                               :begin 0
-                               :end 0
-                               :contents-begin 0
-                               :contents-end 0
-                               :post-blank 0
-                               :post-affiliated 0))
-       ;; for fucks sake, is it seriosly the way to insert in front??
-       (car (org-element-contents section))))))
+      (org-element-set-contents section
+                                (cons (org-element-create 'property-drawer
+                                                          `(:begin 0
+                                                            :end 0
+                                                            :contents-begin 0
+                                                            :contents-end 0
+                                                            :post-blank 0
+                                                            :post-affiliated 0
+                                                            :parent ,section))
+                                      (org-element-contents section))))))
 
 ;; right. so, we can't use normal org-publish hooks for this..
 ;; if you look at org-export-data code, it seems that traverses the tree at first
@@ -253,13 +248,12 @@
         :filter-final-output ,(cons #'exobrain/add-nav-sidebar org-export-filter-final-output-functions)
 
         :with-tags          t
-        :with-todo-keywords t
+        :with-todo-keywords t))
 
         ;; TODO want to exclude certain tags from displaying in export
         ;; not sure if that's possible without patching org-mode functions :(
         ;; :exclude-tags       ("gr" "graspw")
 
-        :exclude "org.org"))
 
 ;; TODO reuse some props??
 (setq exobrain/project-org2md
