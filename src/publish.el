@@ -27,11 +27,38 @@
 
 ;; see https://github.com/emacsmirror/advice-patch
 (require 'advice-patch)
-;; whoa nice
+;; whoa advice-patch is really nice
+
+ ;; remove useless timestmap-wrapper class
 (advice-patch 'org-html-timestamp
               "<span class=\"timestamp\">%s</span>"
               "<span class=\"timestamp-wrapper\"><span class=\"timestamp\">%s</span></span>")
 
+;; no clue why default class is "example" :shrug: (using same format as in blog)
+(advice-patch 'org-html-property-drawer
+              "<div class='properties'>\n%s</div>"
+              "<pre class=\"example\">\n%s</pre>")
+
+;; same, defeault format for html property export is quite dull
+(advice-patch 'org-html-node-property
+              ;; borrowed from blog
+              "<div class='property'><span class='property-name'>%s:</span> <span class='property-value'>%s</span></div>"
+              "%s:%s")
+
+
+;; TODO could force timestamps to emit <time> element
+
+;; these ids are relaly unnecessary, just littering the anchors
+(advice-patch 'org-html-section
+              "<div class=\"outline-text-%1$d\">\n%3$s</div>\n"
+              "<div class=\"outline-text-%d\" id=\"text-%s\">\n%s</div>\n")
+(advice-patch 'org-html-headline
+              "<%1$s class=\"%3$s\">%4$s%5$s</%6$s>\n"
+              "<%s id=\"%s\" class=\"%s\">%s%s</%s>\n")
+;; TODO shit. it can't override multiple definitions at once...
+;; (advice-patch 'org-html-headline
+;;               "f"
+;;               '(concat "outline-container-" (org-export-get-reference headline info)))
 
 
 ;; TODO share with compile-org?
@@ -279,6 +306,7 @@
         :with-tags          t
         :with-todo-keywords t
         :with-priority      t
+        :with-properties    t
 
         :html-head "
 <style>
