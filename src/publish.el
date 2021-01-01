@@ -39,7 +39,7 @@
               "<div class='properties'>\n%s</div>"
               "<pre class=\"example\">\n%s</pre>")
 
-;; same, defeault format for html property export is quite dull
+;; same, the default format for html property export is quite dull
 (advice-patch 'org-html-node-property
               ;; borrowed from blog
               "<div class='property'><span class='property-name'>%s:</span> <span class='property-value'>%s</span></div>"
@@ -75,7 +75,6 @@
 
 ;; examples of sitemap formatting
 ;; https://github.com/nanjj/nanjj.github.io/blob/4338fa60b07788885d3d4c8b2c684360a67e8098/org-publish.org
-
 
 ;; todo use advice instead
 (defun exobrain/org-publish-sitemap-entry (entry style project)
@@ -184,6 +183,7 @@
 ;   (cl-letf (((symbol-function 'org-element-property) 'exobrain/md-org-element-property))
 ;     (funcall orig headline contents info)))
 
+(setq org-todo-keywords '((sequence "TODO" "STRT" "START" "WIP" "|" "CNCL" "CANCEL" "DONE")))
 ;; TODO share with rest of the system..
 (setq exobrain/state-keywords
       '(("TODO"   . "todo")
@@ -270,7 +270,7 @@
         ;; shit. only impacts isolated timestamps... (i.e. not next to TODO keywords etc)
         ;; https://github.com/bzg/org-mode/blob/817c0c81e8f6d1dc387956c8c5b026ced62c157c/lisp/ox.el#L1896
         ;; or maybe doesn't impact anything at all?? has no effect if set to t, same in html export
-        :with-timestamps nil
+        :with-timestamps t
 
         :with-date nil
         :with-properties t
@@ -312,6 +312,10 @@
         :with-priority      t
         :with-properties    t
 
+        ; I'm using my own styles
+        :html-head-include-default-style nil
+        ;; todo not sure if I need org-html-scripts? adds CodeHighlightOn thing
+
         :html-head "\
 <style>
 #sidebar {
@@ -329,11 +333,7 @@ body {
   margin: auto;
 }
 </style> 
-"))
-
-
-; TODO shit. refuses to work.
-; TODO is it necessary??
-(setq org-html-postamble-format "")
+"
+        :html-postamble     nil))
 
 ;; TODO after intermediate, run santity check
