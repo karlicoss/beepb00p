@@ -20,6 +20,10 @@
 (require 'ox-md)
 (require 'ox-html)
 
+(defun pp-org (thing)
+  (org-element-put-property thing :parent nil) ;; otherwise too spammy
+  (pp thing))
+
 ;; see https://github.com/emacsmirror/advice-patch
 (require 'advice-patch)
 ;; whoa nice
@@ -188,6 +192,17 @@
       res)))
 (advice-add #'org-timestamp-translate :override #'exobrain/override-org-timestamp-translate)
 
+
+(defun exobrain/hack-timestamp (orig ts x)
+  (org-element-put-property ts :minute-start nil)
+  (org-element-put-property ts :minute-end   nil)
+  (org-element-put-property ts :hour-start   nil)
+  (org-element-put-property ts :hour-end     nil)
+  ;; (pp-org ts)
+  (let ((res (funcall orig ts x)))
+    ;; (message "AAAAAA %s" res)
+    res))
+(advice-add #'org-element-timestamp-interpreter :around #'exobrain/hack-timestamp)
 
 (setq exobrain/project-preprocess-org
       `("exobrain-preprocess-org"
