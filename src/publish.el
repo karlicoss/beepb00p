@@ -99,8 +99,9 @@
 (advice-add #'org-export-get-reference :override #'exobrain/org-export-get-reference)
 
 (defun exobrain/org-org-property-drawer (drawer contents info)
-  (unless (s-contains? ":ID:"
-                       (or contents "")) ;; contents is empty when we add a fake empty drawer
+  (unless (-any?
+           (lambda (x) (-contains? '("CUSTOM_ID" "ID") (org-element-property :key x)))
+           (org-element-contents drawer))
     (let* ((parent (org-export-get-parent-headline drawer))
            (_      (cl-assert parent)) ;; fucking hell..
            (ref    (org-export-get-reference parent info)))
@@ -109,7 +110,7 @@
                             `(:key "ID" :value ,ref)))))
   (let* ((children (org-element-contents drawer))
          (result   (mapconcat
-                    ;; TODO I wonder if this should happen by default instead of identity 'plaintext' mapping
+                    ;; TODO I wonder if this should happen by default in ox-org.el instead of identity 'plaintext' mapping
                     ;; e.g. by deafult node-property never gets translated
                     (lambda (e) (org-export-data e info))
                     (org-element-contents drawer)
@@ -242,16 +243,28 @@
 (advice-add #'org-timestamp-translate :override #'exobrain/override-org-timestamp-translate)
 
 
-(defun exobrain/hack-timestamp (orig ts x)
+(defun exobrain/hack-timestamp (ts _)
   (org-element-put-property ts :minute-start nil)
   (org-element-put-property ts :minute-end   nil)
   (org-element-put-property ts :hour-start   nil)
-  (org-element-put-property ts :hour-end     nil)
-  ;; (pp-org ts)
-  (let ((res (funcall orig ts x)))
-    ;; (message "AAAAAA %s" res)
-    res))
-(advice-add #'org-element-timestamp-interpreter :around #'exobrain/hack-timestamp)
+  (org-element-put-property ts :hour-end     nil))
+(advice-add #'org-element-timestamp-interpreter :before #'exobrain/hack-timestamp)
+
+
+(setq exobrain/export-settings
+      '(:with-priority      t
+        :with-properties    t
+        ;; TODO want to exclude certain tags from displaying in export
+        ;; not sure if that's possible without patching org-mode functions :(
+        ;; :exclude-tags       ("gr" "graspw")
+        :with-tags          t
+        ;; shit. only impacts isolated timestamps... (i.e. not next to TODO keywords etc)
+        ;; https://github.com/bzg/org-mode/blob/817c0c81e8f6d1dc387956c8c5b026ced62c157c/lisp/ox.el#L1896
+        ;; or maybe doesn't impact anything at all?? has no effect if set to t, same in html export
+        :with-timestamps    t
+        :with-todo-keywords t
+
+        :time-stamp-file    nil))
 
 (setq exobrain/project-preprocess-org
       `("exobrain-preprocess-org"
@@ -265,28 +278,12 @@
         :sitemap-format-entry exobrain/org-publish-sitemap-entry
         ;; TODO maybe won't be needed if I use my own exporter?
         :sitemap-filename "SUMMARY.org"
-        ;; TODO maybe include summary into org-mode file directly? & wrap somehow...
 
-        ;; shit. only impacts isolated timestamps... (i.e. not next to TODO keywords etc)
-        ;; https://github.com/bzg/org-mode/blob/817c0c81e8f6d1dc387956c8c5b026ced62c157c/lisp/ox.el#L1896
-        ;; or maybe doesn't impact anything at all?? has no effect if set to t, same in html export
-        :with-timestamps t
+        ;; TODO not sure if I want to publish all properties here?
+        ,@exobrain/export-settings
 
-        :with-date nil
-        :with-properties t
-        :time-stamp-file nil
+        :filter-final-output ,(cons #'exobrain/add-nav-sidebar org-export-filter-final-output-functions)))
 
-        :filter-final-output ,(cons #'exobrain/add-nav-sidebar org-export-filter-final-output-functions)
-
-        :with-tags          t
-        :with-todo-keywords t))
-
-        ;; TODO want to exclude certain tags from displaying in export
-        ;; not sure if that's possible without patching org-mode functions :(
-        ;; :exclude-tags       ("gr" "graspw")
-
-
-;; TODO reuse some props??
 (setq exobrain/project-org2md
       `("exobrain-org2md"
         :base-directory ,exobrain/public-dir
@@ -295,9 +292,7 @@
         :recursive t
         :publishing-function org-md-publish-to-md
 
-        :with-tags          t
-        :with-todo-keywords t
-        :with-priority      t))
+        ,@exobrain/export-settings))
 
 (setq exobrain/project-org2html
       `("exobrain-html"
@@ -307,10 +302,8 @@
         :recursive t
         :publishing-function org-html-publish-to-html
 
-        :with-tags          t
-        :with-todo-keywords t
-        :with-priority      t
-        :with-properties    t
+        ,@exobrain/export-settings
+        :with-properties    ("CREATED") ;; todo maybe published too? or stuff "created" into the heading??
 
         ; I'm using my own styles
         :html-head-include-default-style nil
