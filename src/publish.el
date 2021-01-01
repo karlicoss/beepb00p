@@ -318,22 +318,45 @@
 
         :html-head "\
 <style>
+/* todo need to make responsive */
+:root {
+  --sidebar-width: 20rem;
+}
+
 #sidebar {
   position: fixed;
   left: 0;
   top: 0;
   bottom: 0;
 
+  min-width: var(--sidebar-width);
+
   /* todo scroll? */
   padding-right: 1em;
   border: 2px solid;
 }
-body {
-  width: 1000px;
-  margin: auto;
-}
-</style> 
+</style>
 "
+        :html-head-extra "\
+<link href='https://beepb00p.xyz/assets/css/default.css'     rel='stylesheet'>
+<link href='https://beepb00p.xyz/assets/css/links.css'       rel='stylesheet'>
+<link href='https://beepb00p.xyz/assets/css/htmlize.css'     rel='stylesheet'>
+<link href='https://beepb00p.xyz/assets/css/org-default.css' rel='stylesheet'>
+<link href='https://beepb00p.xyz/assets/css/org-extra.css'   rel='stylesheet'>
+<style>
+/* ugh. need to override default.css */
+body {
+  /* 3 rem just in case, otherwise overlaps sidebard sometimes for some reason */
+  margin-left: calc(var(--sidebar-width) + 3rem);
+}
+/* eh. some links are way too long and break the reponsive view... I guess ok for now */
+a {
+  word-break: break-word;
+}
+</style>
+"
+
         :html-postamble     nil))
+
 
 ;; TODO after intermediate, run santity check
