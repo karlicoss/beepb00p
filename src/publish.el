@@ -21,6 +21,7 @@
 (require 'ox-html)
 
 (defun pp-org (thing)
+  ;; TODO shit. it modifies the thing...
   (org-element-put-property thing :parent nil) ;; otherwise too spammy
   (pp thing))
 
@@ -84,18 +85,26 @@
 
 (defun exobrain/org-org-property-drawer (drawer contents info)
   ;; FIXME fuck, it seems that it doesn't get called if the property drawer is missing altoghether??. shit.
-  (let* ((parent (org-export-get-parent-headline drawer))
-         (ref    (org-export-get-reference parent info))
-         (res    (org-org-identity drawer contents info))
-         ;; fuck nested let statements too.
-         (cont2  (if (s-contains? ":ID:" contents)
-                     ;; if already has id don't do anything
-                     ;; I dunno why thought such tabulation is a good idea for if-else.. fucking hate this.
-                     contents
-                   ;; otherwise generate id
-                   (format "%s:ID: %s\n" contents ref))))
-    (org-org-identity drawer cont2 info)))
+  ;; TODO switch to a proper check...
+  (unless (s-contains? ":ID:" contents)
+    (let* ((parent (org-export-get-parent-headline drawer))
+           (ref    (org-export-get-reference parent info)))
+      (setcdr
+       (last drawer)
+       ;; meh..
+       (list (list 'node-property (list
+                                   :key "ID"
+                                   :value ref))))))
+  (let* ((children (org-element-contents drawer))
+         (result   (mapconcat
+                    ;; TODO I wonder if this should happen by default instead of identity 'plaintext' mapping
+                    ;; e.g. by deafult node-property never gets translated
+                    (lambda (e) (org-export-data e info))
+                    (org-element-contents drawer)
+                    "")))
+    (format ":PROPERTIES:\n%s:END:" result)))
 
+;; (advice-add #'org-org-section         :before #'exobrain/before-org-org-section)
 ;; (advice-add #'org-org-headline        :before #'exobrain/before-org-org-headline)
 ;; (advice-add #'org-org-section         :around #'exobrain/around-org-org-section)
 ;; (advice-add #'org-org-property-drawer :around #'exobrain/around-org-org-property-drawer)
@@ -103,7 +112,7 @@
 (org-export-define-derived-backend
  'my-org
  'org
- :translate-alist '((property-drawer . exobrain/org-org-property-drawer))) ;; default is identity
+ :translate-alist '((property-drawer . exobrain/org-org-property-drawer))) ;; default is identity, so can't hack via advice
 
 
 (defun org-org-publish-to-my-org (plist filename pub-dir)
@@ -184,6 +193,7 @@
 ;;        '("<%A, %B %d, %Y>" . "<%A, %B %d, %Y %H:%M:%S>"))
 ;;       (org-display-custom-times 't))
 ;;   (org-publish-all))
+;; TODO fuck. here as well, timestamps are only translated if they are not within the heading???
 (defun exobrain/override-org-timestamp-translate (timestamp &optional boundary)
   "sets custom format to all my timestamps (strips off time, it's just too spammy)"
   (let ((res (org-timestamp-format timestamp "[%Y-%m-%d]")))
