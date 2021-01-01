@@ -55,11 +55,15 @@
 (advice-patch 'org-html-headline
               "<%1$s class=\"%3$s\">%4$s%5$s</%6$s>\n"
               "<%s id=\"%s\" class=\"%s\">%s%s</%s>\n")
-;; TODO shit. it can't override multiple definitions at once...
 ;; (advice-patch 'org-html-headline
 ;;               "f"
 ;;               '(concat "outline-container-" (org-export-get-reference headline info)))
-
+;; TODO shit. it can't override multiple definitions at once...
+;; so have to choose one here.. or could replace larger form
+(advice-patch 'org-html-headline
+              "\n<h%1$d id=\"%2$s\"%3$s><a class='headerlink' href='#%2$s'>¶</a>%4$s</h%5$d>\n"
+              "\n<h%d id=\"%s\"%s>%s</h%d>\n")
+;; TODO ok, really awesome that I basically replaced a huge chunk of blog with tuny elisp snippets..
 
 ;; TODO share with compile-org?
 (setq org-export-with-author nil)
@@ -308,7 +312,7 @@
         :with-priority      t
         :with-properties    t
 
-        :html-head "
+        :html-head "\
 <style>
 #sidebar {
   position: fixed;
