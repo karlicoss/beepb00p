@@ -196,6 +196,8 @@
         ("DONE"   . "done")
         ("CANCEL" . "cancel")))
 
+;; used during exporting regular timestamps (default includes day of week)
+(setq org-time-stamp-formats '("<%Y-%m-%d>"))
 
 ;; TODO done keywords should be marked separately..
 (defun exobrain/org-md--headline-title (orig style level title &optional anchor tags)
@@ -263,6 +265,9 @@
         :base-extension "org" ;; do I even need base-extension?
         :publishing-directory ,exobrain/public-dir
         :publishing-function org-org-publish-to-my-org
+
+        ;; useful for debugging
+        ;; :exclude "exobrain.org\\|pkm.org\\|reading.org\\|toread.org"
 
         ,@exobrain/export-settings))
 
