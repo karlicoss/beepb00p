@@ -48,6 +48,8 @@ mdbook_output  = root_dir / 'output'
 def clean_dir(path: Path) -> None:
     assert path.is_dir(), path
     for x in path.iterdir():
+        if x.name == '.git':
+            continue
         if x.is_file():
             x.unlink()
         else: # dir
@@ -72,12 +74,25 @@ def clean() -> None:
 def main() -> None:
     import argparse
     p = argparse.ArgumentParser()
-    p.add_argument('--add', action='store_true')
+    p.add_argument('--add'   , action='store_true')
+    p.add_argument('--target', type=str, required=True)
     args = p.parse_args()
-    target = builtin
+    target = args.target
 
+    preprocess(args)
+
+    if target == mdbook:
+        postprocess_mdbook()
+    elif target == builtin:
+        postprocess_builtin()
+    else:
+        raise AssertionError(target)
+
+
+def preprocess(args) -> None:
     clean()
 
+    target = args.target
     eargs = [
         '--eval', f'''(progn
             (setq exobrain/input-dir  "{input_dir}" )
@@ -115,14 +130,7 @@ def main() -> None:
         ccall(['git', 'add', '-p'], cwd=public_dir)
         # TODO suggest to commit/push?
 
-    if target == mdbook:
-        postprocess_mdbook()
-    elif target == builtin:
-        postprocess_builtin()
-    else:
-        raise AssertionError(target)
-
-def postprocess_builtin():
+def postprocess_builtin() -> None:
     sitemap = html_dir / 'sitemap.html'
     assert sitemap.exists()
     import bs4 # type: ignore
@@ -148,13 +156,14 @@ def postprocess_builtin():
         )
         html.write_text(text)
 
-def postprocess_mdbook():
-    # mdbook doesn't like summary format so we fix it
-    # TODO reorder index?
-    # todo what's that for??
-    ccall(r"awk -i inplace !/\[README\]/  markdown/SUMMARY.md".split())
-    # TODO clean first?
-    ccall(['mdbook', 'build'])
+def postprocess_mdbook() -> None:
+    # mdbook is picky about the summary format (it uses it to discover which files to include??)
+    # https://rust-lang.github.io/mdBook/format/summary.html
+    # eh.. no clue what that was for...
+    # ccall(r"awk -i inplace !/\[README\]/  markdown/SUMMARY.md".split())
+    #
+    ccall(['./mdbook', 'clean'])
+    ccall(['./mdbook', 'build'])
 
     # meh. but it works :shrug:
     loc = '<h1 class="menu-title">exobrain</h1>'
@@ -172,10 +181,7 @@ def postprocess_mdbook():
         # from atomicwrites import atomic_write
         # # with atomic_write(str(html), mode='w', overwrite=True) as fo:
         #     fo.write(body)
-
     assert len(patched) > 0 # just in case
-    # patch in link to the blog..
-    style="font-size: 2rem;/*! text-align: center; *//*! display: inline-block; *//*! font-weight: 200; *//*! flex: 1; *//*! text-align: left; */line-height: var(--menu-bar-height);"
 
 
 if __name__ == '__main__':

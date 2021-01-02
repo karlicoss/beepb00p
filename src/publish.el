@@ -80,7 +80,6 @@
   ;; mdbook doesn't like list item not being a link
   ;; and default sitemap entry function explicitly ignores directories
   (if (directory-name-p entry)
-
       ;; README.md got some special handling, so we abuse that
       ;; https://rust-lang.github.io/mdBook/format/config.html?highlight=readme#configuring-preprocessors
       (format "[[file:%sREADME.org][%s]]" entry (directory-file-name entry))
