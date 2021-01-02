@@ -1,3 +1,5 @@
+;; docs: https://orgmode.org/manual/Publishing-options.html#Publishing-options
+
 (require 'org)
 (require 'subr-x)
 (require 's)
@@ -21,7 +23,7 @@
 (require 'ox-html)
 
 (defun pp-org (thing)
-  ;; TODO shit. it modifies the thing...
+  ;; FIXME shit. it modifies the thing...
   (org-element-put-property thing :parent nil) ;; otherwise too spammy
   (pp thing))
 
@@ -64,10 +66,6 @@
               "\n<h%1$d id=\"%2$s\"%3$s><a class='headerlink' href='#%2$s'>¶</a>%4$s</h%5$d>\n"
               "\n<h%d id=\"%s\"%s>%s</h%d>\n")
 ;; TODO ok, really awesome that I basically replaced a huge chunk of blog with tuny elisp snippets..
-
-;; TODO share with compile-org?
-(setq org-export-with-author nil)
-(setq org-export-preserve-breaks t) ;; by default it collapses consecutive lines.. usually undesirable
 
 ;; TODO shit. filetags don't get inherited??
 ;; ugh... maybe could write a script to hack them back somehow..
@@ -152,19 +150,28 @@
 
 (advice-add #'org-export-data :before #'exobrain/before-org-export-data)
 
+(defun exobrain/org-org-node-property (prop contents _info)
+  (let* ((key   (org-element-property :key   prop))
+         (value (org-element-property :value prop)))
+    (when (-contains? '("CREATED" "PUBLISHED") key)
+      (cl-assert value)
+      (let* ((orgts  (org-timestamp-from-string value))
+             (hacked (exobrain/hack-timestamp orgts))
+             (news   (org-timestamp-format hacked "[%Y-%m-%d]")))
+        (org-element-put-property prop :value news))))
+  (org-org-identity prop contents _info))
+
 
 (org-export-define-derived-backend
  'my-org
  'org
- :translate-alist '((property-drawer . exobrain/org-org-property-drawer))) ;; default is identity, so can't hack via advice
-
-
+ ;; default for these is identity, so can't hack via advice
+ :translate-alist '((property-drawer . exobrain/org-org-property-drawer)
+                    (node-property   . exobrain/org-org-node-property)))
 (defun org-org-publish-to-my-org (plist filename pub-dir)
   (org-publish-org-to 'my-org filename ".org" plist pub-dir))
 
 
-;; https://orgmode.org/manual/Publishing-options.html#Publishing-options
-;; TODO exclude-tags
 ;; with-author? with-timestamps? with-date?
 
 (defun exobrain/extra-filter (output backend info)
@@ -242,18 +249,21 @@
       res)))
 (advice-add #'org-timestamp-translate :override #'exobrain/override-org-timestamp-translate)
 
-
-(defun exobrain/hack-timestamp (ts _)
+;; removes time of day from the timestamp
+(defun exobrain/hack-timestamp (ts &rest args)
   (org-element-put-property ts :minute-start nil)
   (org-element-put-property ts :minute-end   nil)
   (org-element-put-property ts :hour-start   nil)
-  (org-element-put-property ts :hour-end     nil))
+  (org-element-put-property ts :hour-end     nil)
+  ts)
 (advice-add #'org-element-timestamp-interpreter :before #'exobrain/hack-timestamp)
 
-
+;; TODO share with compile-org?
+(setq org-export-preserve-breaks t) ;; by default it collapses consecutive lines.. usually undesirable
 (setq exobrain/export-settings
       '(:with-priority      t
-        :with-properties    t
+        ;; todo eh, not sure if I need anything else?
+        :with-properties    ("ID" "CUSTOM_ID" "CREATED" "PUBLISHED")
         ;; TODO want to exclude certain tags from displaying in export
         ;; not sure if that's possible without patching org-mode functions :(
         ;; :exclude-tags       ("gr" "graspw")
