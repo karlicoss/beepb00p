@@ -10,7 +10,8 @@
 (setq   exobrain/rootdir    default-directory)
 (defvar exobrain/input-dir     nil)
 (defvar exobrain/public-dir    nil)
-(defvar exobrain/output-dir    nil)
+(defvar exobrain/md-dir        nil)
+(defvar exobrain/html-dir      nil)
 
 
 ;; disable ~ files
@@ -222,24 +223,6 @@
     (apply orig args)))
 (advice-add #'org-md-publish-to-md :around #'exobrain/org-md-publish-to-md)
 
-
-(defun exobrain/add-nav-sidebar (contents _backend info)
-  ;; ugh. what a mess
-  (if (string= (plist-get info :input-buffer) "SUMMARY.org")
-      contents
-    (let ((relroot (file-name-directory (file-relative-name exobrain/input-dir (plist-get info :input-file)))))
-      ;; eh. a bit crap that it ends up in the very end of the file, but whatever
-      ;; todo ugh. annoying that it ends up in md source..
-      (format "%s\n#+HTML: <nav id='sidebar'>\n#+INCLUDE: %s\n#+HTML: </nav>"
-              contents
-              ;; for fuck's sake, expand-file-name resolves the .. relatieve link, and there doesn't seem any other path combining function??
-              (format "%s%s" (if relroot (concat relroot "/") "") "SUMMARY.org")))))
-
-;; ugh. seems that it works during html conversion, but fails during org-org :(
-;; (let ((org-time-stamp-custom-formats
-;;        '("<%A, %B %d, %Y>" . "<%A, %B %d, %Y %H:%M:%S>"))
-;;       (org-display-custom-times 't))
-;;   (org-publish-all))
 ;; TODO fuck. here as well, timestamps are only translated if they are not within the heading???
 (defun exobrain/override-org-timestamp-translate (timestamp &optional boundary)
   "sets custom format to all my timestamps (strips off time, it's just too spammy)"
@@ -287,18 +270,16 @@
         :auto-sitemap t
         :sitemap-format-entry exobrain/org-publish-sitemap-entry
         ;; TODO maybe won't be needed if I use my own exporter?
-        :sitemap-filename "SUMMARY.org"
+        :sitemap-filename "SUMMARY.org" ;; todo not sure if needed here? maybe move to md?
 
         ;; TODO not sure if I want to publish all properties here?
-        ,@exobrain/export-settings
-
-        :filter-final-output ,(cons #'exobrain/add-nav-sidebar org-export-filter-final-output-functions)))
+        ,@exobrain/export-settings))
 
 (setq exobrain/project-org2md
       `("exobrain-org2md"
         :base-directory ,exobrain/public-dir
         :base-extension "org"
-        :publishing-directory ,exobrain/output-dir
+        :publishing-directory ,exobrain/md-dir
         :recursive t
         :publishing-function org-md-publish-to-md
 
@@ -310,9 +291,12 @@
       `("exobrain-html"
         :base-directory ,exobrain/public-dir
         :base-extension "org"
-        :publishing-directory ,exobrain/output-dir
+        :publishing-directory ,exobrain/html-dir
         :recursive t
         :publishing-function org-html-publish-to-html
+
+        ;; todo ugh. seems that it's dumping the source org file as well??
+        :auto-sitemap t
 
         ,@exobrain/export-settings
         :with-properties    ("CREATED") ;; todo maybe published too? or stuff "created" into the heading??

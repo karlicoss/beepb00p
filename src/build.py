@@ -30,13 +30,20 @@ from compile_org import emacs
 root_dir = Path(__file__).absolute().parent.parent
 input_dir  = root_dir / 'input'
 public_dir = root_dir / 'public'
-output_dir = root_dir / 'markdown'  # TODO FIXME
-html_output_dir = root_dir / 'output'
+md_dir     = root_dir / 'markdown'
+html_dir   = root_dir / 'html'
 
 input_dir   = input_dir .resolve() # ugh. otherwise relative links might end up weird during org-publish-cache-ctime-of-src
 public_dir  = public_dir.resolve()
-output_dir  = output_dir.resolve()
+md_dir      = md_dir    .resolve()
+html_dir    = html_dir  .resolve()
 
+
+mdbook  = 'mdbook'
+builtin = 'builtin' # builtin emacs export
+
+
+mdbook_output  = root_dir / 'output'
 
 def clean_dir(path: Path) -> None:
     assert path.is_dir(), path
@@ -54,7 +61,8 @@ def clean() -> None:
     for c in cachedir.glob('*.cache'):
         c.unlink()
 
-    clean_dir(output_dir)
+    clean_dir(md_dir)
+    clean_dir(html_dir)
 
     # TODO what about empty dirs?
     for f in public_dir.rglob('*.org'):
@@ -64,25 +72,27 @@ def clean() -> None:
 def main() -> None:
     import argparse
     p = argparse.ArgumentParser()
-    p.add_argument('--no-add', action='store_true')
+    p.add_argument('--add', action='store_true')
     args = p.parse_args()
+    target = builtin
 
     clean()
 
     eargs = [
         '--eval', f'''(progn
-            (setq exobrain/input-dir  "{input_dir}")
+            (setq exobrain/input-dir  "{input_dir}" )
             (setq exobrain/public-dir "{public_dir}")
-            (setq exobrain/output-dir "{output_dir}")
+            (setq exobrain/md-dir     "{md_dir}"    )
+            (setq exobrain/html-dir   "{html_dir}"  )
         )''',
         '--directory', root_dir / 'src/advice-patch',
         '--load', root_dir / 'src/publish.el',
         '-f', 'toggle-debug-on-error', # dumps stacktrace on error
         # adjust this variable to change the pipeline
-        '--eval', '''
+        '--eval', f'''
 (let ((org-publish-project-alist `(
         ,exobrain/project-preprocess-org
-        ,exobrain/project-org2html
+        {",exobrain/project-org2md" if target == mdbook else ",exobrain/project-org2html"}
        )))
   (org-publish-all))
 '''.strip(),
@@ -91,23 +101,51 @@ def main() -> None:
         pass
     assert ep.returncode == 0
 
+    # TODO need to clean public dir??
     # TODO call check_org after preprocess-org instead??
     from check import check_org
     check_org(public_dir)
 
     # TODO think about commit/push/deploy logic?
+    assert (public_dir / '.git').is_dir(), public_dir
     ccall(['git', 'status'], cwd=public_dir)
 
-    iadd = not args.no_add
-    if iadd:
+    if args.add:
         ccall(['git', 'add', '-A', '--intent-to-add'], cwd=public_dir)
         ccall(['git', 'add', '-p'], cwd=public_dir)
-
         # TODO suggest to commit/push?
 
-    # TODO use output_dir
+    if target == mdbook:
+        postprocess_mdbook()
+    elif target == builtin:
+        postprocess_builtin()
+    else:
+        raise AssertionError(target)
+
+def postprocess_builtin():
+    sitemap = html_dir / 'sitemap.html'
+    assert sitemap.exists()
+    import bs4 # type: ignore
+    soup = bs4.BeautifulSoup(sitemap.read_text(), 'lxml')
+    node = soup.find(id='content')
+    node.select_one('.title').decompose()
+    node.name = 'nav' # div by deafult
+    node['id'] = 'sidebar'
+    toc = node.prettify()
+    for html in html_dir.rglob('*.html'):
+        if html == sitemap:
+            continue
+        text = html.read_text()
+        text = text.replace(
+            '\n<body>\n',
+            '\n<body>\n' + toc,
+        )
+        html.write_text(text)
+
+def postprocess_mdbook():
     # mdbook doesn't like summary format so we fix it
     # TODO reorder index?
+    # todo what's that for??
     ccall(r"awk -i inplace !/\[README\]/  markdown/SUMMARY.md".split())
     # TODO clean first?
     ccall(['mdbook', 'build'])
@@ -116,14 +154,13 @@ def main() -> None:
     loc = '<h1 class="menu-title">exobrain</h1>'
     link = '<a style="font-size: 2rem; line-height: var(--menu-bar-height);" href="https://beepb00p.xyz">back to blog</a>'
     patched: List[Path] = []
-    for html in html_output_dir.rglob('*.html'):
+    for html in mdbook_output.rglob('*.html'):
         body = html.read_text()
         if loc not in body:
             continue
         body = body.replace(loc, link + loc, 1)
         html.write_text(body)
         patched.append(html)
-
         # ugh. fine, keep it non-atomic for now...
         # https://github.com/untitaker/python-atomicwrites/issues/42
         # from atomicwrites import atomic_write
