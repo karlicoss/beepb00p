@@ -71,11 +71,9 @@
 ;; TODO shit. filetags don't get inherited??
 ;; ugh... maybe could write a script to hack them back somehow..
 
-
 ;; examples of sitemap formatting
 ;; https://github.com/nanjj/nanjj.github.io/blob/4338fa60b07788885d3d4c8b2c684360a67e8098/org-publish.org
 
-;; todo use advice instead
 (defun exobrain/org-publish-sitemap-entry (entry style project)
   ;; mdbook doesn't like list item not being a link
   ;; and default sitemap entry function explicitly ignores directories
@@ -266,12 +264,6 @@
         :publishing-directory ,exobrain/public-dir
         :publishing-function org-org-publish-to-my-org
 
-        :auto-sitemap t
-        :sitemap-format-entry exobrain/org-publish-sitemap-entry
-        ;; TODO maybe won't be needed if I use my own exporter?
-        :sitemap-filename "SUMMARY.org" ;; todo not sure if needed here? maybe move to md?
-
-        ;; TODO not sure if I want to publish all properties here?
         ,@exobrain/export-settings))
 
 (setq exobrain/project-org2md
@@ -280,6 +272,11 @@
         :base-extension "org"
         :publishing-directory ,exobrain/md-dir
         :publishing-function org-md-publish-to-md
+
+        :auto-sitemap t
+        ;; note: sitemap has to be in source format, so that's why it's md here
+        :sitemap-filename "SUMMARY.org"
+        :sitemap-format-entry exobrain/org-publish-sitemap-entry
 
         ,@exobrain/export-settings
 
@@ -292,7 +289,7 @@
         :publishing-directory ,exobrain/html-dir
         :publishing-function org-html-publish-to-html
 
-        ;; todo ugh. seems that it's dumping the source org file as well??
+        ;; todo ugh. seems that it's dumping sitemap to the source dir, and it can't be changed?
         :auto-sitemap t
 
         ,@exobrain/export-settings
