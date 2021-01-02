@@ -244,7 +244,8 @@
 ;; TODO share with compile-org?
 (setq org-export-preserve-breaks t) ;; by default it collapses consecutive lines.. usually undesirable
 (setq exobrain/export-settings
-      '(:with-priority      t
+      '(:recursive          t
+        :with-priority      t
         ;; todo eh, not sure if I need anything else?
         :with-properties    ("ID" "CUSTOM_ID" "CREATED" "PUBLISHED")
         ;; TODO want to exclude certain tags from displaying in export
@@ -264,7 +265,6 @@
         :base-directory ,exobrain/input-dir
         :base-extension "org" ;; do I even need base-extension?
         :publishing-directory ,exobrain/public-dir
-        :recursive t
         :publishing-function org-org-publish-to-my-org
 
         :auto-sitemap t
@@ -280,7 +280,6 @@
         :base-directory ,exobrain/public-dir
         :base-extension "org"
         :publishing-directory ,exobrain/md-dir
-        :recursive t
         :publishing-function org-md-publish-to-md
 
         ,@exobrain/export-settings
@@ -292,7 +291,6 @@
         :base-directory ,exobrain/public-dir
         :base-extension "org"
         :publishing-directory ,exobrain/html-dir
-        :recursive t
         :publishing-function org-html-publish-to-html
 
         ;; todo ugh. seems that it's dumping the source org file as well??
@@ -318,9 +316,10 @@
   top: 0;
   bottom: 0;
 
-  min-width: var(--sidebar-width);
+  width: var(--sidebar-width);
 
-  /* todo scroll? */
+  overflow-y: scroll;
+
   padding-right: 1em;
   border: 2px solid;
 }
@@ -341,6 +340,9 @@ body {
 /* eh. some links are way too long and break the reponsive view... I guess ok for now */
 a {
   word-break: break-word;
+}
+a * {
+  word-break: initial; /* to prevent todo states etc from word breaking */
 }
 </style>
 "

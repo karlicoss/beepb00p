@@ -135,10 +135,16 @@ def postprocess_builtin():
     for html in html_dir.rglob('*.html'):
         if html == sitemap:
             continue
+        depth = len(html.relative_to(html_dir).parts) - 1
+        tocr = toc.replace(
+            'href="',
+            'href="' + ('' if depth == 0 else '../' * depth),
+        )
+
         text = html.read_text()
         text = text.replace(
             '\n<body>\n',
-            '\n<body>\n' + toc,
+            '\n<body>\n' + tocr,
         )
         html.write_text(text)
 
