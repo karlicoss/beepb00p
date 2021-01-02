@@ -156,6 +156,9 @@ def postprocess_builtin() -> None:
         )
         html.write_text(text)
 
+    (html_dir / 'index.html').symlink_to('README.html') # meh
+
+
 def postprocess_mdbook() -> None:
     # mdbook is picky about the summary format (it uses it to discover which files to include??)
     # https://rust-lang.github.io/mdBook/format/summary.html

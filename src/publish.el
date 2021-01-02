@@ -1,3 +1,14 @@
+(defvar exobrain/excluded-tags
+  '(
+    ;; todo not sure? could keep as well..
+    "habit"
+
+    ;; todo these should be gradually phased out...
+    "gr"
+    "TODO"
+    "graspw"
+    "protocol"))
+
 ;; docs: https://orgmode.org/manual/Publishing-options.html#Publishing-options
 
 (require 'org)
@@ -160,6 +171,13 @@
   (org-org-identity prop contents _info))
 
 
+(defun exobrain/hack-tags (headline contents info)
+  (let* ((tags  (org-element-property :tags headline))
+         (ftags (-difference tags exobrain/excluded-tags)))
+    (org-element-put-property headline :tags ftags)))
+(advice-add #'org-org-headline :before #'exobrain/hack-tags)
+
+
 (org-export-define-derived-backend
  'my-org
  'org
@@ -247,9 +265,6 @@
         :with-priority      t
         ;; todo eh, not sure if I need anything else?
         :with-properties    ("ID" "CUSTOM_ID" "CREATED" "PUBLISHED")
-        ;; TODO want to exclude certain tags from displaying in export
-        ;; not sure if that's possible without patching org-mode functions :(
-        ;; :exclude-tags       ("gr" "graspw")
         :with-tags          t
         ;; shit. only impacts isolated timestamps... (i.e. not next to TODO keywords etc)
         ;; https://github.com/bzg/org-mode/blob/817c0c81e8f6d1dc387956c8c5b026ced62c157c/lisp/ox.el#L1896
