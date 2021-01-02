@@ -1,7 +1,7 @@
 (defvar exobrain/excluded-tags
   '(
-    ;; todo not sure? could keep as well..
-    "habit"
+    "habit" ;; todo not sure? could keep as well..
+    "refile" ;; this one is def a bit spammy
 
     ;; todo these should be gradually phased out...
     "gr"
@@ -172,10 +172,40 @@
 
 
 (defun exobrain/hack-tags (headline contents info)
-  (let* ((tags  (org-element-property :tags headline))
+  (let* ((tags  (org-element-property :tags headline)) ;; todo use org-export-get-tags? it can filter too
          (ftags (-difference tags exobrain/excluded-tags)))
     (org-element-put-property headline :tags ftags)))
 (advice-add #'org-org-headline :before #'exobrain/hack-tags)
+
+
+;;; for html, we want inherited tags to be displayed within the headlines (since otherwise it's too opaque)
+;;; the easiest way seems to mark them in a special way and then handle during rendering...
+(setq exobrain/inh-prefix "INHERITED_")
+
+(defun exobrain/hack-html-tags (headline contents info)
+  (let* ((selftags (org-export-get-tags headline info nil nil))
+         (partags  (org-export-get-tags (org-export-get-parent-element headline) info nil t))
+         (selftags  (-difference selftags partags))) ;; if parent includes the tag, treat it as inherited
+    (org-element-put-property headline
+                              :tags
+                              (-concat selftags
+                                       (--map (s-concat exobrain/inh-prefix it) partags)))))
+(advice-add #'org-html-headline :before #'exobrain/hack-html-tags)
+
+;; annoying, but seems the easiest is to simply override...
+(defun exobrain/org-html--tags (tags info)
+  (let* ((inhtags  (--filter (s-starts-with? exobrain/inh-prefix it) tags))
+         (selftags (-difference tags inhtags))
+         (inhtags  (--map    (s-chop-prefix exobrain/inh-prefix it) inhtags)))
+    ;; not sure why everythin wrapped in 'tag' in ox-html (instead of, say 'tags')
+    (format "<span class=\"tag\">%s</span>"
+            (s-join "" (--map (format "<span class=\"%1$s%2$s\">%1$s</span>" (nth 0 it) (nth 1 it))
+                              ;; not so sure about the order.. but I guess it's nice when all visible tags are aligned
+                              (-concat (--map (list it " tag-inherited") inhtags)
+                                       (--map (list it " tag-self"     ) selftags)))))))
+
+
+(advice-add #'org-html--tags  :override #'exobrain/org-html--tags)
 
 
 (org-export-define-derived-backend
@@ -260,6 +290,7 @@
 
 ;; TODO share with compile-org?
 (setq org-export-preserve-breaks t) ;; by default it collapses consecutive lines.. usually undesirable
+(setq org-export-with-section-numbers nil)
 (setq exobrain/export-settings
       '(:recursive          t
         :with-priority      t
@@ -359,6 +390,19 @@ a {
 }
 a * {
   word-break: initial; /* to prevent todo states etc from word breaking */
+}
+
+.tag {
+  float: right; /* todo consolidate with blog */
+}
+.tag span {
+  margin-left: 1ch;
+}
+.tag .tag-self {
+  color: #a51; /* todo this is active color in blog... not sure if want it here? */
+}
+.tag .tag-inherited {
+  color: #eee; /* eh. I guess almost invisible is ok, I'm mainly concerned about the search ... */
 }
 </style>
 "

@@ -59,7 +59,9 @@ def clean_dir(path: Path) -> None:
 def clean() -> None:
     # todo ugh, need symlink watching tool here again...
     cachedir = Path('~/.org-timestamps').expanduser()
-    # TODO not sure about removing all of it...
+    # right, so it keeps track of modifications and doesn't publish if it wasn't modified
+    # but completely unclear how it behaves wrt added/removed files etc
+    # also wouldn't know if the source code was modified... so best not to use it I guess
     for c in cachedir.glob('*.cache'):
         c.unlink()
 
