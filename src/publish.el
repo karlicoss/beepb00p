@@ -333,6 +333,15 @@
 
         :with-properties ("CREATED")))
 
+;; eh. a bit hacky, but does the job
+;; doesn't seem that org-mdoe exposes filetags properly
+(defun org-html--build-pre/postamble (type info)
+  (if (eq type 'preamble)
+    (let* ((filetags (plist-get info :filetags))
+           (tagss    (exobrain/org-html--tags filetags info)))
+      (format "<div class='filetags'>%s</div>" tagss))
+    nil))
+
 (setq exobrain/project-org2html
       `("exobrain-html"
         :base-directory ,exobrain/public-dir
@@ -342,6 +351,8 @@
 
         ;; todo ugh. seems that it's dumping sitemap to the source dir, and it can't be changed?
         :auto-sitemap t
+
+        :html-preamble t
 
         ,@exobrain/export-settings
         :with-properties    ("CREATED") ;; todo maybe published too? or stuff "created" into the heading??
@@ -403,6 +414,15 @@ a * {
 }
 .tag .tag-inherited {
   color: #eee; /* eh. I guess almost invisible is ok, I'm mainly concerned about the search ... */
+}
+
+.filetags {
+  float: left;
+  font-size: 1.2rem;
+}
+
+.tag-self::before {
+  content: '#';
 }
 </style>
 "
