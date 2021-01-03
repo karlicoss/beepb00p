@@ -1,5 +1,4 @@
 // https://lunrjs.com/guides/index_prebuilding.html
-// TODO build index from raw htmls? and just make them visible? ugh.
 
 // TODO put raw html here?
 const dmap = new Map()
@@ -7,7 +6,8 @@ const idx = lunr(function () {
   this.ref('key')
   this.field('text')
 
-    // TODO iter map?
+  this.metadataWhitelist = ['position']
+
   documents.forEach((doc) => {
       doc.key = doc.file + '#' + doc.id
       dmap.set(doc.key, doc)
@@ -23,12 +23,6 @@ const ready = () => {
     const query   = document.getElementById('query')
     const results = document.getElementById('results')
 
-    // query.value = 'hi'
-
-    window.query   = query
-    window.results = results
-
-    // TODO clear first?
     const dosearch = () => {
         const q = query.value
         const sres = idx.search(q)
@@ -37,23 +31,42 @@ const ready = () => {
         for (const r of sres) {
             const d = dmap.get(r.ref)
 
+            const etext = create('span')
+            etext.style.display = 'block'
+            const text = d.text
+            for ([k, v] of Object.entries(r.matchData.metadata)) {
+                const poss = v.text.position
+                let cpos = 0
+                for (const [pos, len] of [...v.text.position, [text.length, 0]]) {
+                    if (pos > cpos) {
+                        etext.appendChild(document.createTextNode(text.substring(cpos, pos)))
+                    }
+                    if (len == 0) {
+                        break
+                    }
+                    const npos = pos + len
+                    const mark = create('mark')
+                    mark.textContent = text.substring(pos, npos)
+                    etext.appendChild(mark)
+                    cpos = npos
+                }
+            }
+            // todo use css
             const el   = create('div')
             el.style.paddingBottom = '0.5em'
             const link = create('a')
             link.href = `https://beepb00p.xyz/exobrain2/${d.file}#${d.id}`
             // todo don't need # in text?
             link.textContent = d.file
-            const text = create('span')
-            text.style.display = 'block'
-            text.textContent = d.text
             el.appendChild(link)
-            el.appendChild(text)
+            el.appendChild(etext)
             results.appendChild(el)
         }
     }
 
+    /* todo could debounce but whatever */
+    query.addEventListener('input', dosearch)
     search.addEventListener('click', dosearch)
-
 }
 
 document.addEventListener('DOMContentLoaded', ready)
