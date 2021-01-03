@@ -171,7 +171,9 @@ def postprocess_builtin() -> None:
             'href="',
             'href="' + rel,
         )
+        # meh... this gets too complicated
         sidebar = f"""
+<a id='jumptosidebar' href='#sidebar'>Jump to exobrain search &amp sitemap</a>
 <div id='sidebar'>
 {search_body}
 {tocr}

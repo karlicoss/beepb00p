@@ -15,29 +15,16 @@ body {
 
 
 /* positioning & responsiveness  */
-body {
-  display: flex;
-  overflow-x: scroll;
-}
 #sidebar {
-  /* todo would be nice to make it scrollable.. but not sure how */
-  /* this is so when it's overflown (on mobile), it doesn't shrink */
-  min-width: var(--sidebar-width);
-  /* this is so it doesn't expand too much */
-  max-width: var(--sidebar-width);
-  /* somehow just width: doesn't achieve the same effect, guess I don't really understand how it works */
+  overflow: auto; /* enable scroll */
 }
 #content {
-  min-width: min(var(--content-width), 95%);
-  max-width: var(--content-width);
-
-  /* position in the center */
-  margin-left: auto;
-  margin-right: auto;
+  width: var(--content-width);
 }
-#exobrain-toc {
-  margin-left : auto; /* flex: make sure it sticks to the right */
-  overflow-y: scroll;
+#jumptosidebar {
+  position: absolute;
+  top: 0;
+  right: 0;
 }
 a {
   /* eh. some links are way too long and break the reponsive view... I guess ok for now */
@@ -47,6 +34,45 @@ a * {
   word-break: initial; /* to prevent todo states etc from word breaking */
 }
 /**/
+
+
+/* fuck. seems that this is the easiest to achieve responsiveness
+   - sticky doesn't work (and I don't understand it?)
+   - can't use absolute, it's relative to the document, so not 'sticky'
+   - fixed works well until contents start overflowing... then can't scroll horizontally
+   - with flex which works well horizontally, can't properly make it sticky vertically..
+ */
+
+/* 1700 = content width + sidebar width */
+@media (max-width: 1700px) {
+  #content {
+    margin-left: auto;
+    margin-right: auto;
+  }
+  #sidebar {
+    margin-left: auto;
+    margin-right: auto;
+
+    width: var(--content-width);
+  }
+}
+@media (min-width: 1700px) {
+  #jumptosidebar {
+    display: none;
+  }
+  #content {
+    margin-left: calc((100% - var(--content-width) - var(--sidebar-width)) / 2);
+  }
+  #sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    right: 0;
+
+    width: var(--sidebar-width);
+  }
+}
+
 
 
 #sidebar {
@@ -70,6 +96,7 @@ a * {
 
 /* TODO filetags: need to shove into the content? */
 .filetags {
+  display: none;
   position: absolute; /* hack to prevent it from flex.. to fix properly perhaps shouldn't do it in preamble */
   font-size: 1.2rem;
 }
