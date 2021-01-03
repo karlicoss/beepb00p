@@ -8,16 +8,10 @@ from typing import List
 # TODO sanity check that there are noexport entries or some private tags (e.g. people mentioned)
 # ./check
 
-# cargo install mdbook && mdbook init
-
-
 def ccall(*args, **kwargs):
     print(args, file=sys.stderr)
     return check_call(*args, **kwargs)
 
-# TODO https://rust-lang.github.io/mdBook/format/config.html
-
-# https://github.com/rust-lang/mdBook/blob/master/book-example/book.toml
 # TODO editable?
 # TODO huh, that actually would be nice. I could fix stuff in-place and then apply to org-mode
 # TODO search settings?
@@ -39,12 +33,10 @@ md_dir      = md_dir    .resolve()
 html_dir    = html_dir  .resolve()
 
 
-mdbook  = 'mdbook'
 builtin = 'builtin' # builtin emacs export
 
 
 src = root_dir / 'src'
-mdbook_output  = root_dir / 'output'
 
 def clean_dir(path: Path) -> None:
     assert path.is_dir(), path
@@ -83,13 +75,7 @@ def main() -> None:
     target = args.target
 
     preprocess(args)
-
-    if target == mdbook:
-        postprocess_mdbook()
-    elif target == builtin:
-        postprocess_builtin()
-    else:
-        raise AssertionError(target)
+    postprocess_builtin()
 
 
 def preprocess(args) -> None:
@@ -110,7 +96,7 @@ def preprocess(args) -> None:
         '--eval', f'''
 (let ((org-publish-project-alist `(
         ,exobrain/project-preprocess-org
-        {",exobrain/project-org2md" if target == mdbook else ",exobrain/project-org2html"}
+        ,exobrain/project-org2html
        )))
   (org-publish-all))
 '''.strip(),
@@ -206,34 +192,8 @@ const PATH_TO_ROOT = "{rel}"
     (html_dir / 'index.html').symlink_to('README.html') # meh
     # TODO relativize in the very end maybe?
 
-
-def postprocess_mdbook() -> None:
-    # mdbook is picky about the summary format (it uses it to discover which files to include??)
-    # https://rust-lang.github.io/mdBook/format/summary.html
-    # eh.. no clue what that was for...
-    # ccall(r"awk -i inplace !/\[README\]/  markdown/SUMMARY.md".split())
-    #
-    ccall(['./mdbook', 'clean'])
-    ccall(['./mdbook', 'build'])
-
-    # meh. but it works :shrug:
-    loc = '<h1 class="menu-title">exobrain</h1>'
-    link = '<a style="font-size: 2rem; line-height: var(--menu-bar-height);" href="https://beepb00p.xyz">back to blog</a>'
-    patched: List[Path] = []
-    for html in mdbook_output.rglob('*.html'):
-        body = html.read_text()
-        if loc not in body:
-            continue
-        body = body.replace(loc, link + loc, 1)
-        html.write_text(body)
-        patched.append(html)
-        # ugh. fine, keep it non-atomic for now...
-        # https://github.com/untitaker/python-atomicwrites/issues/42
-        # from atomicwrites import atomic_write
-        # # with atomic_write(str(html), mode='w', overwrite=True) as fo:
-        #     fo.write(body)
-    assert len(patched) > 0 # just in case
-
+# TODO add this back
+# link = '<a style="font-size: 2rem; line-height: var(--menu-bar-height);" href="https://beepb00p.xyz">back to blog</a>'
 
 if __name__ == '__main__':
     # TODO allow skipping?
