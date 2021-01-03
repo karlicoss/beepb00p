@@ -11,6 +11,27 @@ body {
   width: initial;
   margin: initial;
 }
+.CANCEL {
+  width: initial; /* ugh. not sure what to do here.. */
+}
+.todo {
+  margin-right: initial; /* ??? not sure why it was in the first place? */
+}
+.priority {
+  margin-right: initial; /* same as above, weird one */
+}
+.tag {
+  font-size: 0.8em;
+}
+.tag span:before {
+  content: ':';
+}
+.priority {
+  opacity: 50%;
+}
+.todo {
+  opacity: 50%;
+}
 /**/
 
 
@@ -19,7 +40,7 @@ body {
   overflow: auto; /* enable scroll */
 }
 #content {
-  width: var(--content-width);
+  max-width: var(--content-width);
 }
 #jumptosidebar {
   position: absolute;
@@ -34,7 +55,6 @@ a * {
   word-break: initial; /* to prevent todo states etc from word breaking */
 }
 /**/
-
 
 /* fuck. seems that this is the easiest to achieve responsiveness
    - sticky doesn't work (and I don't understand it?)
@@ -53,7 +73,9 @@ a * {
     margin-left: auto;
     margin-right: auto;
 
-    width: var(--content-width);
+    margin-top: 2em; /* ugh, otherwise sometimes appears to close (because of tags) and might not take full space??? */
+
+    max-width: var(--content-width);
   }
 }
 @media (min-width: 1700px) {
@@ -93,6 +115,19 @@ a * {
 }
 
 
+:target {
+  -webkit-animation: target-fade 1s 1;
+  -moz-animation   : target-fade 1s 1;
+}
+/* ugh. using the same color as headerlink, but in can't concat color and transparency in css :( */
+@-webkit-keyframes target-fade {
+ 0%   { background-color: #c60f0fff; } 
+ 100% { background-color: #c60f0f00; }
+}
+@-moz-keyframes target-fade {
+ 0%   { background-color: #c60f0fff; } 
+ 100% { background-color: #c60f0f00; }
+}
 
 /* TODO filetags: need to shove into the content? */
 .filetags {
@@ -111,9 +146,6 @@ a * {
 }
 .tag .tag-inherited {
   color: #eee; /* eh. I guess almost invisible is ok, I'm mainly concerned about the search ... */
-}
-.tag-self::before {
-  content: '#';
 }
 
 /* search */
