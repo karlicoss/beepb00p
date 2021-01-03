@@ -1,24 +1,34 @@
 <!doctype html>
 <html lang="en">
-    <head>
-        <meta charset="utf-8">
-        <meta http-equiv="x-ua-compatible" content="ie=edge">
-        <title>LUNR</title>
-        <meta name="description" content="">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <title>Search</title>
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+#query {
+    min-width: 30em;
+}
+.search-result {
+    padding-bottom: 0.5em;
+}
+.search-result-link {
+}
+.search-result-body {
+    display: block;
+    white-space: pre;
+}
+</style>
+<script src="https://unpkg.com/lunr/lunr.js"></script>
+<script src="documents.js"></script>
+<script src="index.js"></script>
+</head>
+<body>
 
-    <script src="https://unpkg.com/lunr/lunr.js"></script>
-    <script src="documents.js"></script>
-    <script src="index.js"></script>
-    </head>
-    <body>
+    <input id='query' type="search" placeholder="type to search (for example, 'exobrain')" autofocus>
+    <span id="status"></span>
+    <div id="results"></div>
 
-      <div>
-        <input id='query' type="search" placeholder="search">
-        <div class="query-error"></div>
-        <button id='search'>Search</button>
-      </div>
-      <div id="results">HI</div>
-
-    </body>
+</body>
 </html>
