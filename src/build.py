@@ -170,6 +170,13 @@ def postprocess_builtin() -> None:
             'href="' + rel,
         )
 
+        # ugh. very annoying... this is ought to be easier...
+        rel_head = f'''
+<script>
+const PATH_TO_ROOT = "{rel}"
+</script>
+'''
+
         search_head = f'''
 <link  href='{rel}search.css' rel='stylesheet'>
 <script src='{rel}search.js'></script>
@@ -179,8 +186,8 @@ def postprocess_builtin() -> None:
             '\n<body>\n' + tocr + '\n' + search_body,
         )
         text = text.replace(
-                           '\n</head>\n',
-             search_head + '\n</head>\n',
+                                      '\n</head>\n',
+             rel_head + search_head + '\n</head>\n',
         )
 
         html.write_text(text)

@@ -1,5 +1,5 @@
 // todo maybe move this to document.js?
-const BASE_URL = 'https://beepb00p.xyz/exobrain2'
+// NOTE: PATH_TO_ROOT is set externally
 
 const create = x => document.createElement(x)
 
@@ -12,7 +12,7 @@ const load = script => new Promise((resolve, reject) => {
 
 const _makeindex = async () => {
     await load('https://unpkg.com/lunr/lunr.js')
-    await load('documents.js')
+    await load(PATH_TO_ROOT + 'documents.js')
 
     const key2doc = new Map()
     const idx = lunr(function () {
@@ -62,7 +62,7 @@ const dosearch = async () => {
         link.target= '_blank'
         link.classList.add('search-result-link')
         // TODO highlight the heading matched by id by exobrain css? maybe with animation or smth
-        link.href = `${BASE_URL}/${d.file}#${d.id}`
+        link.href = `${PATH_TO_ROOT}${d.file}#${d.id}`
         link.textContent = d.file
 
         const text = d.text
