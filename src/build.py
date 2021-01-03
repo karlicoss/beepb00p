@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 from pathlib import Path
 import sys
-from shutil import rmtree
-from subprocess import check_call
+from shutil import rmtree, copy
+from subprocess import check_call, check_output
 from typing import List
 
 # TODO sanity check that there are noexport entries or some private tags (e.g. people mentioned)
@@ -43,6 +43,7 @@ mdbook  = 'mdbook'
 builtin = 'builtin' # builtin emacs export
 
 
+src = root_dir / 'src'
 mdbook_output  = root_dir / 'output'
 
 def clean_dir(path: Path) -> None:
@@ -102,8 +103,8 @@ def preprocess(args) -> None:
             (setq exobrain/md-dir     "{md_dir}"    )
             (setq exobrain/html-dir   "{html_dir}"  )
         )''',
-        '--directory', root_dir / 'src/advice-patch',
-        '--load', root_dir / 'src/publish.el',
+        '--directory', src / 'advice-patch',
+        '--load'     , src / 'publish.el',
         '-f', 'toggle-debug-on-error', # dumps stacktrace on error
         # adjust this variable to change the pipeline
         '--eval', f'''
@@ -133,32 +134,59 @@ def preprocess(args) -> None:
         # TODO suggest to commit/push?
 
 def postprocess_builtin() -> None:
+    copy(src / 'search/search.css', html_dir / 'search.css')
+    copy(src / 'search/search.js' , html_dir / 'search.js' )
+
+    from bs4 import BeautifulSoup as BS # type: ignore
+
     sitemap = html_dir / 'sitemap.html'
     assert sitemap.exists()
-    import bs4 # type: ignore
-    soup = bs4.BeautifulSoup(sitemap.read_text(), 'lxml')
+    soup = BS(sitemap.read_text(), 'lxml')
     node = soup.find(id='content')
     node.select_one('.title').decompose()
     node.name = 'nav' # div by deafult
     node['id'] = 'sidebar'
     toc = node.prettify()
+
+    # todo eh.. implement this as an external site agnostic script
+    (html_dir / 'documents.js').write_text(check_output([
+        src / 'search/makeindex.py',
+        '--root', html_dir,
+    ]).decode('utf8'))
+
+    shtml = src / 'search/search.html'
+    soup = BS(shtml.read_text(), 'lxml')
+    node = soup.find(id='search')
+    search_body = node.prettify()
+
     for html in html_dir.rglob('*.html'):
-        if html == sitemap:
-            continue
+        text = html.read_text()
         depth = len(html.relative_to(html_dir).parts) - 1
+        rel = ('' if depth == 0 else '../' * depth)
+
+        # fixme need to relativize properly
         tocr = toc.replace(
             'href="',
-            'href="' + ('' if depth == 0 else '../' * depth),
+            'href="' + rel,
         )
 
-        text = html.read_text()
+        search_head = f'''
+<link  href='{rel}search.css' rel='stylesheet'>
+<script src='{rel}search.js'></script>
+'''
         text = text.replace(
             '\n<body>\n',
-            '\n<body>\n' + tocr,
+            '\n<body>\n' + tocr + '\n' + search_body,
         )
+        text = text.replace(
+                           '\n</head>\n',
+             search_head + '\n</head>\n',
+        )
+
         html.write_text(text)
 
     (html_dir / 'index.html').symlink_to('README.html') # meh
+    # TODO relativize in the very end maybe?
 
 
 def postprocess_mdbook() -> None:
