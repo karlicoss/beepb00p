@@ -9,30 +9,28 @@
     "graspw"
     "protocol"))
 
-;; docs: https://orgmode.org/manual/Publishing-options.html#Publishing-options
-
-(require 'org)
-(require 'subr-x)
-(require 's)
-(require 'dash)
-
-; TODO fucking hell, it doesn't seem capable of resolving symlinks
-
+; ugh. fucking hell, it doesn't seem capable of resolving symlinks
 (setq   exobrain/rootdir    default-directory)
 (defvar exobrain/input-dir     nil)
 (defvar exobrain/public-dir    nil)
 (defvar exobrain/md-dir        nil)
 (defvar exobrain/html-dir      nil)
 
+;; docs: https://orgmode.org/manual/Publishing-options.html#Publishing-options
 
-;; disable ~ files
-(setq make-backup-files nil)
-
-
+(require 'org)
 (require 'ox)
 (require 'ox-org)
 (require 'ox-md)
 (require 'ox-html)
+
+(require 'subr-x)
+(require 's)
+(require 'dash)
+
+;; disable ~ files
+(setq make-backup-files nil)
+
 
 (defun pp-org (thing)
   ;; FIXME shit. it modifies the thing...
@@ -334,7 +332,7 @@
         :with-properties ("CREATED")))
 
 ;; eh. a bit hacky, but does the job
-;; doesn't seem that org-mdoe exposes filetags properly
+;; doesn't seem that org-mode exposes filetags properly
 (defun org-html--build-pre/postamble (type info)
   (if (eq type 'preamble)
     (let* ((filetags (plist-get info :filetags))
@@ -361,70 +359,13 @@
         :html-head-include-default-style nil
         ;; todo not sure if I need org-html-scripts? adds CodeHighlightOn thing
 
-        :html-head "\
-<style>
-/* todo need to make responsive */
-:root {
-  --sidebar-width: 20rem;
-}
-
-#sidebar {
-  position: fixed;
-  left: 0;
-  top: 0;
-  bottom: 0;
-
-  width: var(--sidebar-width);
-
-  overflow-y: scroll;
-
-  padding-right: 1em;
-  border: 2px solid;
-}
-</style>
-"
-        :html-head-extra "\
+        :html-head "
 <link href='https://beepb00p.xyz/assets/css/default.css'     rel='stylesheet'>
 <link href='https://beepb00p.xyz/assets/css/links.css'       rel='stylesheet'>
 <link href='https://beepb00p.xyz/assets/css/htmlize.css'     rel='stylesheet'>
 <link href='https://beepb00p.xyz/assets/css/org-default.css' rel='stylesheet'>
 <link href='https://beepb00p.xyz/assets/css/org-extra.css'   rel='stylesheet'>
-<style>
-/* ugh. need to override default.css */
-body {
-  /* 3 rem just in case, otherwise overlaps sidebard sometimes for some reason */
-  margin-left: calc(var(--sidebar-width) + 3rem);
-}
-/* eh. some links are way too long and break the reponsive view... I guess ok for now */
-a {
-  word-break: break-word;
-}
-a * {
-  word-break: initial; /* to prevent todo states etc from word breaking */
-}
-
-.tag {
-  float: right; /* todo consolidate with blog */
-}
-.tag span {
-  margin-left: 1ch;
-}
-.tag .tag-self {
-  color: #a51; /* todo this is active color in blog... not sure if want it here? */
-}
-.tag .tag-inherited {
-  color: #eee; /* eh. I guess almost invisible is ok, I'm mainly concerned about the search ... */
-}
-
-.filetags {
-  float: left;
-  font-size: 1.2rem;
-}
-
-.tag-self::before {
-  content: '#';
-}
-</style>
+<link href='/exobrain.css'                                   rel='stylesheet'>
 "
 
         :html-postamble     nil))

@@ -1,0 +1,103 @@
+:root {
+  --content-width: 1000px; /* todo do em?? not sure.. */
+  --sidebar-width: 700px;
+}
+
+/* overrides/resets for blog css */
+a.headerlink {
+  margin-left: initial;
+}
+body {
+  width: initial;
+  margin: initial;
+}
+/**/
+
+
+/* positioning & responsiveness  */
+body {
+  display: flex;
+  overflow-x: scroll;
+}
+#sidebar {
+  /* todo would be nice to make it scrollable.. but not sure how */
+  /* this is so when it's overflown (on mobile), it doesn't shrink */
+  min-width: var(--sidebar-width);
+  /* this is so it doesn't expand too much */
+  max-width: var(--sidebar-width);
+  /* somehow just width: doesn't achieve the same effect, guess I don't really understand how it works */
+}
+#content {
+  min-width: min(var(--content-width), 95%);
+  max-width: var(--content-width);
+
+  /* position in the center */
+  margin-left: auto;
+  margin-right: auto;
+}
+#exobrain-toc {
+  margin-left : auto; /* flex: make sure it sticks to the right */
+  overflow-y: scroll;
+}
+a {
+  /* eh. some links are way too long and break the reponsive view... I guess ok for now */
+  word-break: break-word;
+}
+a * {
+  word-break: initial; /* to prevent todo states etc from word breaking */
+}
+/**/
+
+
+#sidebar {
+  background: #eee;
+}
+#exobrain-toc {
+  padding-right: 1em;
+  border: 2px solid;
+
+  background: #ddd;
+}
+#exobrain-toc ul ul {
+  padding-inline-start: 1em;
+}
+#exobrain-toc ul {
+  list-style-type: none;
+  padding-inline-start: 0.1em;
+}
+
+
+
+/* TODO filetags: need to shove into the content? */
+.filetags {
+  position: absolute; /* hack to prevent it from flex.. to fix properly perhaps shouldn't do it in preamble */
+  font-size: 1.2rem;
+}
+.tag {
+  float: right; /* todo consolidate with blog */
+}
+.tag span {
+  margin-left: 1ch;
+}
+.tag .tag-self {
+  color: #a51; /* todo this is active color in blog... not sure if want it here? */
+}
+.tag .tag-inherited {
+  color: #eee; /* eh. I guess almost invisible is ok, I'm mainly concerned about the search ... */
+}
+.tag-self::before {
+  content: '#';
+}
+
+/* search */
+#search {
+  padding-left : 0.5em;
+  padding-right: 0.5em;
+}
+#search-query {
+  width: 100%; /* otherwise too narrow */
+}
+.search-result {
+  padding-bottom: 0.5em;
+}
+/**/

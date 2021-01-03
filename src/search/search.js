@@ -45,9 +45,9 @@ const dosearch = async () => {
     const q = query.value
     const [idx, key2doc] = await makeindex()
 
-    const sres = idx.search(q)
-    if (sres.length > 0) {
-        status.textContent = `${sres.length} results`
+    const sres = q == '' ? [] : idx.search(q)
+    if (q == '' || sres.length > 0) {
+        status.textContent = q == '' ? '' : `${sres.length} results`
         status.style.color = 'initial'
         results.textContent = '' // clear old results
     } else {

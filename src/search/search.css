@@ -1,27 +1,7 @@
-#search {
-    position: fixed;
-    top: 0;
-    right: 0;
-
-    overflow-y: scroll;
-    height: 100%; /* necessary, otherwise too tall */
-
-    width: 60em;
-
-    padding-left : 0.5em;
-    padding-right: 0.5em;
-    background: #eeeeee;
-}
-
-#search-query {
-    min-width: 30em;
-}
-.search-result {
-    padding-bottom: 0.5em;
-}
-.search-result-link {
-}
+/* todo eh, this file should be minimal, most belongs to the main css anyway  */
 .search-result-body {
     display: block;
-    white-space: pre-wrap;
+
+    white-space: pre-wrap; /* preserve original whitespace, but respect wrapping rules  */
+    line-break: anywhere; /* otherwise might not break even if content doesn't fit */
 }

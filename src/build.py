@@ -134,8 +134,10 @@ def preprocess(args) -> None:
         # TODO suggest to commit/push?
 
 def postprocess_builtin() -> None:
+    # todo crap. it's not idempotent...
     copy(src / 'search/search.css', html_dir / 'search.css')
     copy(src / 'search/search.js' , html_dir / 'search.js' )
+    copy(src / 'exobrain.css'     , html_dir / 'exobrain.css')
 
     from bs4 import BeautifulSoup as BS # type: ignore
 
@@ -145,7 +147,7 @@ def postprocess_builtin() -> None:
     node = soup.find(id='content')
     node.select_one('.title').decompose()
     node.name = 'nav' # div by deafult
-    node['id'] = 'sidebar'
+    node['id'] = 'exobrain-toc'
     toc = node.prettify()
 
     # todo eh.. implement this as an external site agnostic script
@@ -169,6 +171,12 @@ def postprocess_builtin() -> None:
             'href="',
             'href="' + rel,
         )
+        sidebar = f"""
+<div id='sidebar'>
+{search_body}
+{tocr}
+</div>
+"""
 
         # ugh. very annoying... this is ought to be easier...
         rel_head = f'''
@@ -182,14 +190,15 @@ const PATH_TO_ROOT = "{rel}"
 <script src='{rel}search.js'></script>
 '''
         text = text.replace(
-            '\n<body>\n',
-            '\n<body>\n' + tocr + '\n' + search_body,
+                      '\n</body>\n',
+            sidebar + '\n</body>\n',
         )
         text = text.replace(
                                       '\n</head>\n',
              rel_head + search_head + '\n</head>\n',
         )
 
+        text = text.replace("href='/exobrain.css", f"href='{rel}exobrain.css") # fixme need to relativize properly...
         html.write_text(text)
 
     (html_dir / 'index.html').symlink_to('README.html') # meh
