@@ -288,6 +288,7 @@
 (advice-add #'org-element-timestamp-interpreter :before #'exobrain/hack-timestamp)
 
 ;; TODO share with compile-org?
+(setq org-confirm-babel-evaluate nil)
 (setq org-export-preserve-breaks t) ;; by default it collapses consecutive lines.. usually undesirable
 (setq org-export-with-section-numbers nil)
 (setq exobrain/export-settings

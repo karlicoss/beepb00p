@@ -32,6 +32,10 @@ body {
 .todo {
   opacity: 50%;
 }
+.example { /* todo bad class name for quoted stuff (:) */
+  white-space: pre-wrap; /* preserve original whitespace, but respect wrapping rules  */
+  line-break: anywhere; /* otherwise might not break even if content doesn't fit */
+}
 /**/
 
 
