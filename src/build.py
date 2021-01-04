@@ -43,7 +43,7 @@ def clean_dir(path: Path) -> None:
     for x in path.iterdir():
         if x.name == '.git':
             continue
-        if x.is_file():
+        if x.is_file() or x.is_symlink():
             x.unlink()
         else: # dir
             rmtree(x)
@@ -70,9 +70,8 @@ def main() -> None:
     import argparse
     p = argparse.ArgumentParser()
     p.add_argument('--add'   , action='store_true')
-    p.add_argument('--target', type=str, required=True)
+    p.add_argument('--filter', type=str, default=None)
     args = p.parse_args()
-    target = args.target
 
     preprocess(args)
     postprocess_builtin()
@@ -81,13 +80,16 @@ def main() -> None:
 def preprocess(args) -> None:
     clean()
 
-    target = args.target
+    filter = args.filter
+    efilter = 'nil' if filter is None else rf"""'(:exclude "\\.*" :include ("{filter}"))"""
+
     eargs = [
         '--eval', f'''(progn
             (setq exobrain/input-dir  "{input_dir}" )
             (setq exobrain/public-dir "{public_dir}")
             (setq exobrain/md-dir     "{md_dir}"    )
             (setq exobrain/html-dir   "{html_dir}"  )
+            (setq exobrain/filter     {efilter}     )
         )''',
         '--directory', src / 'advice-patch',
         '--load'     , src / 'publish.el',

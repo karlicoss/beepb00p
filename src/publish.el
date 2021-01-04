@@ -15,6 +15,7 @@
 (defvar exobrain/public-dir    nil)
 (defvar exobrain/md-dir        nil)
 (defvar exobrain/html-dir      nil)
+(defvar exobrain/filter        nil)
 
 ;; docs: https://orgmode.org/manual/Publishing-options.html#Publishing-options
 
@@ -310,8 +311,7 @@
         :publishing-directory ,exobrain/public-dir
         :publishing-function org-org-publish-to-my-org
 
-        ;; useful for debugging
-        ;; :exclude "exobrain.org\\|pkm.org\\|reading.org\\|toread.org"
+        ,@exobrain/filter
 
         ,@exobrain/export-settings))
 
