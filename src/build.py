@@ -121,6 +121,11 @@ def preprocess(args) -> None:
         ccall(['git', 'add', '-p'], cwd=public_dir)
         # TODO suggest to commit/push?
 
+    for f in public_dir.rglob('*.org'):
+        assert not f.is_symlink(), f # just in case?
+        check_call(['chmod', '-w', f]) # prevent editing
+
+
 def postprocess_builtin() -> None:
     # todo crap. it's not idempotent...
     copy(src / 'search/search.css', html_dir / 'search.css')
@@ -136,7 +141,7 @@ def postprocess_builtin() -> None:
     node.select_one('.title').decompose()
     node.name = 'nav' # div by deafult
     node['id'] = 'exobrain-toc'
-    toc = node.prettify()
+    toc = str(node) # do not prettify to avoid too many newlines around tags
 
     # todo eh.. implement this as an external site agnostic script
     (html_dir / 'documents.js').write_text(check_output([
