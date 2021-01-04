@@ -1,6 +1,6 @@
 (defvar exobrain/excluded-tags
   '(
-    "habit" ;; todo not sure? could keep as well..
+    "habit" "drill" ;; todo not sure? could keep as well..
     "refile" ;; this one is def a bit spammy
 
     ;; todo these should be gradually phased out...
@@ -80,6 +80,10 @@
 
 ;; TODO shit. filetags don't get inherited??
 ;; ugh... maybe could write a script to hack them back somehow..
+;; todo copied from blog
+(add-to-list 'org-html-text-markup-alist '(verbatim . "<samp class='inline'>%s</samp>"))
+(add-to-list 'org-html-text-markup-alist '(code     . "<code class='inline'>%s</code>"))
+
 
 ;; examples of sitemap formatting
 ;; https://github.com/nanjj/nanjj.github.io/blob/4338fa60b07788885d3d4c8b2c684360a67e8098/org-publish.org
@@ -196,6 +200,8 @@
   (let* ((inhtags  (--filter (s-starts-with? exobrain/inh-prefix it) tags))
          (selftags (-difference tags inhtags))
          (inhtags  (--map    (s-chop-prefix exobrain/inh-prefix it) inhtags)))
+    ;; ugh. if you type ::tag: it parses it as empty tag?? must be a bug in org?
+    (cl-assert (--none? (s-blank? it) (-concat inhtags selftags)))
     ;; not sure why everythin wrapped in 'tag' in ox-html (instead of, say 'tags')
     (format "<span class=\"tag\">%s</span>"
             (s-join "" (--map (format "<span class=\"%1$s%2$s\">%1$s</span>" (nth 0 it) (nth 1 it))

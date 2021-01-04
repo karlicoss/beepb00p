@@ -36,6 +36,10 @@ body {
   white-space: pre-wrap; /* preserve original whitespace, but respect wrapping rules  */
   line-break: anywhere; /* otherwise might not break even if content doesn't fit */
 }
+a code.inline {
+  /* TODO why did I do underline here in blog? looks really weird in TOC */
+  text-decoration: initial;
+}
 /**/
 
 
