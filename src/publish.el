@@ -372,7 +372,8 @@
 <link href='https://beepb00p.xyz/assets/css/htmlize.css'     rel='stylesheet'>
 <link href='https://beepb00p.xyz/assets/css/org-default.css' rel='stylesheet'>
 <link href='https://beepb00p.xyz/assets/css/org-extra.css'   rel='stylesheet'>
-<link href='/exobrain.css'                                   rel='stylesheet'>
+<link  href='/exobrain.css'                                  rel='stylesheet'>
+<script src='/settings.js'                                   rel='stylesheet'>
 "
 
         :html-postamble     nil))

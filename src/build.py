@@ -128,9 +128,10 @@ def preprocess(args) -> None:
 
 def postprocess_builtin() -> None:
     # todo crap. it's not idempotent...
-    copy(src / 'search/search.css', html_dir / 'search.css')
-    copy(src / 'search/search.js' , html_dir / 'search.js' )
+    copy(src / 'search/search.css', html_dir / 'search.css'  )
+    copy(src / 'search/search.js' , html_dir / 'search.js'   )
     copy(src / 'exobrain.css'     , html_dir / 'exobrain.css')
+    copy(src / 'settings.js'      , html_dir / 'settings.js' )
 
     from bs4 import BeautifulSoup as BS # type: ignore
 
@@ -172,6 +173,14 @@ def postprocess_builtin() -> None:
 {tocr}
 </div>
 """
+        # todo would be cool to integrate it with org-mode properly..
+        settings = f'''
+<span class='exobrain-settings'>
+<span class='exobrain-setting'>show timestamps<input id="settings-timestamps" type="checkbox"/></span>
+<span class='exobrain-setting'>show priorities<input id="settings-priorities" type="checkbox"/></span>
+<span class='exobrain-setting'>show todo state<input id="settings-todostates" type="checkbox"/></span>
+</span>
+        '''
 
         # ugh. very annoying... this is ought to be easier...
         rel_head = f'''
@@ -185,15 +194,22 @@ const PATH_TO_ROOT = "{rel}"
 <script src='{rel}search.js'></script>
 '''
         text = text.replace(
-                      '\n</body>\n',
-            sidebar + '\n</body>\n',
+                                 '\n</body>\n',
+            sidebar + settings + '\n</body>\n',
         )
         text = text.replace(
                                       '\n</head>\n',
              rel_head + search_head + '\n</head>\n',
         )
 
-        text = text.replace("href='/exobrain.css", f"href='{rel}exobrain.css") # fixme need to relativize properly...
+        # fixme need to relativize properly...
+        text = text.replace(
+             "href='/exobrain.css",
+            f"href='{rel}exobrain.css",
+        ).replace(
+             "src='/settings.js",
+            f"src='{rel}settings.js",
+        )
         html.write_text(text)
 
     (html_dir / 'index.html').symlink_to('README.html') # meh

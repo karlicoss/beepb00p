@@ -14,7 +14,7 @@ body {
 .CANCEL {
   width: initial; /* ugh. not sure what to do here.. */
 }
-.todo {
+.todo, .done {
   margin-right: initial; /* ??? not sure why it was in the first place? */
 }
 .priority {
@@ -34,7 +34,6 @@ body {
 }
 .example { /* todo bad class name for quoted stuff (:) */
   white-space: pre-wrap; /* preserve original whitespace, but respect wrapping rules  */
-  line-break: anywhere; /* otherwise might not break even if content doesn't fit */
 }
 a code.inline {
   /* TODO why did I do underline here in blog? looks really weird in TOC */
@@ -166,5 +165,26 @@ a * {
 }
 .search-result {
   padding-bottom: 0.5em;
+}
+/**/
+
+
+/* settings */
+html, body {
+  min-height: 100vh; /* eh, otherwise settings can be displayed midpage */
+}
+body {
+  position: relative; /* eh, otherwise bottom: 0 not working??  */
+}
+.exobrain-settings {
+  position: absolute;
+  bottom: 0;
+  color: #aaa;
+}
+.exobrain-setting {
+  outline: 1px dashed black
+}
+.exobrain-hide {
+  display: none;
 }
 /**/
