@@ -240,13 +240,15 @@
 ;   (cl-letf (((symbol-function 'org-element-property) 'exobrain/md-org-element-property))
 ;     (funcall orig headline contents info)))
 
-(setq org-todo-keywords '((sequence "TODO" "STRT" "START" "WIP" "|" "CNCL" "CANCEL" "DONE")))
+(setq org-todo-keywords '((sequence "TODO" "STRT" "START" "WIP" "WAIT" "|" "CNCL" "CANCEL" "DONE")))
 ;; TODO share with rest of the system..
 (setq exobrain/state-keywords
       '(("TODO"   . "todo")
         ("START"  . "todo") ;; TODO start?
         ("STRT"   . "todo") ;; TODO start?
+        ("WAIT"   . "todo")
         ("DONE"   . "done")
+        ("CNCL"   . "cancel")
         ("CANCEL" . "cancel")))
 
 ;; used during exporting regular timestamps (default includes day of week)

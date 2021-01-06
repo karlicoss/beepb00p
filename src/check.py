@@ -24,11 +24,17 @@ def search(*args):
 
 import orgparse # type: ignore
 
-from checks import WORD_CHECKS, TAG_CHECKS
+from checks import F_CHECKS, WORD_CHECKS, TAG_CHECKS
 
 
 def check(path: Path) -> Iterator[Failed]:
     print(f"checking {path}")
+    for x in F_CHECKS:
+        yield from search(
+            '-F',
+            x,
+            path,
+        )
     for x in WORD_CHECKS:
         yield from search(
             '--word-regexp',
