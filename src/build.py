@@ -2,7 +2,7 @@
 from pathlib import Path
 import sys
 from shutil import rmtree, copy
-from subprocess import check_call, check_output
+from subprocess import check_call, check_output, run
 from typing import List
 
 # TODO sanity check that there are noexport entries or some private tags (e.g. people mentioned)
@@ -72,16 +72,31 @@ def main() -> None:
     p.add_argument('--add'   , action='store_true')
     p.add_argument('--filter', type=str, default=None)
     p.add_argument('--no-html', action='store_false', dest='html')
+    p.add_argument('--watch', action='store_true')
+    p.add_argument('--under-entr', action='store_true') # ugh.
     args = p.parse_args()
 
+    # ugh. this all is pretty complicated...
+    if args.watch:
+        assert not args.html # non-idempotent for now... need to fix later
+        clean()
+        nargs = [*sys.argv, '--under-entr']
+        nargs.remove('--watch')
+        while True:
+            paths = '\n'.join(str(p) for p in input_dir.rglob('*') if '.git' not in p.parts)
+            run(['entr', '-d', *nargs], input=paths.encode('utf8'))
+        sys.exit(0)
+    if args.under_entr:
+        preprocess(args)
+        sys.exit(0)
+
+    clean()
     preprocess(args)
     if args.html:
         postprocess_html()
 
 
 def preprocess(args) -> None:
-    clean()
-
     filter = args.filter
     efilter = 'nil' if filter is None else rf"""'(:exclude "\\.*" :include ("{filter}"))"""
 
