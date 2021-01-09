@@ -71,10 +71,12 @@ def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument('--add'   , action='store_true')
     p.add_argument('--filter', type=str, default=None)
+    p.add_argument('--no-html', action='store_false', dest='html')
     args = p.parse_args()
 
     preprocess(args)
-    postprocess_builtin()
+    if args.html:
+        postprocess_html()
 
 
 def preprocess(args) -> None:
@@ -93,22 +95,17 @@ def preprocess(args) -> None:
         )''',
         '--directory', src / 'advice-patch',
         '--load'     , src / 'publish.el',
-        '-f', 'toggle-debug-on-error', # dumps stacktrace on error
-        # adjust this variable to change the pipeline
-        '--eval', f'''
-(let ((org-publish-project-alist `(
-        ,exobrain/project-preprocess-org
-        ,exobrain/project-org2html
-       )))
-  (org-publish-all))
-'''.strip(),
+        # '-f', 'toggle-debug-on-error', # dumps stacktrace on error
     ]
-    with emacs(*eargs) as ep:
+    with emacs(
+            *eargs,
+            '--eval',
+            f'''(let ((org-publish-project-alist `(,exobrain/project-preprocess-org)))
+                  (org-publish-all))''',
+    ) as ep:
         pass
     assert ep.returncode == 0
 
-    # TODO need to clean public dir??
-    # TODO call check_org after preprocess-org instead??
     from check import check_org
     check_org(public_dir)
 
@@ -121,12 +118,22 @@ def preprocess(args) -> None:
         ccall(['git', 'add', '-p'], cwd=public_dir)
         # TODO suggest to commit/push?
 
-    for f in public_dir.rglob('*.org'):
-        assert not f.is_symlink(), f # just in case?
-        check_call(['chmod', '-w', f]) # prevent editing
+    if args.html:
+        with emacs(
+                *eargs,
+                '--eval',
+                f'''(let ((org-publish-project-alist `(,exobrain/project-org2html)))
+                    (org-publish-all))''',
+        ) as ep:
+            pass
+        assert ep.returncode == 0
+
+    # for f in public_dir.rglob('*.org'):
+    #     assert not f.is_symlink(), f # just in case?
+    #     check_call(['chmod', '-w', f]) # prevent editing
 
 
-def postprocess_builtin() -> None:
+def postprocess_html() -> None:
     # todo crap. it's not idempotent...
     copy(src / 'search/search.css', html_dir / 'search.css'  )
     copy(src / 'search/search.js' , html_dir / 'search.js'   )
