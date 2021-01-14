@@ -195,6 +195,11 @@
                                        (--map (s-concat exobrain/inh-prefix it) partags)))))
 (advice-add #'org-html-headline :before #'exobrain/hack-html-tags)
 
+
+;; note: uncomment to emit org-mode with inherited tags (eh, )
+;; (setq exobrain/inh-prefix "")
+;; (advice-add #'org-org-headline :before #'exobrain/hack-html-tags)
+
 ;; annoying, but seems the easiest is to simply override...
 (defun exobrain/org-html--tags (tags info)
   (let* ((inhtags  (--filter (s-starts-with? exobrain/inh-prefix it) tags))
