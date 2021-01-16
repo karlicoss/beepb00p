@@ -218,6 +218,21 @@
 (advice-add #'org-html--tags  :override #'exobrain/org-html--tags)
 
 
+(defun exobrain/org-html-inner-template-reorder-toc (contents info)
+  "Pretty annoying when the TOC is very long and it shows up on the very top after the introduction in root block"
+  ;; also tried with flexbox and order:, but the problem it doesn't support collapsing margins
+  (let* ((footnote (org-html-footnote-section info))
+         (depth (plist-get info :with-toc))
+         (toc (when depth (org-html-toc depth info)))
+         (contents (if (not toc) contents
+                        ;; find first actual outline and reorder TOC before it
+                        (let* ((slices (s-slice-at "<div .* class=.outline-2" contents))
+                               (slices (-insert-at 1 toc slices)))
+                          (s-join "" slices)))))
+    (concat contents footnote)))
+(advice-add #'org-html-inner-template :override #'exobrain/org-html-inner-template-reorder-toc)
+
+
 (org-export-define-derived-backend
  'my-org
  'org
