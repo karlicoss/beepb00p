@@ -226,9 +226,11 @@
          (toc (when depth (org-html-toc depth info)))
          (contents (if (not toc) contents
                         ;; find first actual outline and reorder TOC before it
-                        (let* ((slices (s-slice-at "<div .* class=.outline-2" contents))
-                               (slices (-insert-at 1 toc slices)))
-                          (s-join "" slices)))))
+                        ;; for fucks sake, s-slice-at is recursive and hits elisp recursion limit... https://github.com/magnars/s.el/pull/125
+                        (let* ((slices (s-split-up-to "<div .* class=.outline-2" contents 1)) ;; split no more than once
+                               (before (nth 0 slices)) ;; should always be present
+                               (after  (s-chop-prefix before contents)))
+                          (concat before toc after)))))
     (concat contents footnote)))
 (advice-add #'org-html-inner-template :override #'exobrain/org-html-inner-template-reorder-toc)
 
