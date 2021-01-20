@@ -4,7 +4,7 @@ function timestampsCheckbox() {
 }
 
 const key2cls = {
-    'settings-timestamps': '.timestamp, .property.CREATED',
+    'settings-timestamps': '.timestamp, .property.CREATED, *[data-property-name=CREATED]',
     'settings-priorities': '.priority',
     'settings-todostates': '.todo, .done',
 }
