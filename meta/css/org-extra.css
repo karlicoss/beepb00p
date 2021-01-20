@@ -8,28 +8,11 @@ blockquote {
 
 /* xxx */
 
-/* mm. a bit ugly that 3 and 4 are hardcoded. just to tabulate subtasts */
-.outline-3 {
-    padding-left: 0.5em;
-    border-left-width: 3px;
-    border-left-style: dotted;
-
-    border-left-color: transparent;
-}
-.outline-3:hover {
-    border-left-color: #ccc;
-}
-/* TODO ugh. copy pasting */
-.outline-4 {
-    padding-left: 0.5em;
-    border-left-width: 3px;
-    border-left-style: dotted;
-
-    border-left-color: transparent;
-}
-.outline-4:hover {
-    border-left-color: #ccc;
-}
+/* mm. a bit ugly that 2,3,4 are hardcoded. just to tabulate outlines & give visual clues */
+/* outline-2 doesn't need margin because there is no outline-1? */                                                                                                                                                                                       
+.outline-2 {                   border-left-width: 3px; border-left-style: dotted; border-left-color: transparent; } .outline-2:hover { border-left-color: #eee; }                                                                                         
+.outline-3 { margin-left: 1em; border-left-width: 3px; border-left-style: dotted; border-left-color: transparent; } .outline-3:hover { border-left-color: #eee; }                                                                                         
+.outline-4 { margin-left: 1em; border-left-width: 3px; border-left-style: dotted; border-left-color: transparent; } .outline-4:hover { border-left-color: #eee; }  
 
 
 /* hack to get around emacs always adding title to org mode export.. */
