@@ -102,10 +102,29 @@
 ;; it worked, but then I moved some code around and it stopped for some reason...
 ;; too exhausted to debug it, so will use it late
 ;; sometimes I fucking hate emacs.
+;; md5: nice that it has fixed length, but not very reversible
+;; base64: might be arbirary long?
 (defun exobrain/org-export-get-reference (datum info)
-  (let* ((title (org-element-property :raw-value datum)))
-    (cl-assert title)
-    (md5 title)))
+  (let* ((title (org-element-property :raw-value datum))
+         (begin (org-element-property :begin     datum))
+         (end   (org-element-property :end       datum))
+         (_     (cl-assert title))
+         (res   (replace-regexp-in-string
+                 ;; drop all vowels, can read without it...
+                 "[aeoiu]\\|[^[:alpha:]]\\|http\\|https"
+                 ""
+                 (s-downcase title)))
+                  ;; TODO and then sample characters? not sure
+         (res (if (<= (length res) 50)
+                  res
+                ;; if it's too long, only keep head & tail
+                (concat (s-left 25 res) (s-right 25 res))))
+         (res (if (> (length res) 0)
+                  res
+                ;; not much we can do in this case
+                ;; could use heading number maybe? dunno
+                (format "%s_%s" begin end))))
+    res))
 (advice-add #'org-export-get-reference :override #'exobrain/org-export-get-reference)
 
 (defun exobrain/org-org-property-drawer (drawer contents info)
