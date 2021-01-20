@@ -5,7 +5,11 @@
 
 /* overrides/resets for blog css */
 a.headerlink {
+  /* hm. negative margin is kinda nice because then it doesn't occupy the heading box?
+   * but seemed sort of unreliable?
+   */
   margin-left: initial;
+  color: #eee; /* default is too bright  */
 }
 body {
   width: initial;
@@ -39,6 +43,15 @@ a code.inline {
   /* TODO why did I do underline here in blog? looks really weird in TOC */
   text-decoration: initial;
 }
+
+h2, h3, h4, h5 {
+  font-size: 1em;
+}
+
+.outline-text-2, .outline-text-3, .outline-text-4, .outline-text-5 {
+  margin-left: 1em;
+}
+
 /**/
 
 
