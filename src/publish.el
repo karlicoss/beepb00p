@@ -1,6 +1,5 @@
 (defvar exobrain/excluded-tags
   '(
-    "habit" "drill" ;; todo not sure? could keep as well..
     "refile" ;; this one is def a bit spammy
 
     ;; todo these should be gradually phased out...
@@ -110,10 +109,15 @@
          (end   (org-element-property :end       datum))
          (_     (cl-assert title))
          (res   (replace-regexp-in-string
+                 ;; remove days of week, since the date is sometimes part of title...
+                 " \\(Mon\\|Tue\\|Wed\\|Thu\\|Fri\\|Sat\\|Sun\\) "
+                 ""
+                 title))
+         (res   (replace-regexp-in-string
                  ;; drop all vowels, can read without it...
                  "[aeoiu]\\|[^[:alpha:]]\\|http\\|https"
                  ""
-                 (s-downcase title)))
+                 (s-downcase res)))
                   ;; TODO and then sample characters? not sure
          (res (if (<= (length res) 50)
                   res
