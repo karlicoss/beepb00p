@@ -57,6 +57,11 @@
               "<div class='property' data-property-name='%1$s'><span class='property-name'>%1$s</span>: <span class='property-value'>%2$s</span></div>"
               "%s:%s")
 
+;; super annoying (is this nbsp?), should be via css
+(advice-patch 'org-html-format-headline-default-function
+              ;;
+              " "
+              "&#xa0;&#xa0;&#xa0;")
 
 ;; TODO could force timestamps to emit <time> element
 
