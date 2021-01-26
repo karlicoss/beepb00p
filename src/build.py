@@ -5,9 +5,6 @@ from shutil import rmtree, copy
 from subprocess import check_call, check_output, run
 from typing import List
 
-# TODO sanity check that there are noexport entries or some private tags (e.g. people mentioned)
-# ./check
-
 def ccall(*args, **kwargs):
     print(args, file=sys.stderr)
     return check_call(*args, **kwargs)
@@ -147,6 +144,18 @@ def preprocess(args) -> None:
     #     assert not f.is_symlink(), f # just in case?
     #     check_call(['chmod', '-w', f]) # prevent editing
 
+def relativize(soup, *, path: Path, root: Path):
+    depth = len(path.relative_to(root).parts) - 1
+    rel = ('' if depth == 0 else '../' * depth)
+
+    for tag, attr in [('a', 'href'), ('link', 'href'), ('script', 'src')]:
+        for t in soup.find_all(tag):
+            link = t.get(attr) or ''
+            if not link.startswith('/'):
+                continue
+            t[attr] = rel + link[1:]
+    return soup
+
 
 def postprocess_html() -> None:
     # todo crap. it's not idempotent...
@@ -156,15 +165,25 @@ def postprocess_html() -> None:
     copy(src / 'settings.js'      , html_dir / 'settings.js' )
 
     from bs4 import BeautifulSoup as BS # type: ignore
+    bs = lambda x: BS(x, 'lxml')
+
+    # for fucks sake, seems that it's not possible to insert raw html?
+    def ashtml(x):
+        b = bs(x)
+        head = list(b.head or [])
+        body = list(b.body or [])
+        return head + body
+
 
     sitemap = html_dir / 'sitemap.html'
     assert sitemap.exists()
-    soup = BS(sitemap.read_text(), 'lxml')
-    node = soup.find(id='content')
+    node = bs(sitemap.read_text()).find(id='content')
     node.select_one('.title').decompose()
     node.name = 'nav' # div by deafult
     node['id'] = 'exobrain-toc'
-    toc = str(node) # do not prettify to avoid too many newlines around tags
+    tocs = str(node) # do not prettify to avoid too many newlines around tags
+    # mm, org-mode emits relative links, but we actually want abolute here so it makes sense for any page
+    tocs = tocs.replace('href="', 'href="/')
 
     # todo eh.. implement this as an external site agnostic script
     (html_dir / 'documents.js').write_text(check_output([
@@ -173,28 +192,24 @@ def postprocess_html() -> None:
     ]).decode('utf8'))
 
     shtml = src / 'search/search.html'
-    soup = BS(shtml.read_text(), 'lxml')
-    node = soup.find(id='search')
-    search_body = node.prettify()
+    node = bs(shtml.read_text()).find(id='search')
+    searchs = node.prettify()
+
 
     for html in html_dir.rglob('*.html'):
         text = html.read_text()
-        depth = len(html.relative_to(html_dir).parts) - 1
-        rel = ('' if depth == 0 else '../' * depth)
+        soup = bs(text)
 
-        # fixme need to relativize properly
-        tocr = toc.replace(
-            'href="',
-            'href="' + rel,
-        )
         # meh... this gets too complicated
         sidebar = f"""
 <a id='jumptosidebar' href='#sidebar'>Jump to exobrain search &amp sitemap</a>
 <div id='sidebar'>
-{search_body}
-{tocr}
+{searchs}
+{tocs}
 </div>
 """
+        soup.body.extend(ashtml(sidebar))
+
         # todo would be cool to integrate it with org-mode properly..
         settings = f'''
 <span class='exobrain-settings'>
@@ -203,39 +218,26 @@ def postprocess_html() -> None:
 <span class='exobrain-setting'>show todo state<input id="settings-todostates" type="checkbox"/></span>
 </span>
         '''
+        soup.body.extend(ashtml(settings))
 
         # ugh. very annoying... this is ought to be easier...
+        depth = len(html.relative_to(html_dir).parts) - 1
+        rel = ('' if depth == 0 else '../' * depth)
         rel_head = f'''
 <script>
 const PATH_TO_ROOT = "{rel}"
 </script>
 '''
-
         search_head = f'''
 <link  href='{rel}search.css' rel='stylesheet'>
 <script src='{rel}search.js'></script>
 '''
-        text = text.replace(
-                                 '\n</body>\n',
-            sidebar + settings + '\n</body>\n',
-        )
-        text = text.replace(
-                                      '\n</head>\n',
-             rel_head + search_head + '\n</head>\n',
-        )
-
-        # fixme need to relativize properly...
-        text = text.replace(
-             "href='/exobrain.css",
-            f"href='{rel}exobrain.css",
-        ).replace(
-             "src='/settings.js",
-            f"src='{rel}settings.js",
-        )
-        html.write_text(text)
+        soup.head.extend(ashtml(rel_head))
+        soup.head.extend(ashtml(search_head))
+        soup = relativize(soup, path=html, root=html_dir)
+        html.write_text(str(soup))
 
     (html_dir / 'index.html').symlink_to('README.html') # meh
-    # TODO relativize in the very end maybe?
 
 # TODO add this back
 # link = '<a style="font-size: 2rem; line-height: var(--menu-bar-height);" href="https://beepb00p.xyz">back to blog</a>'
