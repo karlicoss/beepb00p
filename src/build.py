@@ -75,7 +75,6 @@ def main() -> None:
 
     # ugh. this all is pretty complicated...
     if args.watch:
-        assert not args.html # non-idempotent for now... need to fix later
         clean()
         nargs = [*sys.argv, '--under-entr']
         nargs.remove('--watch')
@@ -83,11 +82,9 @@ def main() -> None:
             paths = '\n'.join(str(p) for p in input_dir.rglob('*') if '.git' not in p.parts)
             run(['entr', '-d', *nargs], input=paths.encode('utf8'))
         sys.exit(0)
-    if args.under_entr:
-        preprocess(args)
-        sys.exit(0)
+    if not args.under_entr:
+        clean()
 
-    clean()
     preprocess(args)
     if args.html:
         postprocess_html()
@@ -158,7 +155,6 @@ def relativize(soup, *, path: Path, root: Path):
 
 
 def postprocess_html() -> None:
-    # todo crap. it's not idempotent...
     copy(src / 'search/search.css', html_dir / 'search.css'  )
     copy(src / 'search/search.js' , html_dir / 'search.js'   )
     copy(src / 'exobrain.css'     , html_dir / 'exobrain.css')
@@ -195,10 +191,16 @@ def postprocess_html() -> None:
     node = bs(shtml.read_text()).find(id='search')
     searchs = node.prettify()
 
+    # for idempotence
+    MARKER = '<!-- PROCESSED BY postprocess_html -->'
 
     for html in html_dir.rglob('*.html'):
         text = html.read_text()
-        soup = bs(text)
+        already_handled = MARKER in text
+        if already_handled:
+            continue
+
+        soup = bs(text + MARKER)
 
         # meh... this gets too complicated
         sidebar = f"""
@@ -237,7 +239,8 @@ const PATH_TO_ROOT = "{rel}"
         soup = relativize(soup, path=html, root=html_dir)
         html.write_text(str(soup))
 
-    (html_dir / 'index.html').symlink_to('README.html') # meh
+    if (html_dir / 'README.html').exists(): # meh, for incremental mode
+        check_call(['ln', '-sf', 'README.html', html_dir / 'index.html'])
 
 # TODO add this back
 # link = '<a style="font-size: 2rem; line-height: var(--menu-bar-height);" href="https://beepb00p.xyz">back to blog</a>'
