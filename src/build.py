@@ -266,11 +266,13 @@ def compile_post(path: MPath) -> Results:
     But that wouldn't be expressible in mypy, and the caller is merging everything together anyway. So whatever.
     '''
     try:
-        yield from _compile_post(path)
+        return list(_compile_post(path))
     except Exception as e:
         ex = RuntimeError(f'While compiling {path}')
         ex.__cause__ = e
-        yield ex
+        # ugh. log here since cause doesn't propagate through process pool
+        log.exception(ex)
+        return [ex]
 
 
 @dataclass(init=False, frozen=True)
@@ -545,11 +547,16 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Results:
     else:
         full = body
 
+    # annoying if it slips in; also linkchecker can't detect these
+    # todo single quote?
+    assert 'href="file://' not in full, post
+
     post = dataclasses.replace(post, body=full)
 
     opath.parent.mkdir(exist_ok=True)
     # TODO might need to move everything into the same dir??
     opath.write_text(full)
+
 
     outfiles = list(sorted(str(p.relative_to(dir_)) for p in dir_.rglob('*')))
     log.info('[%s]: outputs: %s', ltag, ' '.join(outfiles))
@@ -630,12 +637,19 @@ def blog_tags() -> Sequence[str]:
 
 from feedgen.feed import FeedGenerator # type: ignore
 
+# TODO feed generation should be blog agnostic?..
 @cache
 def feeds(posts: Tuple[Post]) -> None:
     atom = feed(posts, 'atom')
     rss  = feed(posts, 'rss')
-    (output / 'atom.xml').write_text(atom.atom_str(pretty=True).decode('utf8'))
-    (output / 'rss.xml' ).write_text(rss .rss_str (pretty=True).decode('utf8'))
+    afile = output / 'atom.xml'
+    rfile = output / 'rss.xml'
+    afile.write_text(atom.atom_str(pretty=True).decode('utf8'))
+    rfile.write_text(rss .rss_str (pretty=True).decode('utf8'))
+    for f in (afile, rfile):
+        # some feed readers might not accept large RSS/atom feeds...
+        # TODO this is also an argument against inline images I suppose
+        assert f.stat().st_size < 512 * 1024, f
 
 
 tz = pytz.utc # todo ugh this is what Hakyll assumed
@@ -765,6 +779,10 @@ def compile_all(max_workers: Optional[int]=None) -> Iterable[Exception]:
         copy(f, assets / f.relative_to(META))
     for f in (META / 'images').rglob('*.svg'):
         copy(f, assets / f.relative_to(META))
+    for f in (ROOT / 'pic').glob('*.png'):
+        copy(f, f.relative_to(ROOT)) # ugh.
+    for f in input.glob('*.html'): # meh
+        copy(f, f.relative_to(input))
     # eh. apparently glob(recursive=True) always follows symlinks??
     # TODO make these proper dependensies? dunno
     for p in chain.from_iterable(
@@ -778,9 +796,10 @@ def compile_all(max_workers: Optional[int]=None) -> Iterable[Exception]:
         copy(f, f.relative_to(input))
 
     posts = []
-    from concurrent.futures import ThreadPoolExecutor
-    with ThreadPoolExecutor(max_workers=max_workers) as pool:
-        for rpost in pool.map(compile_post, map(lambda p: mpath(input / p), get_inputs())):
+    # todo hmm, why did ThreadPoolExecutor stop working?
+    from concurrent.futures import ProcessPoolExecutor as Pool
+    with Pool(max_workers=max_workers) as pool:
+        for rpost in pool.map(compile_post, (mpath(input / p) for p in get_inputs())):
             for post in rpost:
                 if isinstance(post, Exception):
                     ex = post
@@ -835,9 +854,9 @@ def main() -> None:
     p.add_argument('--filter', action='append', required=False, type=str, help='glob to filter the inputs')
     p.add_argument('--serve' , action='store_true') # TODO host/port?
     p.add_argument('--watch' , action='store_true')
-    p.add_argument('--input' , type=Path, default=ROOT / 'input' , required=False)
-    p.add_argument('--output', type=Path, default=ROOT / 'output', required=False)
-    p.add_argument('--format', type=str , default='html'         , required=False)
+    p.add_argument('--input' , type=Path, default=ROOT / 'data/input', required=False)
+    p.add_argument('--output', type=Path, default=ROOT / 'data/html' , required=False)
+    p.add_argument('--format', type=str , default='html'             , required=False)
     args = p.parse_args()
 
     global input, output
