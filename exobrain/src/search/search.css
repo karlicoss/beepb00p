@@ -1,0 +1,7 @@
+/* todo eh, this file should be minimal, most belongs to the main css anyway  */
+.search-result-body {
+    display: block;
+
+    white-space: pre-wrap; /* preserve original whitespace, but respect wrapping rules  */
+    line-break: anywhere; /* otherwise might not break even if content doesn't fit */
+}

@@ -1,0 +1,203 @@
+:root {
+  --content-width: 1000px; /* todo do em?? not sure.. */
+  --sidebar-width: 700px;
+}
+
+/* overrides/resets for blog css */
+a.headerlink {
+  /* hm. negative margin is kinda nice because then it doesn't occupy the heading box?
+   * but seemed sort of unreliable?
+   */
+  margin-left: initial;
+  color: #eee; /* default is too bright  */
+}
+body {
+  width: initial;
+  margin: initial;
+}
+.CANCEL {
+  width: initial; /* ugh. not sure what to do here.. */
+}
+.todo, .done {
+  margin-right: initial; /* ??? not sure why it was in the first place? */
+}
+.priority {
+  margin-right: initial; /* same as above, weird one */
+}
+.tag {
+  font-size: 0.8em;
+}
+.tag span:before {
+  content: ':';
+}
+.priority {
+  opacity: 50%;
+}
+.todo {
+  opacity: 50%;
+}
+.example { /* todo bad class name for quoted stuff (:) */
+  white-space: pre-wrap; /* preserve original whitespace, but respect wrapping rules  */
+}
+a code.inline {
+  /* TODO why did I do underline here in blog? looks really weird in TOC */
+  text-decoration: initial;
+}
+
+h2, h3, h4, h5 {
+  font-size: 1em;
+}
+
+.outline-text-2, .outline-text-3, .outline-text-4, .outline-text-5 {
+  margin-left: 1em;
+}
+
+/**/
+
+
+/* positioning & responsiveness  */
+#sidebar {
+  overflow: auto; /* enable scroll */
+}
+#content {
+  max-width: var(--content-width);
+}
+#jumptosidebar {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+a {
+  /* eh. some links are way too long and break the reponsive view... I guess ok for now */
+  word-break: break-word;
+}
+a * {
+  word-break: initial; /* to prevent todo states etc from word breaking */
+}
+/**/
+
+/* fuck. seems that this is the easiest to achieve responsiveness
+   - sticky doesn't work (and I don't understand it?)
+   - can't use absolute, it's relative to the document, so not 'sticky'
+   - fixed works well until contents start overflowing... then can't scroll horizontally
+   - with flex which works well horizontally, can't properly make it sticky vertically..
+ */
+
+/* 1700 = content width + sidebar width */
+@media (max-width: 1700px) {
+  #content {
+    margin-left: auto;
+    margin-right: auto;
+  }
+  #sidebar {
+    margin-left: auto;
+    margin-right: auto;
+
+    margin-top: 2em; /* ugh, otherwise sometimes appears to close (because of tags) and might not take full space??? */
+
+    max-width: var(--content-width);
+  }
+}
+@media (min-width: 1700px) {
+  #jumptosidebar {
+    display: none;
+  }
+  #content {
+    margin-left: calc((100% - var(--content-width) - var(--sidebar-width)) / 2);
+  }
+  #sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    right: 0;
+
+    width: var(--sidebar-width);
+  }
+}
+
+
+
+#sidebar {
+  background: #eee;
+}
+#exobrain-toc {
+  padding-right: 1em;
+  border: 2px solid;
+
+  background: #ddd;
+}
+#exobrain-toc ul ul {
+  padding-inline-start: 1em;
+}
+#exobrain-toc ul {
+  list-style-type: none;
+  padding-inline-start: 0.1em;
+}
+
+
+:target {
+  -webkit-animation: target-fade 1s 1;
+  -moz-animation   : target-fade 1s 1;
+}
+/* ugh. using the same color as headerlink, but in can't concat color and transparency in css :( */
+@-webkit-keyframes target-fade {
+ 0%   { background-color: #c60f0fff; } 
+ 100% { background-color: #c60f0f00; }
+}
+@-moz-keyframes target-fade {
+ 0%   { background-color: #c60f0fff; } 
+ 100% { background-color: #c60f0f00; }
+}
+
+/* TODO filetags: need to shove into the content? */
+.filetags {
+  display: none;
+  position: absolute; /* hack to prevent it from flex.. to fix properly perhaps shouldn't do it in preamble */
+  font-size: 1.2rem;
+}
+.tag {
+  float: right; /* todo consolidate with blog */
+}
+.tag span {
+  margin-left: 1ch;
+}
+.tag .tag-self {
+  color: #a51; /* todo this is active color in blog... not sure if want it here? */
+}
+.tag .tag-inherited {
+  color: #eee; /* eh. I guess almost invisible is ok, I'm mainly concerned about the search ... */
+}
+
+/* search */
+#search {
+  padding-left : 0.5em;
+  padding-right: 0.5em;
+}
+#search-query {
+  width: 100%; /* otherwise too narrow */
+}
+.search-result {
+  padding-bottom: 0.5em;
+}
+/**/
+
+
+/* settings */
+html, body {
+  min-height: 100vh; /* eh, otherwise settings can be displayed midpage */
+}
+body {
+  position: relative; /* eh, otherwise bottom: 0 not working??  */
+}
+.exobrain-settings {
+  position: absolute;
+  bottom: 0;
+  color: #aaa;
+}
+.exobrain-setting {
+  outline: 1px dashed black
+}
+.exobrain-hide {
+  display: none;
+}
+/**/
