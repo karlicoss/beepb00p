@@ -536,9 +536,10 @@ def _compile_post_aux(deps: Deps, dir_: Path) -> Results:
             body=body,
             **meta,
         )
-        # ugh. I think sometimes I end up with unnecessary relative paths liek ../../../path/to/blog (e.g. hpi post)
-        rrr = '/'.join('..' for _ in range(len(input.parts) - 1)) + str(input)
-        pbody = pbody.replace(rrr, '')
+        # ugh. wtf??? I think sometimes I end up with unnecessary relative paths like href="../../../path/to/blog/page.html" (e.g. hpi post)
+        if str(input) in pbody:
+            # jesus.
+            pbody = re.sub(r'href=".*?' + re.escape(str(input)), 'href="', pbody)
         full = full_t.render(
             body=pbody,
             **meta,
