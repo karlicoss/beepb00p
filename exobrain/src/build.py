@@ -19,21 +19,19 @@ from compile_org import emacs
 
 
 root_dir = Path(__file__).absolute().parent.parent
-input_dir  = root_dir / 'input'
-public_dir = root_dir / 'public'
-md_dir     = root_dir / 'markdown'
-html_dir   = root_dir / 'html'
+src  = root_dir / 'src'
+data = root_dir / 'data'
+
+input_dir  = data / 'input'
+public_dir = data / 'public'
+md_dir     = data / 'markdown'
+html_dir   = data / 'html'
 
 input_dir   = input_dir .resolve() # ugh. otherwise relative links might end up weird during org-publish-cache-ctime-of-src
 public_dir  = public_dir.resolve()
 md_dir      = md_dir    .resolve()
 html_dir    = html_dir  .resolve()
 
-
-builtin = 'builtin' # builtin emacs export
-
-
-src = root_dir / 'src'
 
 def clean_dir(path: Path) -> None:
     assert path.is_dir(), path

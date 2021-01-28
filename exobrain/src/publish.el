@@ -346,6 +346,9 @@
 (advice-add #'org-element-timestamp-interpreter :before #'exobrain/hack-timestamp)
 
 ;; TODO share with compile-org?
+(setq org-export-exclude-tags '("noexport" "hide"))
+(setq org-export-with-broken-links t) ;; TODO mm not ideal
+;;
 (setq org-confirm-babel-evaluate nil)
 (setq org-export-preserve-breaks t) ;; by default it collapses consecutive lines.. usually undesirable
 (setq org-export-with-section-numbers nil)
