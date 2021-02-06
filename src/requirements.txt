@@ -8,6 +8,7 @@ html5lib # ???
 feedgen # generate RSS/atom
 logzero # nicer logs
 mypy
+click # nicer clis
 ##
 
 ## org-mode

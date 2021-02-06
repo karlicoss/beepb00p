@@ -200,16 +200,6 @@ def postprocess_html() -> None:
 
         soup = bs(text + MARKER)
 
-        # meh... this gets too complicated
-        sidebar = f"""
-<a id='jumptosidebar' href='#sidebar'>Jump to exobrain search &amp sitemap</a>
-<div id='sidebar'>
-{searchs}
-{tocs}
-</div>
-"""
-        soup.body.extend(ashtml(sidebar))
-
         # todo would be cool to integrate it with org-mode properly..
         settings = f'''
 <span class='exobrain-settings'>
@@ -218,7 +208,17 @@ def postprocess_html() -> None:
 <span class='exobrain-setting'>show todo state<input id="settings-todostates" type="checkbox"/></span>
 </span>
         '''
-        soup.body.extend(ashtml(settings))
+
+        # meh... this gets too complicated
+        sidebar = f"""
+<a id='jumptosidebar' href='#sidebar'>Jump to search, settings &amp; sitemap</a>
+<div id='sidebar'>
+{searchs}
+{settings}
+{tocs}
+</div>
+"""
+        soup.body.extend(ashtml(sidebar))
 
         # ugh. very annoying... this is ought to be easier...
         depth = len(html.relative_to(html_dir).parts) - 1

@@ -186,12 +186,18 @@ a * {
 html, body {
   min-height: 100vh; /* eh, otherwise settings can be displayed midpage */
 }
+
+/*
 body {
   position: relative; /* eh, otherwise bottom: 0 not working??  */
 }
+*/
 .exobrain-settings {
-  position: absolute;
-  bottom: 0;
+  /*
+   * ok guess not needed, embedding them in sidebar
+    position: absolute;
+    bottom: 0;
+  */
   color: #aaa;
 }
 .exobrain-setting {
