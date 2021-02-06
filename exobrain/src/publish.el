@@ -82,6 +82,29 @@
               "\n<h%d id=\"%s\"%s>%s</h%d>\n")
 ;; TODO ok, really awesome that I basically replaced a huge chunk of blog with tuny elisp snippets..
 
+
+;; fucking hell. seriosly?????
+(setq cmp-ignore-first-unicode
+      (lambda (sa sb)
+        (let* ((aspair (lambda (s)
+                         (let* ((title (if (funcall org-file-p s)
+                                           (org-publish-find-title s project)
+                                         " "))
+                                (c (substring title 0 1))
+                                (cp (get-char-code-property (string-to-char c) 'general-category))
+                                (mt (if (eq cp 'So) title (concat (char-to-string 150000) title))) ;; add extra big unicode character
+                                (res (if (funcall org-file-p s)
+                                         (concat (file-name-directory s) mt)
+                                       s)))
+                           res))))
+          (string< (funcall aspair sa) (funcall aspair sb)))))
+
+;; I want the ones with emoji to go first (they are more important)
+(advice-patch 'org-publish-sitemap
+              `(sort files ,cmp-ignore-first-unicode)
+              '(sort files sort-predicate))
+
+
 ;; TODO shit. filetags don't get inherited??
 ;; ugh... maybe could write a script to hack them back somehow..
 ;; todo copied from blog
