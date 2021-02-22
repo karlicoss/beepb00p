@@ -19,3 +19,7 @@ orgparse
 notebook # jupyter
 nbconvert==5.6.1 # meh. see https://github.com/jupyter/nbgrader/issues/1306#issuecomment-706296789
 ##
+
+
+# TODO used in sandbox or something??
+git+https://github.com/karlicoss/porg

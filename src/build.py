@@ -686,7 +686,12 @@ def feed(posts: Tuple[Post], kind: str) -> FeedGenerator:
         # TODO meh, later use proper update date...
         #
         # TODO use type=text/html for comparisons?
-        fe.content(post.body, type='html')
+        # TODO meh
+        if post.upid == 'infra_diagram':
+            content = "Sorry, this post contains a huge diagram and isn't RSS friendly. It's best viewed on the website"
+        else:
+            content = post.body
+        fe.content(content, type='html')
     return fg
 
 
@@ -788,7 +793,7 @@ def compile_all(max_workers: Optional[int]=None) -> Iterable[Exception]:
     # TODO make these proper dependensies? dunno
     for p in chain.from_iterable(
             glob(f'{input}/**/*.{x}', recursive=True)
-            for x in ('jpg', 'svg', 'png')
+            for x in ('jpg', 'svg', 'png', 'svg')
     ):
         f = Path(p)
         if 'ext' in f.parts:

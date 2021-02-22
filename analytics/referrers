@@ -59,7 +59,7 @@ WHERE
      {WHERE_NOT_BORING}
      {LQ}
 ORDER BY timestamp DESC
-''')
+''') # hmm... should sort here right?
 # todo not sure about excluding beepb00p.xyz here?
         for ts, page, referer in res:
             # todo not sure which timezone to use?
@@ -121,6 +121,7 @@ def run(*, access_log: Path, exclude: Optional[Path]=None, delta: Optional[timed
 
 
     dd = df.copy()
+    # TODO if it empty, it crashes. but on the other hand should't really be emtpy
     dd['dt'] = dd['dt'].dt.date
     dd = dd[dd['page'].str.match(r'/[\w-]+.html')] # exclude exobrain stuff
     dd = dd.groupby(['dt', 'page']).count().reset_index()
