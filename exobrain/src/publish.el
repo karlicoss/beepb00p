@@ -313,10 +313,11 @@
 ;   (cl-letf (((symbol-function 'org-element-property) 'exobrain/md-org-element-property))
 ;     (funcall orig headline contents info)))
 
-(setq org-todo-keywords '((sequence "TODO" "STRT" "START" "WIP" "WAIT" "|" "CNCL" "CANCEL" "DONE")))
+(setq org-todo-keywords '((sequence "TODO" "NEXT" "STRT" "START" "WIP" "WAIT" "|" "CNCL" "CANCEL" "DONE")))
 ;; TODO share with rest of the system..
 (setq exobrain/state-keywords
       '(("TODO"   . "todo")
+        ("NEXT"   . "todo")
         ("START"  . "todo") ;; TODO start?
         ("STRT"   . "todo") ;; TODO start?
         ("WAIT"   . "todo")
