@@ -1,7 +1,7 @@
 from pathlib import Path
 from subprocess import check_call, check_output, Popen, PIPE
 from typing import NamedTuple
-from shutil import copy
+from shutil import copy, copytree
 
 import pytest
 
@@ -35,7 +35,7 @@ def _check_org(path: Path) -> None:
     assert len(ids) > 10
 
 
-def test_build_some(tmp_data: Path) -> None:
+def test_build_some(tmp_data: Path, tmp_path: Path) -> None:
     d = tmp_data
     i      = d / 'input'
     public = d / 'public'
@@ -50,7 +50,9 @@ def test_build_some(tmp_data: Path) -> None:
     copy(INPUT / 'memex.org'          , memex)
     copy(INPUT / 'projects/cachew.org', cachew)
     # TODO add another one?
-    check_call(build('--data-dir', d))
+
+    with Popen(build('--data-dir', d)) as popen:
+        pass
 
     _check_org(public / 'projects/cachew.org')
     _check_org(public / 'memex.org')
@@ -67,3 +69,24 @@ def test_build_some(tmp_data: Path) -> None:
     assert '"../memex.html"' in hc
     hm = (html / 'memex.html').read_text()
     assert '"projects/cachew.html"' in hm
+
+    ## test idempotence
+    old = tmp_path / 'old'
+    copytree(public, old / 'public')
+    copytree(html  , old / 'html'  )
+
+    with Popen(build('--data-dir', d)) as popen:
+        pass
+
+    check_call(['diff', '-bur', old / 'public', public])
+    # NOTE: if we don't clean properly, documents.js ends with entries from TOC.. ugh
+    check_call(['diff', '-bur', old / 'html'  , html  ])
+    ##
+
+
+
+# def test_watch(tmp_data: Path) -> None:
+#     # TODO ugh. probably won't be possible to kjjkk 1k
+#     pass
+
+# TODO test idempotence?

@@ -56,12 +56,19 @@ def clean_dir(path: Path) -> None:
 
 def clean() -> None:
     # todo ugh, need symlink watching tool here again...
+    # org-publish-timestamp-directory
     cachedir = Path('~/.org-timestamps').expanduser()
     # right, so it keeps track of modifications and doesn't publish if it wasn't modified
     # but completely unclear how it behaves wrt added/removed files etc
     # also wouldn't know if the source code was modified... so best not to use it I guess
+    # also this... https://emacs.stackexchange.com/questions/44534/org-mode-sitemap-not-updated-after-re-publish
+    # ugh. there is org-publish-use-timestamps-flag, but I'm not sure if it's respected
     for c in cachedir.glob('*.cache'):
         c.unlink()
+
+    # it's really really annoying it's so hard to implement this properly
+    # basically specifying all the inputs and outputs (bazel-like) is the only way to go I guess
+    # but it's not really possible considering all the dynamic stuff during building. shit
 
     clean_dir(cfg.md_dir)
     clean_dir(cfg.html_dir)
