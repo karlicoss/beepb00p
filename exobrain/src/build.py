@@ -22,7 +22,7 @@ from utils import classproperty
 _root = Path(__file__).absolute().parent.parent
 src  = _root / 'src'
 
-DATA = _root / 'data'
+DATA: Path
 
 # note: need to resolve, otherwise relative links might end up weird during org-publish-cache-ctime-of-src
 class cfg:
@@ -79,7 +79,15 @@ def main() -> None:
     p.add_argument('--no-html', action='store_false', dest='html')
     p.add_argument('--watch', action='store_true')
     p.add_argument('--under-entr', action='store_true') # ugh.
+    p.add_argument('--data-dir', type=Path)
     args = p.parse_args()
+
+    ddir = args.data_dir
+    global DATA
+    if ddir is None:
+        DATA = _root / 'data'
+    else:
+        DATA = ddir.absolute()
 
     # ugh. this all is pretty complicated...
     if args.watch:
@@ -99,15 +107,20 @@ def main() -> None:
 
 
 def preprocess(args) -> None:
+    """
+    Publishies intermediate ('public') org-mode?
+    """
     public_dir = cfg.public_dir
+    input_dir  = cfg.input_dir
 
     filter = args.filter
     efilter = 'nil' if filter is None else rf"""'(:exclude "\\.*" :include ("{filter}"))"""
 
+    assert input_dir.exists(), input_dir
     eargs = [
         '--eval', f'''(progn
-            (setq exobrain/input-dir  "{cfg.input_dir}" )
-            (setq exobrain/public-dir "{cfg.public_dir}")
+            (setq exobrain/input-dir  "{input_dir}" )
+            (setq exobrain/public-dir "{public_dir}")
             (setq exobrain/md-dir     "{cfg.md_dir}"    )
             (setq exobrain/html-dir   "{cfg.html_dir}"  )
             (setq exobrain/filter     {efilter}     )
@@ -129,10 +142,12 @@ def preprocess(args) -> None:
     check_org(public_dir)
 
     # TODO think about commit/push/deploy logic?
-    assert (public_dir / '.git').is_dir(), public_dir
-    ccall(['git', 'status'], cwd=public_dir)
+    # TODO not sure why I had this? prob don't want it...
+    # assert (public_dir / '.git').is_dir(), public_dir
+    # ccall(['git', 'status'], cwd=public_dir)
 
     if args.add:
+        raise RuntimeError('Temporary unsupported')
         ccall(['git', 'add', '-A', '--intent-to-add'], cwd=public_dir)
         ccall(['git', 'add', '-p'], cwd=public_dir)
         # TODO suggest to commit/push?
