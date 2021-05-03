@@ -1,3 +1,4 @@
 #!/usr/bin/env bash
 set -eux
 mypy src/build.py
+pytest -s src/test.py

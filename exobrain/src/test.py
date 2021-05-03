@@ -1,9 +1,13 @@
 from pathlib import Path
-from subprocess import check_call, check_output, Popen, PIPE
-from typing import NamedTuple
+from subprocess import run, check_call, check_output, Popen, PIPE, CalledProcessError
+from time import sleep
+from typing import NamedTuple, List
 from shutil import copy, copytree
 
 import pytest
+
+
+from utils import tmp_popen
 
 
 def build(*args):
@@ -51,8 +55,7 @@ def test_build_some(tmp_data: Path, tmp_path: Path) -> None:
     copy(INPUT / 'projects/cachew.org', cachew)
     # TODO add another one?
 
-    with Popen(build('--data-dir', d)) as popen:
-        pass
+    check_call(build('--data-dir', d))
 
     _check_org(public / 'projects/cachew.org')
     _check_org(public / 'memex.org')
@@ -74,19 +77,39 @@ def test_build_some(tmp_data: Path, tmp_path: Path) -> None:
     old = tmp_path / 'old'
     copytree(public, old / 'public')
     copytree(html  , old / 'html'  )
+    def diff() -> List[str]:
+        r = run(['diff', '-brq', old / 'public', public], stdout=PIPE)
+        out = r.stdout
+        assert out is not None
+        l1 = out.decode('utf8').strip().splitlines()
 
-    with Popen(build('--data-dir', d)) as popen:
-        pass
+        r = run(['diff', '-brq', old / 'html'  , html  ], stdout=PIPE)
+        out = r.stdout
+        assert out is not None
+        l2 = out.decode('utf8').strip().splitlines()
 
-    check_call(['diff', '-bur', old / 'public', public])
+        return l1 + l2
     # NOTE: if we don't clean properly, documents.js ends with entries from TOC.. ugh
-    check_call(['diff', '-bur', old / 'html'  , html  ])
+
+    check_call(build('--data-dir', d))
+    assert diff() == []
     ##
 
+    with tmp_popen(build('--data-dir', d, '--watch')) as popen:
+        # TODO how much should we sleep?
+        sleep(3)
+        assert diff() == []
 
+        memex.touch()
+        sleep(3)
+        assert diff() == []
 
-# def test_watch(tmp_data: Path) -> None:
-#     # TODO ugh. probably won't be possible to kjjkk 1k
-#     pass
-
-# TODO test idempotence?
+        # just a santiy check
+        with memex.open('a') as fo:
+            fo.write('x')
+        sleep(3)
+        dd = diff()
+        [d1, d2, d3] = dd
+        assert 'memex.org'    in d1
+        assert 'documents.js' in d2  # hmm
+        assert 'memex.html'   in d3

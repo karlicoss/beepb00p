@@ -280,6 +280,4 @@ const PATH_TO_ROOT = "{rel}"
 # link = '<a style="font-size: 2rem; line-height: var(--menu-bar-height);" href="https://beepb00p.xyz">back to blog</a>'
 
 if __name__ == '__main__':
-    # TODO allow skipping?
-    check_call(['./lint'])
     main()
