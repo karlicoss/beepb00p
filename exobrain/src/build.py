@@ -16,21 +16,31 @@ def ccall(*args, **kwargs):
 # TODO export txt files as md as well?
 
 from compile_org import emacs
+from utils import classproperty
 
 
-root_dir = Path(__file__).absolute().parent.parent
-src  = root_dir / 'src'
-data = root_dir / 'data'
+_root = Path(__file__).absolute().parent.parent
+src  = _root / 'src'
 
-input_dir  = data / 'input'
-public_dir = data / 'public'
-md_dir     = data / 'markdown'
-html_dir   = data / 'html'
+DATA = _root / 'data'
 
-input_dir   = input_dir .resolve() # ugh. otherwise relative links might end up weird during org-publish-cache-ctime-of-src
-public_dir  = public_dir.resolve()
-md_dir      = md_dir    .resolve()
-html_dir    = html_dir  .resolve()
+# note: need to resolve, otherwise relative links might end up weird during org-publish-cache-ctime-of-src
+class cfg:
+    @classproperty
+    def input_dir(cls) -> Path:
+        return (DATA / 'input' ).resolve()
+
+    @classproperty
+    def public_dir(cls) -> Path:
+        return (DATA / 'public').resolve()
+
+    @classproperty
+    def md_dir(cls) -> Path:
+        return (DATA / 'md'    ).resolve()
+
+    @classproperty
+    def html_dir(cls) -> Path:
+        return (DATA / 'html'  ).resolve()
 
 
 def clean_dir(path: Path) -> None:
@@ -53,11 +63,11 @@ def clean() -> None:
     for c in cachedir.glob('*.cache'):
         c.unlink()
 
-    clean_dir(md_dir)
-    clean_dir(html_dir)
+    clean_dir(cfg.md_dir)
+    clean_dir(cfg.html_dir)
 
     # TODO what about empty dirs?
-    for f in public_dir.rglob('*.org'):
+    for f in cfg.public_dir.rglob('*.org'):
         f.unlink()
 
 
@@ -77,7 +87,7 @@ def main() -> None:
         nargs = [*sys.argv, '--under-entr']
         nargs.remove('--watch')
         while True:
-            paths = '\n'.join(str(p) for p in input_dir.rglob('*') if '.git' not in p.parts)
+            paths = '\n'.join(str(p) for p in cfg.input_dir.rglob('*') if '.git' not in p.parts)
             run(['entr', '-d', *nargs], input=paths.encode('utf8'))
         sys.exit(0)
     if not args.under_entr:
@@ -89,15 +99,17 @@ def main() -> None:
 
 
 def preprocess(args) -> None:
+    public_dir = cfg.public_dir
+
     filter = args.filter
     efilter = 'nil' if filter is None else rf"""'(:exclude "\\.*" :include ("{filter}"))"""
 
     eargs = [
         '--eval', f'''(progn
-            (setq exobrain/input-dir  "{input_dir}" )
-            (setq exobrain/public-dir "{public_dir}")
-            (setq exobrain/md-dir     "{md_dir}"    )
-            (setq exobrain/html-dir   "{html_dir}"  )
+            (setq exobrain/input-dir  "{cfg.input_dir}" )
+            (setq exobrain/public-dir "{cfg.public_dir}")
+            (setq exobrain/md-dir     "{cfg.md_dir}"    )
+            (setq exobrain/html-dir   "{cfg.html_dir}"  )
             (setq exobrain/filter     {efilter}     )
         )''',
         '--directory', src / 'advice-patch',
@@ -153,6 +165,8 @@ def relativize(soup, *, path: Path, root: Path):
 
 
 def postprocess_html() -> None:
+    html_dir = cfg.html_dir
+
     copy(src / 'search/search.css', html_dir / 'search.css'  )
     copy(src / 'search/search.js' , html_dir / 'search.js'   )
     copy(src / 'exobrain.css'     , html_dir / 'exobrain.css')
@@ -245,5 +259,5 @@ const PATH_TO_ROOT = "{rel}"
 
 if __name__ == '__main__':
     # TODO allow skipping?
-    check_call(['mypy', '--check-untyped', __file__])
+    check_call(['./lint'])
     main()
