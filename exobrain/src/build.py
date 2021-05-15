@@ -74,6 +74,7 @@ def clean() -> None:
     clean_dir(cfg.html_dir)
 
     # TODO what about empty dirs?
+    # right -- we don't want to use clean_dir because there is also gitignore/license here. ugh
     for f in cfg.public_dir.rglob('*.org'):
         f.unlink()
 
@@ -84,6 +85,7 @@ def main() -> None:
     p.add_argument('--add'   , action='store_true')
     p.add_argument('--filter', type=str, default=None)
     p.add_argument('--no-html', action='store_false', dest='html')
+    p.add_argument('--md'     , action='store_true')
     p.add_argument('--watch', action='store_true')
     p.add_argument('--under-entr', action='store_true') # ugh.
     p.add_argument('--data-dir', type=Path)
@@ -159,12 +161,17 @@ def preprocess(args) -> None:
         ccall(['git', 'add', '-p'], cwd=public_dir)
         # TODO suggest to commit/push?
 
-    if args.html:
+    if args.html or args.md:
+        # TODO might want both?
+        mode = 'html' if args.html else 'md'
+        prj = 'exobrain/project-org2html' if args.html else 'exobrain/project-org2md'
         with emacs(
+                # ugh. such crap
+                *([] if args.html else ['--eval', '(setq markdown t)']),
                 *eargs,
                 '--eval',
-                f'''(let ((org-publish-project-alist `(,exobrain/project-org2html)))
-                    (org-publish-all))''',
+                f'''(let ((org-publish-project-alist `(,{prj})))
+                        (org-publish-all))''',
         ) as ep:
             pass
         assert ep.returncode == 0

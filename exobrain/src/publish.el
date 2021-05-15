@@ -41,9 +41,10 @@
 (require 'advice-patch)
 ;; whoa advice-patch is really nice
 
- ;; remove useless timestmap-wrapper class
+;; remove useless timestmap-wrapper class
 (advice-patch 'org-html-timestamp
-              "<span class=\"timestamp\">%s</span>"
+              ;; fuck. markdown falls back onto html for timestamps??
+              (if (boundp 'markdown) "`%s`" "<span class=\"timestamp\">%s</span>")
               "<span class=\"timestamp-wrapper\"><span class=\"timestamp\">%s</span></span>")
 
 ;; no clue why default class is "example" :shrug: (using same format as in blog)
@@ -102,7 +103,9 @@
 ;; I want the ones with emoji to go first (they are more important)
 (advice-patch 'org-publish-sitemap
               `(sort files ,cmp-ignore-first-unicode)
+              ;; fucking annoying... why does it complain about "unused lexical variable"???
               '(sort files sort-predicate))
+;; TODO hmm sometimes it's not dumping sitemap... for no apparent reason?
 
 
 ;; TODO shit. filetags don't get inherited??
@@ -309,10 +312,11 @@
 ;; I hate elisp.
 ;; (advice-add #' org-element-property :around #'exobrain/md-org-element-property)
 
-; (defun exobrain/org-md-headline (orig headline contents info)
-;   (cl-letf (((symbol-function 'org-element-property) 'exobrain/md-org-element-property))
-;     (funcall orig headline contents info)))
+;; (defun exobrain/org-md-headline (orig headline contents info)
+;;   (cl-letf (((symbol-function 'org-element-property) 'exobrain/md-org-element-property))
+;;     (funcall orig headline contents info)))
 
+;; TODO done keywords should be marked separately..
 (setq org-todo-keywords '((sequence "TODO" "NEXT" "STRT" "START" "WIP" "WAIT" "|" "CNCL" "CANCEL" "DONE")))
 ;; TODO share with rest of the system..
 (setq exobrain/state-keywords
@@ -328,7 +332,13 @@
 ;; used during exporting regular timestamps (default includes day of week)
 (setq org-time-stamp-formats '("<%Y-%m-%d>"))
 
-;; TODO done keywords should be marked separately..
+
+;; hide anchors (they get emitted as HTML)
+(advice-patch 'org-md-headline
+              ""
+              "<a id=\"%s\"></a>")
+
+;;
 (defun exobrain/org-md--headline-title (orig style level title &optional anchor tags)
   ;; TODO todo keywords are at the very beginning? so should work?
   (let* ((spl (s-split-up-to " " title 1))
@@ -343,8 +353,11 @@
 (advice-add #'org-md--headline-title :around #'exobrain/org-md--headline-title)
 
 (defun exobrain/md-org-make-tag-string (tags)
-  (let ((stags (--map (format "<span class='tag'>%s</span>" it) tags)))
-    (apply #'s-concat stags)))
+  (let ((stags (--map (format "[[%s]]" it) tags)))
+    (s-concat " " (s-join " " stags))))
+
+;; for fucks sake
+
 
 (defun exobrain/org-md-publish-to-md (orig &rest args)
   (cl-letf (((symbol-function 'org-make-tag-string) 'exobrain/md-org-make-tag-string))
@@ -413,17 +426,21 @@
         :sitemap-filename "SUMMARY.org"
         :sitemap-format-entry exobrain/org-publish-sitemap-entry
 
-        ,@exobrain/export-settings
 
-        :with-properties ("CREATED")))
+        ;; todo exclude timestamps maybe?
+        ,@exobrain/export-settings
+        :with-priority nil
+        :with-properties nil
+        :with-timestamps nil ;; TODO later? verbatim maybe?
+        :with-todo-keywords nil))
 
 ;; eh. a bit hacky, but does the job
 ;; doesn't seem that org-mode exposes filetags properly
 (defun org-html--build-pre/postamble (type info)
   (if (eq type 'preamble)
-    (let* ((filetags (plist-get info :filetags))
-           (tagss    (exobrain/org-html--tags filetags info)))
-      (format "<div class='filetags'>%s</div>" tagss))
+      (let* ((filetags (plist-get info :filetags))
+             (tagss    (exobrain/org-html--tags filetags info)))
+        (format "<div class='filetags'>%s</div>" tagss))
     nil))
 
 (setq exobrain/project-org2html
