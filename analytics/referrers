@@ -14,7 +14,7 @@ from typing import Set, Dict, Any, Optional
 import pandas as pd # type: ignore
 
 
-from logs.common import get_delta, get_delta_sql
+from logs.common import get_delta, get_delta_sql, DB_PATH
 
 
 # -1 for infinite
@@ -48,23 +48,24 @@ def iter_log(access_log: Path, delta: Optional[timedelta]=None) -> Iterable[Row]
     LQ = get_delta_sql(delta)
 
     # TODO ugh, not sure why stuff like "/./tags.html" ends up in logs??
-    normalise_page = 'REPLACE(page, "./", "")'
+    normalise_page = 'REPLACE(uri, "./", "")'
     conn = sqlite3.connect(f'file:{access_log}?immutable=1', uri=True)
     with conn:
         # 'now'
         res = conn.execute(f'''
-SELECT timestamp, {normalise_page}, referer
-FROM visits
+SELECT ts, {normalise_page}, referer
+FROM logs
 WHERE
      {WHERE_NOT_BORING}
      {LQ}
-ORDER BY timestamp DESC
+ORDER BY ts DESC
 ''') # hmm... should sort here right?
 # todo not sure about excluding beepb00p.xyz here?
         for ts, page, referer in res:
             # todo not sure which timezone to use?
             dt = datetime.utcfromtimestamp(ts)
             yield (dt, page, referer)
+    conn.close()
 
 
 
@@ -156,7 +157,7 @@ def run(*, access_log: Path, exclude: Optional[Path]=None, delta: Optional[timed
 def main():
     import argparse
     p = argparse.ArgumentParser()
-    p.add_argument('--access-log', type=Path, required=True, help='log sqlite database')
+    # p.add_argument('--access-log', type=Path, required=True, help='log sqlite database')
     p.add_argument('--html', type=Path)
     p.add_argument('--exclude', type=Path)
     p.add_argument('--last', type=str, help='example: 3d or 10h')
@@ -167,7 +168,7 @@ def main():
 
     delta = get_delta(args.last)
 
-    rt, gcount, trends  = run(access_log=args.access_log, exclude=args.exclude, delta=delta)
+    rt, gcount, trends  = run(access_log=DB_PATH, exclude=args.exclude, delta=delta)
 
     logger.info('rendering...')
     # TODO ugh. need some wort of iterative html rendering.. it takes 10% memeory as well

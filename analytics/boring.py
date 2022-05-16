@@ -13,13 +13,13 @@ _BORING = {
 }
 
 
-WHERE_NOT_BORING = 'page NOT IN (' + ', '.join(f'"{x}"' for x in _BORING) + ')' + '''
-AND page NOT LIKE '%/css/%'
-AND page NOT LIKE '%.css'
-AND page NOT LIKE '%.js'
-AND page NOT LIKE '/comments/%'
-AND page NOT LIKE '%.svg'
-AND page NOT LIKE '%robot-face%'
+WHERE_NOT_BORING = 'uri NOT IN (' + ', '.join(f'"{x}"' for x in _BORING) + ')' + '''
+AND uri NOT LIKE '%/css/%'
+AND uri NOT LIKE '%.css'
+AND uri NOT LIKE '%.js'
+AND uri NOT LIKE '/comments/%'
+AND uri NOT LIKE '%.svg'
+AND uri NOT LIKE '%robot-face%'
 AND referer NOT LIKE 'https://beepb00p.xyz%'
 AND referer NOT LIKE '%.baidu.com/'
 AND referer NOT LIKE '%www.google.%'
