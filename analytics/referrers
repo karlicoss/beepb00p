@@ -8,13 +8,14 @@ from pathlib import Path
 from pprint import pprint
 import re
 import sys
+import sqlite3
 from time import sleep
-from typing import Set, Dict, Any, Optional
+from typing import Set, Dict, Any, Optional, Iterable
 
 import pandas as pd # type: ignore
 
 
-from logs.common import get_delta, get_delta_sql, DB_PATH
+from logs.common import get_delta, get_delta_sql, DB_PATH, Row, Page, Referer
 
 
 # -1 for infinite
@@ -32,23 +33,13 @@ less_prio = {
 }
 
 
-from typing import Iterable, Tuple
-Timestamp = datetime
-Page = str
-Referer = str
-
-Row = Tuple[Timestamp, Page, Referer]
-
 from boring import WHERE_NOT_BORING
 
 def iter_log(access_log: Path, delta: Optional[timedelta]=None) -> Iterable[Row]:
-    import sqlite3
-
-
     LQ = get_delta_sql(delta)
 
     # TODO ugh, not sure why stuff like "/./tags.html" ends up in logs??
-    normalise_page = 'REPLACE(uri, "./", "")'
+    normalise_page = 'REPLACE(uri, "./", "") AS uri'
     conn = sqlite3.connect(f'file:{access_log}?immutable=1', uri=True)
     with conn:
         # 'now'
@@ -92,12 +83,12 @@ def run(*, access_log: Path, exclude: Optional[Path]=None, delta: Optional[timed
     # TODO not sure if should use pandas?
 
     def is_boring(row: Row) -> bool:
-        url = row[1]
+        url: Page = row[1]
         if url is None:
             return True
 
         # TODO filter reddit/hn somehow? or just sort to display in the bottom?
-        ref = row[2]
+        ref: Referer = row[2]
         if EXCLUDED_RE is not None and EXCLUDED_RE.search(ref):
             return True
         return False
@@ -154,7 +145,7 @@ def run(*, access_log: Path, exclude: Optional[Path]=None, delta: Optional[timed
     return df, gc, dd
 
 
-def main():
+def main() -> None:
     import argparse
     p = argparse.ArgumentParser()
     # p.add_argument('--access-log', type=Path, required=True, help='log sqlite database')
