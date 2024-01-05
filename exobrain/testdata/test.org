@@ -1,0 +1,40 @@
+#+title: Test
+
+This is a test file
+
+* a heading with example
+TODO crap this doesn't work at the moment? crashes while it's trying to do org-export-get-reference
+: #+begin_example
+: i am an example
+: #+end_example
+
+
+* TODO [#C] some todos
+:PROPERTIES:
+:CREATED: [2020-11-29 Sun 23:51]
+:END:
+- [ ] move individual data sources to files within the repo.. not even submodules, too much hassle
+  if someone needs, they can just import axol.sources.src directly
+- [ ] cleanup the json shit.. ideally use some proper library
+- [ ] not sure what to do with RSS feeds.. but could start with HTML report generation
+- [ ] query language:
+  might be better to adopt
+  service:sub:query
+  e.g.
+  pinboard:tag:whatever
+  or
+  github:some query
+  not sure what to do with colons though.. but maybe think about this later. most won't support searching them anyway
+
+* TODO [#C] thinking about query language
+:PROPERTIES:
+:CREATED: [2020-11-30 Mon 03:29]
+:END:
+how it could look in adhoc mode
+github:'scott alexander' twitter:'scott alexander'
+
+in config, allow something nicer like
+[twitter,github,reddit]:'scott alexander'
+
+or [twitter,github,reddit, pinboard]:['scott alexander', 'quantified self']
+pinboard:tag:scottalexander

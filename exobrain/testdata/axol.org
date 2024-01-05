@@ -1,0 +1,773 @@
+#+TITLE: Axol: search alerts
+#+LOGSEQ_TITLE: axol
+#+FILETAGS: axol
+#+OPTIONS: toc:nil
+
+Eventually I'll write about it [[https://beepb00p.xyz/axol.html][here]]
+
+#+TOC: headlines 2
+
+* [#A] Motivation :refile:
+** TODO [#B] I don't necessarily want to read everything found by 'scott alexander', but it's still interesting to run search to see the overlap between people?
+:PROPERTIES:
+:CREATED: [2020-06-25 Thu 09:38]
+:END:
+** TODO why not hnrss?
+:PROPERTIES:
+:CREATED: [2020-11-30 Mon 01:53]
+:END:
+it's very likely more convenient to use if you only want a few HN queries, and don't care about historic ones
+** TODO why axol over rss bridges?
+:PROPERTIES:
+:CREATED: [2020-12-05 Sat 03:56]
+:END:
+rss is awesome! downsides
+- might be trickier to do various post-filtering
+- with axol, you can compare results across queries (user summary)
+- can be used with promnesia maybe
+** STRT motivation: I don't understand how google search alerts work. e.g. try on openbci query (see my old emails from google alert)
+:PROPERTIES:
+:CREATED: [2018-11-10 Sat 11:43]
+:END:
+** TODO [#D] [2019-12-30 Mon 20:03] Ask HN: Do you still use RSS? | Hacker News :rss:toblog:
+https://news.ycombinator.com/item?id=21913598
+: I've just started using Feedbin about a month ago, and although my HN firehose feed is at like 1100 something, it definitely limits the rest of the HN feeds. The show and ask feeds are both stuck around 400 something.
+** [#D] [2018-11-24 Sat 14:04] problems with diff approach
+*** random errors, resulting in empty diff
+*** small differences in output (e.g. google search)
+*** not always interested in items disappearing from query
+
+the downside -- having to keep the state :(
+** [#C] [[http://twitter.com/karlicoss/status/1047228539156750336][TW]] at [2018-10-02 Tue 20:55] А кто-нибудь знает тулы типа https://t.co/EbpbNZWQFC , но чтобы туда можно было вбить грубо говоря любую поисковую кверю, или API (например reddit/github); и оно отслеживало результаты?
+*** [2019-10-02 Wed 23:29] huh
+** [#C] [2020-06-22 Mon 10:52] [[https://news.ycombinator.com/item?id=23018081][I feel the same. So many cool things I'd love to learn about, but not enough tim... | Hacker News]] :pkm:axol:
+ : I feel the same. So many cool things I'd love to learn about, but not enough time.
+* [#B] Similar/existing projects
+** [#C] [2020-03-03 Tue 23:24] [[https://news.ycombinator.com/item?id=22474282][Show HN: Mailbrew – Automated Email Digests from HN, RSS, Reddit, Twitter]]
+ https://mailbrew.com/
+** TODO [#C] [2019-12-26 Thu 11:34] awesome-selfhosted/awesome-selfhosted: A list of Free Software network services and web applications which can be hosted locally. Selfhosting is the process of hosting and managing applications instead of renting from Software-as-a-Service providers
+https://github.com/awesome-selfhosted/awesome-selfhosted
+: Search Engines
+** DONE [#B] trackreddit only two subscriptions
+  CLOSED: [2019-01-12 Sat 23:07]
+:PROPERTIES:
+:CREATED: [2018-07-15 Sun 17:38]
+:END:
+wanted lifelogging
+trackreddit
+** DONE [#D] tool to search on reddit or even custom services? special ordering ('least likely' for showing least occuring subreddits). could also do it on rust? :pkm:
+:PROPERTIES:
+:CREATED: [2018-09-29 Sat 15:34]
+:END:
+:LOGBOOK:
+- State "DONE"       from "STRT"       [2020-03-10 Tue 00:21]
+:END:
+searched as 'keyword monitoring tool'
+tried searching on reddit, but nothing really useful..
+https://github.com/trulia/thoth -- unclear what it's doing
+
+keyword tracking (SERP) -- not sure if an overkill..
+*** DONE [2018-11-06 Tue 19:37] just implement a provider for kibitzr?
+   CLOSED: [2018-11-10 Sat 09:50]
+*** CANCEL rust?
+CLOSED: [2018-11-10 Sat 09:50]
+* [#B] * Make it more user friendly
+** TODO add axol doctor config :project:
+:PROPERTIES:
+:CREATED: [2020-11-30 Mon 03:56]
+:END:
+also axol doctor to check individual providers + reuse in tests
+** TODO [#B] rely on user config dirs
+:PROPERTIES:
+:CREATED: [2020-05-25 Mon 21:28]
+:END:
+** TODO [#C] provide an asci diagram for crawler + report + feed reader?
+:PROPERTIES:
+:CREATED: [2020-03-10 Tue 20:05]
+:END:
+* [#B] * Blacklisting
+
+** TODO [#B] maybe button to ban user? it would write to config or something? maybe I can even use some public API constructor?
+:PROPERTIES:
+:CREATED:  [2019-08-17 Sat 15:11]
+:END:
+** TODO [#B] I suppose pouchdb would be perfect for blacklisting :couchdb:
+:PROPERTIES:
+:CREATED:  [2019-09-02 Mon 13:37]
+:END:
+
+** TODO [#B] for blacklisting, instead could just apply custom per-user classes? or even edit them. that would allow to highlight properly
+:PROPERTIES:
+:CREATED:  [2019-09-16 Mon 13:32]
+:END:
+** TODO [#C] yeah, blacklisting could both update backend and hide locally
+   :PROPERTIES:
+   :CREATED:  [2019-08-17 Sat 15:17]
+   :END:
+** TODO [#C] [2019-04-15 Mon 14:20] axol results for reddit_pkm, rendered at Fri 12 Apr 2019 05:07
+reddit_pkm.html
+shit. need to ignore the weapons subreddits
+I think generally, my tools needs to have a database...
+** [#C] shit, top lifelogging tweets are on japanese... :twitter:
+:PROPERTIES:
+:CREATED:  [2019-07-29 Mon 23:34]
+:END:
+** TODO [#C] would be interesting to ignore links I already visited from results. It can even be done automatically.... :promnesia:axol:
+:PROPERTIES:
+:CREATED:  [2019-07-20 Sat 08:59]
+:END:
+** TODO [#D] huh, quite a few bots on reddit? :reddit:
+:PROPERTIES:
+:CREATED:  [2019-07-27 Sat 19:04]
+:END:
+ aznc_bot
+ bprogramming even maybe?
+ autotldr
+ tabledresser
+** [#C] huh, lots of stuff from twitter is just garbage. need a good way of suppressing it... :axol:twitter:
+:PROPERTIES:
+:CREATED:  [2019-07-29 Mon 23:39]
+:END:
+*** [2020-01-01 Wed 23:36] twitter_mypy (211) - Miniflux
+https://axol.karlicoss.xyz/feed/53/entries
+: /mypy1031
+*** [2020-01-01 Wed 23:36] twitter_mypy (211) - Miniflux
+https://axol.karlicoss.xyz/feed/53/entries
+: /aymk_mypy/status/1211970059205107712 All
+: twitter_mypy 7 hours ago Original @Witch_Astaroth みどりさん！この垢にしてから相互になった方の中では割と話せたと思ってます笑 来年もよろしくお願いします！
+*** [2020-01-01 Wed 23:36] twitter_mypy (111) - Miniflux
+https://axol.karlicoss.xyz/feed/53/entries
+: /mypy2424/status/1211845733210443778 All
+: twitter_mypy 7 hours ago Original 事実でも噂でも、クズとかいうやつお前はその人より努力してからいえよな〜って思うよ！！！！！ 好きな
+*** [2020-01-01 Wed 23:36] twitter_mypy (111) - Miniflux
+https://axol.karlicoss.xyz/feed/53/entries
+: /soe1113/status/741281801323175936 All
+:    twitter_mypy 7 hours ago O
+*** [2020-01-03 Fri 20:14] twitter_lifelogging (20) - Miniflux
+https://axol.karlicoss.xyz/feed/52/entries
+: /jager_atami/status/24390787028 All
+: twitter_lifelogging 2 days ago Original #udetate #lifelogging 陶房で壺割り 12 個 201
+*** [2020-01-03 Fri 20:15] twitter_quantified_self (36) - Miniflux
+https://axol.karlicoss.xyz/feed/55/entries
+: /hiperesoterismo/status/1212803558203985920 All
+:     twitter_quantified_self 4 hours ago Original mis únicos 4 moodspic.twitter.com/5RgPiKKhMx ★
+
+* [#B] What would be a good UI for axol?
+** TODO [#B] I really need some sort of proper frontend browser for it...
+:PROPERTIES:
+:CREATED: [2020-10-26 Mon 11:37]
+:END:
+** TODO [#C] would be nice to have some html dashboard, so it's easy to blacklist terms?
+:PROPERTIES:
+:CREATED: [2020-01-03 Fri 20:14]
+:END:
+** STRT [#B] need a UI to easily add items to axol. e.g. Alexei Kitaev
+:PROPERTIES:
+:CREATED:  [2019-07-18 Thu 21:29]
+:END:
+:LOGBOOK:
+- State "STRT"      from "TODO"       [2019-07-20 Sat 07:47]
+:END:
+ maybe some simple cmdline available from anywhere. or org mode as source?
+
+
+** TODO [#C] use metabase or something? could use a column to mark as seen? would be much easier than rss
+:PROPERTIES:
+:CREATED: [2020-12-10 Thu 01:41]
+:END:
+** TODO [#B] dunno about rss interface... really need a more efficient way of processing content, reordering, etc
+:PROPERTIES:
+:CREATED: [2020-05-21 Thu 17:09]
+:END:
+
+* [#C] Queries :refile:
+** TODO [#A] search for 'data export' or something?
+   :PROPERTIES:
+   :CREATED:  [2019-09-23 Mon 02:16]
+   :END:
+*** [2019-12-07 Sat 16:51] not much on reddit for 'data liberation:
+*** [2020-03-10 Tue 00:45] 'data export' looks promising on github
+** TODO [#C] [2020-01-12 Sun 00:10] github.com/karlicoss - Twitter Search / Twitter :self:
+https://twitter.com/search?q=github.com%2Fkarlicoss&src=typed_query&f=live
+*** [2020-03-10 Tue 00:40] right, it looks quite reasonable to have
+**** [2020-11-30 Mon 03:41] very few results though
+*** [2020-03-30 Mon 10:55] All | Search powered by Algolia
+ https://hn.algolia.com/?dateRange=all&page=0&prefix=true&query=github.com%2Fkarlicoss&sort=byPopularity&type=story
+
+
+** STRT [#C] [2020-01-30 Thu 21:18] my. package | beepb00p :postprivacy:qs:toread:
+:LOGBOOK:
+- State "STRT"       from "TODO"       [2020-03-01 Sun 12:17]
+:END:
+https://beepb00p.xyz/mypkg.html
+: Interesting experiment! Thanks for sharing :-) You might find this person's musings about such experiments interesting: https://www.plomlompom.de/index.en.html#topic_postprivacy
+*** TODO [2020-03-01 Sun 12:17] axol it
+** STRT [#B] [2019-02-15 Fri 17:54] What Universal Human Experiences Are You Missing Without Realizing It? | Slate Star Codex :mind:
+   - State "STRT"      from "TODO"       [2019-04-13 Sat 15:22]
+   https://slatestarcodex.com/2014/03/17/what-universal-human-experiences-are-you-missing-without-realizing-it/
+ search this post on reddit or something
+*** [2019-04-22 Mon 09:42] actually even found something interesting on gh..
+  https://github.com/search?q=what-universal-human-experiences-are-you-missing-without-realizing-it&type=Code
+  although, it's code search, not repo search
+*** [2019-04-22 Mon 10:27] so trying to google that query
+ if looking for past month, that basically results in random keywords
+ what universal human experiences are you missing without realizing it
+*** [2019-06-13 Thu 21:50] yeah, twitter feed is not too huge, so could subscribe to it
+
+** TODO [#D] [2019-06-29 Sat 21:48] https://github.com/hypotext/notation - Twitter Search
+   https://twitter.com/search?q=https%3A%2F%2Fgithub.com%2Fhypotext%2Fnotation&partner=Firefox&source=desktop-search
+*** [2019-08-09 Fri 22:58] axol this?
+**** [2019-08-25 Sun 17:48] or aaxol for twitter? although doesn't seem to be posted often
+
+
+** [#C] [2020-01-09 Thu 13:09] karlicoss/cachew - Twitter Search / Twitter :cachew:
+https://twitter.com/search?q=karlicoss%2Fcachew&partner=Firefox&source=desktop-search
+
+** TODO [#B] [2020-08-24 Mon 12:22] [[https://hn.algolia.com/?dateRange=all&page=0&prefix=true&query=https%3A%2F%2Fen.wikipedia.org%2Fwiki%2FNoon_Universe&sort=byPopularity&type=all][All | Search powered by Algolia]] Noon Universe search
+
+** STRT [#C] mypy -- exclude mypython; prioritize topics :mypy:
+:PROPERTIES:
+:CREATED: [2020-06-24 Wed 16:59]
+:END:
+:LOGBOOK:
+- State "STRT"       from "TODO"       [2020-11-30 Mon 03:40]
+:END:
+** TODO [#C] sleep tracking                                     :sleep:qs:
+:PROPERTIES:
+:CREATED:  [2018-12-31 Mon 00:08]
+:END:
+** TODO [#C] add 'emotionally unavailable' to search alert? maybe, I could help someone else :noexport:
+
+** STRT [#C] add bret victor? :bretvictor:
+:PROPERTIES:
+:CREATED:  [2019-05-20 Mon 06:26]
+:END:
+:LOGBOOK:
+- State "STRT"      from "TODO"       [2019-06-15 Sat 16:55]
+:END:
+*** [2019-06-13 Thu 21:51] uh. need a proper interface for it
+**** STRT [2019-06-13 Thu 21:51] what's the quickest possible way to create guis? still gonna be python config, right? perhaps self-checking!
+     :LOGBOOK:
+     - State "STRT"      from "TODO"       [2019-06-15 Sat 16:55]
+     :END:
+***** [2019-06-15 Sat 16:55] ok, just main function sounds ok..
+** TODO [#C] ted chiang -- pretty nice to search on twitter     :tedchiang:
+:PROPERTIES:
+:CREATED:  [2018-12-31 Mon 00:17]
+:END:
+** TODO [#C] complex numbers group; argonov; transhumanism?     :argonov:
+:PROPERTIES:
+:CREATED:  [2018-11-10 Sat 00:16]
+:END:
+*** STRT [#B] [2019-06-15 Sat 17:02] youtube.com/watch?v=YrXk2buqsgg
+    :LOGBOOK:
+    - State "STRT"      from              [2019-06-15 Sat 17:02]
+    :END:
+    can find some interesting stuff on twitter..
+*** DONE [2019-07-28 Sun 21:45] "виктор аргонов" got some good results on twitter
+    CLOSED: [2019-07-29 Mon 10:18]
+    :LOGBOOK:
+    - State "DONE"       from              [2019-07-29 Mon 10:18]
+    :END:
+** STRT [#C] search by 'biorobot' or 'emotionless'?         :noexport:
+:PROPERTIES:
+:CREATED:  [2018-11-10 Sat 00:26]
+:END:
+ nohing too interesting though..
+** STRT [#C] kobo; spaced repetition?                          :spacedrep:
+:PROPERTIES:
+:CREATED:  [2018-11-16 Fri 20:43]
+:END:
+*** [2019-12-07 Sat 16:20] eh, kobo not so interesting..
+** STRT [#C] [2018-08-25 Sat 22:33] scott alexander unsong - Twitter Search
+ https://twitter.com/search?f=tweets&vertical=default&q=scott%20alexander%20unsong&src=typd&lang=en-gb
+
+*** TODO could add this to my twitter poller thing (again, via API)  or kibitzr?
+** STRT [#C] karlicoss!                                        :self:
+:PROPERTIES:
+:CREATED:  [2018-12-31 Mon 00:11]
+:END:
+ :LOGBOOK:
+ - State "STRT"      from "TODO"       [2019-06-15 Sat 16:58]
+ :END:
+*** [2019-06-15 Sat 16:57] doesn't look much on pinboard...
+*** [2019-12-07 Sat 16:44] not much interesting
+** STRT [#C] cancel scott alexander search alert
+:PROPERTIES:
+:CREATED: [2020-06-22 Mon 23:12]
+:END:
+:LOGBOOK:
+- State "STRT"       from "TODO"       [2020-11-30 Mon 03:37]
+:END:
+** TODO [#D] set up alerts for nutrition stuff
+:PROPERTIES:
+:CREATED:  [2018-11-09 Fri 22:18]
+:END:
+** TODO [#B] add "lagrangian mechanics"??? :lagrangian:
+:PROPERTIES:
+:CREATED: [2020-03-09 Mon 21:21]
+:END:
+*** [2020-11-30 Mon 03:43] or 'Hamiltonian'? at least on HN
+** [#C] [2020-03-09 Mon 23:46] #promnesia
+: GitHub - karlicoss/promnesia - Another piece of your extended mind
+search on pinboard? or even axol..
+** STRT [#A] kedr livansky :kedr:
+:PROPERTIES:
+:CREATED:  [2020-04-27 Mon 21:11]
+:END:
+:LOGBOOK:
+- State "STRT"       from "TODO"       [2020-11-30 Mon 03:51]
+:END:
+** STRT [#B] exobrain? :exobrain:
+:PROPERTIES:
+:CREATED:  [2020-04-28 Tue 22:40]
+:END:
+:LOGBOOK:
+- State "STRT"       from "TODO"       [2020-11-30 Mon 03:54]
+:END:
+** TODO [#D] [2020-05-01 Fri 09:42] [[https://pinboard.in/t:eeg][Pinboard bookmarks tagged eeg]]
+
+** TODO [#D] [2020-05-01 Fri 09:42] [[https://pinboard.in/t:km][Pinboard bookmarks tagged km]] :pkm:
+
+** STRT [#B] memex? esp github :memex:
+:PROPERTIES:
+:CREATED:  [2020-05-19 Tue 19:49]
+:END:
+:LOGBOOK:
+- State "STRT"       from "TODO"       [2020-11-30 Mon 03:47]
+:END:
+** STRT [#B] george hotz?
+:PROPERTIES:
+:CREATED: [2020-10-26 Mon 12:17]
+:END:
+:LOGBOOK:
+- State "STRT"       from "TODO"       [2020-11-30 Mon 03:55]
+:END:
+** DONE [#C] add mypy to search??
+   CLOSED: [2019-12-07 Sat 16:29]
+   :PROPERTIES:
+   :CREATED:  [2019-11-23 Sat 21:44]
+   :END:
+ :LOGBOOK:
+ - State "DONE"       from "TODO"       [2019-12-07 Sat 16:29]
+ :END:
+** [#D] [2019-10-01 Tue 19:38] tried aaxol for
+*** "pocket export"
+*** "data liberation"
+** TODO [#C] pkm for twitter can probably be removed...
+:PROPERTIES:
+:CREATED: [2020-06-22 Mon 23:07]
+:END:
+** STRT [#C] initial query... :mypy:
+:PROPERTIES:
+:CREATED: [2019-10-29 Tue 23:58]
+:END:
+:LOGBOOK:
+- State "STRT"       from "TODO"       [2019-12-07 Sat 16:47]
+:END:
+mypy  -from:mypy2424  -from:mypy1031 -from:aymk_mypy -to:aymk_mypy -from:mypy0229
+
+ugh, not sure how convenient it'd be to filter this shit
+** TODO cleanup 'extended mind' -- certainly lots of crap in the database :twitter:
+:PROPERTIES:
+:CREATED: [2020-11-30 Mon 03:02]
+:END:
+
+
+** TODO hmm, beepb00p.xyz isn't resolving anything? :self:twitter:
+:PROPERTIES:
+:CREATED: [2020-11-30 Mon 02:29]
+:END:
+** [#D] [2019-12-02 Mon 15:11] axol results for hackernews_pkm, rendered at 02 Dec 2019 11:05
+axol/summary/hackernews_pkm.html
+: Personal Knowledge database
+** [#D] [2019-12-02 Mon 15:17] axol results for hackernews_pkm, rendered at 02 Dec 2019 11:05
+axol/summary/hackernews_pkm.html
+: Personal knowledge base
+** DONE [#B] subscribe to more news on QS, BCI and gadgets :qs:
+  CLOSED: [2019-04-22 Mon 10:41]
+:PROPERTIES:
+:CREATED:  [2018-04-29 Sun 00:16]
+:END:
+- State "DONE"       from "STRT"      [2019-04-22 Mon 10:41]
+*** DONE regular?
+   CLOSED: [2019-01-07 Mon 21:25]
+*** TODO brain-computer interface :bci:
+
+** [2021-01-14 Thu 19:52] [[http://glumov:25000/feed/69/entries][reddit_memex.xml (34) - Miniflux]] :noexport:
+ memex: need to ignore radeon stuff..
+* [#C] Sources :refile:
+** STRT [#C] wonder if I could search among hypothesis users... :hypothesis:
+:PROPERTIES:
+:CREATED:  [2019-04-19 Fri 22:51]
+:END:
+:LOGBOOK:
+- State "STRT"      from "TODO"       [2019-06-15 Sat 16:46]
+:END:
+*** [2019-06-15 Sat 16:46] eh, search is a bit weird...
+
+
+** TODO [#D] could add google search too I suppose.. but that's def lowest priority
+   :PROPERTIES:
+   :CREATED:  [2019-01-02 Wed 00:24]
+   :END:
+
+** STRT [#C] implement for reddit. release reddit/github searchers (as library, then import and use)
+   :PROPERTIES:
+   :CREATED:  [2018-11-27 Tue 18:17]
+   :END:
+** STRT [#C] youtube? could search quantified self at least
+   :PROPERTIES:
+   :CREATED:  [2019-06-15 Sat 17:20]
+   :END:
+ :LOGBOOK:
+ - State "STRT"      from "TODO"       [2019-07-20 Sat 10:26]
+ :END:
+*** [2019-07-20 Sat 10:26] eh, tried few queries and does't look that result appear that often...
+** TODO [#C] World be great to search in comments               :axol:reddit:
+   :PROPERTIES:
+   :CREATED:  [2019-01-11 Fri 15:32]
+   :END:
+
+** TODO [#C] hypothesis
+:PROPERTIES:
+:CREATED:  [2019-01-05 Sat 15:39]
+:END:
+*** [2019-07-28 Sun 16:10] not that many results on pkm/quantified self..
+*** [2019-07-28 Sun 16:12] more on spaced repetition and ted chiang
+** TODO [#C] [2019-07-28 Sun 16:57] Schedule - pushshift.io
+ https://pushshift.io/schedule/
+ : Current Schedule
+ :     April comments should be available around May 20 ,2018.
+** TODO [#C] [2019-07-28 Sun 16:56] New API endpoint -- Now you can search comments! : redditdev
+ https://www.reddit.com/r/redditdev/comments/3fv8vv/new_api_endpoint_now_you_can_search_comments/
+ : New API endpoint -- Now you can search comments!
+** TODO [#D] for google search, only notify about new results; not about changes. wonder how?
+:PROPERTIES:
+:CREATED:  [2018-11-11 Sun 06:38]
+:END:
+** [#C] [2019-12-28 Sat 10:41] Search Reddit Comments by User
+https://redditcommentsearch.com/
+: Search through comments of a particular reddit user.
+** TODO [#C] [2020-01-11 Sat 23:54] pushshift/api: Pushshift API
+https://github.com/pushshift/api
+
+** TODO [#C] duckduckgo?
+:PROPERTIES:
+:CREATED: [2019-11-07 Thu 23:32]
+:END:
+** [#C] [2019-12-01 Sun 17:36] Pushshift Reddit Search :reddit:scrape:
+https://redditsearch.io/?term=beepb00p.xyz&dataviz=false&aggs=false&subreddits=&searchtype=posts,comments&search=true&start=0&end=1575221715&size=100
+
+** [#C] [2019-12-15 Sun 15:14] hacker-news-favorites-api/main.js at master · reactual/hacker-news-favorites-api
+https://github.com/reactual/hacker-news-favorites-api/blob/master/src/main.js
+: const x = require('x-ray')()
+hmm, it's got 'paginate'?
+** TODO [#B] [2020-05-18 Mon 23:52] [[https://hypothes.is/search?q=beepb00p.xyz][Hypothesis]]
+eh need to run orger I guess? or axol!
+
+** TODO [#C] could run HN more often :hackernews:
+:PROPERTIES:
+:CREATED: [2020-06-03 Wed 14:31]
+:END:
+also use more generic hooks?
+** [2020-05-03 Sun 07:48] [[https://grep.app/search?q=import%20my%5C..%2A%24&regexp=true&filter[lang][0]=Python][import my\..*$ - grep.app]]
+* [#C] CI/testing
+** TODO HN is very quick, so prob really good to test on (even on CI)
+:PROPERTIES:
+:CREATED: [2020-11-30 Mon 03:59]
+:END:
+* SEPARATOR :noexport:
+
+* TODO [#B] Sort tags by number of total occurences?
+:PROPERTIES:
+:CREATED:  [2019-07-16 Tue 12:27]
+:END:
+
+* TODO [#B] Use cachew and keep stuff as blobs with id :cachew:
+:PROPERTIES:
+:CREATED:  [2020-01-31 Fri 14:13]
+:END:
+
+Not sure if I should overwrite or update? Could decide later and query with unique ids to start with?
+
+* TODO [#B] warn when there are too many atom items?
+:PROPERTIES:
+:CREATED: [2020-06-21 Sun 21:26]
+:END:
+* TODO [#B] suppress some feeds in the config?
+:PROPERTIES:
+:CREATED: [2020-07-09 Thu 20:10]
+:END:
+* TODO [#B] [2020-11-21 Sat 07:43] [[https://news.ycombinator.com/item?id=25161117][Show HN: I made an alternative to Google Alerts that listens to social media]]
+ https://www.pmalerts.com/
+** [2020-12-05 Sat 02:29] eh, demands to register etc
+* STRT [#C] shit, seems that the timestamps are wrong and also I got the link wrong
+:PROPERTIES:
+:CREATED: [2020-07-18 Sat 11:52]
+:END:
+:LOGBOOK:
+- State "STRT"       from "TODO"       [2020-07-18 Sat 11:53]
+:END:
+might need to work on this: axol/databases/twitter_extended_mind.sqlite
+* TODO [#C] Maybe record a video on the phone ? :demo:
+:PROPERTIES:
+:CREATED:  [2020-04-19 Sun 23:19]
+:END:
+* STRT [#C] maybe check crawled pinboard users for interesting tags/links?
+:PROPERTIES:
+:CREATED: [2019-01-02 Wed 16:02]
+:END:
+** [2019-06-15 Sat 17:13] yeah, need to make this bit more effecient..
+* STRT [#C] maybe, summary and 'rendered' are really sort of the same page? just different sorting...
+:PROPERTIES:
+:CREATED: [2019-07-16 Tue 08:47]
+:END:
+:LOGBOOK:
+- State "STRT"      from "TODO"       [2019-07-27 Sat 19:27]
+:END:
+* STRT [#C] Def interesting to see user stats
+:PROPERTIES:
+:CREATED:  [2019-07-16 Tue 12:26]
+:END:
+:LOGBOOK:
+- State "STRT"      from "TODO"       [2019-07-20 Sat 10:24]
+:END:
+
+* TODO [#C] Sort tags by number of total occurences?
+:PROPERTIES:
+:CREATED:  [2019-07-16 Tue 12:27]
+:END:
+
+* TODO [#C] Maybe better way of normalising? E.g. look at ted_chiang  and gq article. Display 'bumped' entries separately? Like a different way of sorting
+:PROPERTIES:
+:CREATED:  [2019-07-16 Tue 12:46]
+:END:
+
+* TODO [#C] prepend # in tag?
+:PROPERTIES:
+:CREATED: [2019-07-28 Sun 19:13]
+:END:
+* TODO [#C] could search for interesting tags occurence without them actually being scraped
+:PROPERTIES:
+:CREATED: [2019-07-30 Tue 23:49]
+:END:
+* TODO [#C] might be good to do some sort of fuzzy grouping?
+:PROPERTIES:
+:CREATED: [2019-08-17 Sat 15:20]
+:END:
+
+wonder what's an effecient way of doing it? sort of similarity connected components?
+/TheGoogleDotCom/status/915750443275444226
+Can Google's AI-powered Clips make people care about lifelogging? - TechCrunch http://ift.tt/2wyk69G
+2017-10-05 01:28 by TheGoogleDotCom
+/gauravndhankar/status/915750414774972416
+Can Google’s AI-powered Clips make people care about lifelogging? http://dlvr.it/PsRpwK pic.twitter.com/IAPiiqacKo
+2017-10-05 01:28 by gauravndhankar
+/animesh1977/status/915749491344596992
+Can Google’s AI-powered Clips make people care about lifelogging? http://ift.tt/2xUwbaz
+* TODO [#C] would be interesting to have explorer for users that looks for some relevant taks/keywords? :pinboard:
+:PROPERTIES:
+:CREATED: [2019-11-21 Thu 20:42]
+:END:
+* TODO [#C] Hmm also need real-time search and notify I guess?      :hackernews:
+:PROPERTIES:
+:CREATED:  [2019-12-02 Mon 12:48]
+:END:
+
+* TODO [#C] Eh, better idea would be a tag subscription... :mypy:
+:PROPERTIES:
+:CREATED:  [2020-01-31 Fri 15:56]
+:END:
+
+* STRT [#C] would be nice to have some efficient frontend + backend thing :timeline:
+:PROPERTIES:
+:CREATED: [2019-12-02 Mon 14:53]
+:END:
+:LOGBOOK:
+- State "STRT"       from "TODO"       [2019-12-04 Wed 20:11]
+:END:
+** [2019-12-02 Mon 15:04] hmmm. actually could do it in a twitter account??
+** TODO [2019-12-04 Wed 09:18] could ask on HN? :outbox:
+*** TODO [2021-01-09 Sat 08:24] maybe have a special state like 'ACT'? meaning I have to actually 'just' do it :noexport:
+** [2019-12-04 Wed 20:11] or RSS?  https://github.com/awesome-selfhosted/awesome-selfhosted#feed-readers
+* TODO [#C] [2019-12-24 Tue 00:53] Edit Feed: beepb00p.xyz - Miniflux
+https://axol.karlicoss.xyz/feed/56/edit
+: Scraper Rules
+: Rewrite Rules
+: Title Filter
+: Content Filter
+
+* TODO [#C] [2019-12-24 Tue 01:02] Command Line Usage - Documentation
+https://miniflux.app/docs/cli.html
+: miniflux -config-file /etc/miniflux.conf
+* TODO [#C] could make a filter to release items slowly? e.g. tweets with more than 10 likes, if update pops it up, then it ends up in the feed. although I need 'processed' entries
+:PROPERTIES:
+:CREATED: [2020-03-10 Tue 20:01]
+:END:
+* [#C] [2020-05-27 Wed 12:35] [[https://news.ycombinator.com/item?id=23321646][Axol: Personal automatic news feed – crawl Reddit/Twitter/HN and read as RSS | Hacker News]]
+
+* TODO [#C] perhaps redefine everything in entities? and have relations -- people, subreddits, urls, tags, etc
+:PROPERTIES:
+:CREATED: [2019-04-15 Mon 23:03]
+:END:
+* TODO [#C] rename adhoc to 'search'?
+:PROPERTIES:
+:CREATED: [2020-07-18 Sat 10:19]
+:END:
+* TODO [#C] think about a special tag to mark stuff that should be autoimported in a similar manner my kibitzr thing worked
+* TODO [#C] some todos
+:PROPERTIES:
+:CREATED: [2020-11-29 Sun 23:51]
+:END:
+- [ ] move individual data sources to files within the repo.. not even submodules, too much hassle
+  if someone needs, they can just import axol.sources.src directly
+- [ ] cleanup the json shit.. ideally use some proper library
+- [ ] not sure what to do with RSS feeds.. but could start with HTML report generation
+- [ ] query language:
+  might be better to adopt
+  service:sub:query
+  e.g.
+  pinboard:tag:whatever
+  or
+  github:some query
+  not sure what to do with colons though.. but maybe think about this later. most won't support searching them anyway
+* TODO [#C] def should keep original results in the DB as far as possible
+:PROPERTIES:
+:CREATED: [2020-11-30 Mon 02:51]
+:END:
+* TODO [#C] to start with, only support exact queries? e.g. demand them in queries and mention that support for fuzzier might be added later
+:PROPERTIES:
+:CREATED: [2020-11-30 Mon 03:02]
+:END:
+* TODO [#C] think about multiple small databases vs one huge?
+:PROPERTIES:
+:CREATED: [2020-11-30 Mon 03:21]
+:END:
+
+multiple small:
+- easier to mess with/explore
+- easier concurrency
+- easier to remove from reports (although for that need to make sure it's really 1-1 correspondence with source and query? dunno)
+single db:
+- easier to bulk clean/somewhat easier to bulk normalise
+  although this would be kind of useless if I store raw json outputs
+- easier to do queries across multiple (e.g. associating users?)
+* TODO [#C] thinking about query language
+:PROPERTIES:
+:CREATED: [2020-11-30 Mon 03:29]
+:END:
+how it could look in adhoc mode
+github:'scott alexander' twitter:'scott alexander'
+
+in config, allow something nicer like
+[twitter,github,reddit]:'scott alexander'
+
+or [twitter,github,reddit, pinboard]:['scott alexander', 'quantified self']
+pinboard:tag:scottalexander
+
+
+- [ ] NOTE: echo twitter:'scott alexander' -- this is gonna get swallowed by bash... suggest to always quote?
+- [ ] NOTE: treat " and ' the same? twitter does it...
+- [ ] TODO: make sure that query parsing is defensive
+* TODO [#C] for people to try it out it really needs a simplest service possible they can run with docker? ideally without auth etc
+:PROPERTIES:
+:CREATED: [2020-12-05 Sat 03:07]
+:END:
+* STRT [#D] Track most active pinboard users? They might have interesting other stuff
+:PROPERTIES:
+:CREATED:  [2018-11-14 Wed 22:15]
+:END:
+** [2019-07-20 Sat 10:02] maybe, try to intersect known user's tags and see what they got in common?
+
+* TODO [#D] running under docker results in /app/axol/js/sorttable
+:PROPERTIES:
+:CREATED: [2020-06-17 Wed 22:06]
+:END:
+* TODO [#D] use different font?
+:PROPERTIES:
+:CREATED: [2019-12-02 Mon 11:07]
+:END:
+* TODO [#D] might need two pass algorithm? One for crawling, second for filtering?
+:PROPERTIES:
+:CREATED: [2019-12-02 Mon 15:12]
+:END:
+
+e.g. I crawled quite a bit of pokemon crap, would be good to filter it?
+
+
+* related :pkm:search:degoogle:
+
+
+
+* [#E] private :noexport:pr:
+** TODO [#C] use aaxol :habit:
+  SCHEDULED: <2022-10-10 Mon>
+:PROPERTIES:
+:CREATED: [2019-07-19 Fri 09:38]
+:ID:       fb6e474a-6011-472c-a59b-c919b41215a0
+:DRILL_LAST_INTERVAL: 668.6039
+:DRILL_REPEATS_SINCE_FAIL: 8
+:DRILL_TOTAL_REPEATS: 7
+:DRILL_FAILURE_COUNT: 0
+:DRILL_AVERAGE_QUALITY: 4.143
+:DRILL_EASE: 2.52
+:DRILL_LAST_QUALITY: 5
+:DRILL_LAST_REVIEWED: [2020-12-10 Thu 10:37]
+:END:
+** TODO hmm, twitter OOMs on glumov?
+:PROPERTIES:
+:CREATED: [2020-12-01 Tue 23:29]
+:END:
+** TODO [#C] eh, ran report gen on glumov and it didn't seem to take it well...
+:PROPERTIES:
+:CREATED: [2020-03-09 Mon 23:21]
+:END:
+** TODO [#C] rss generation can be separate, so it doesn't OOM on glumov?
+:PROPERTIES:
+:CREATED: [2020-07-06 Mon 09:57]
+:END:
+** TODO [#C] suggest to emmanuel? Even ad-hoc would be good (and think about UI in the meantime)
+:PROPERTIES:
+:CREATED: [2020-05-25 Mon 21:27]
+:END:
+* [#C] [2019-04-15 Mon 22:16] Pinboard: network for karlicoss :pinboard:axol:
+https://pinboard.in/network/
+shit... too many tweets. I need a way to filter the network...
+** [2021-01-16 Sat 19:51] in fact it's the most common request to pinboard author apparently
+* TODO [#C] spinboard: something's not right. e.g. try
+:PROPERTIES:
+:CREATED: [2018-11-29 Thu 00:42]
+:END:
+querying /t:quantified-self
+https://pinboard.in/t:quantified-self/
+spinboard gives 220 total results. however, on the first page there are 50...
+scraper is missing something?
+
+
+eh. sooo, there are no dupes even!! BS4 actually sees only 20 per page (pinboard still gives us '50' in the next url).
+whereas chrome does show up 50 entries; but if you go to the second page they are gonna overlap.
+** TODO must be some pinboard bug?? :pinboard:
+* STRT [#D] [2019-11-06 Wed 00:32] classes — classes 0.1.0 documentation
+:LOGBOOK:
+- State "STRT"       from              [2020-02-15 Sat 21:37]
+:END:
+https://classes.readthedocs.io/en/latest/
+** [2020-02-15 Sat 21:37] hmm, somethihg  I was trying to do in axol?... :axol:
+
+* doesn't look active. all top results are from 2017 :axol:upspin:
+:PROPERTIES:
+:CREATED: [2020-04-02 Thu 10:35]
+:END:
+* STRT [#D] [2019-09-04 Wed 21:29] ScriptSmith/socialreaper: Social media scraping / data collection library for Facebook, Twitter, Reddit, YouTube, Pinterest, and Tumblr APIs :reddit:scrape:axol:
+:LOGBOOK:
+- State "STRT"       from              [2020-05-16 Sat 08:03]
+:END:
+https://github.com/ScriptSmith/socialreaper
+: Reddit
+: Get the top 10 comments from the top 50 threads of all time on reddit
+** [#C] [2020-05-16 Sat 08:03] ok, seems to be using real APIs, so overall I'm skeptical. but it's got a nice panel for tokens :exports:jdoe:
+* TODO [#B] pruning -- for now via sqlitedbbrowser? make sure it locks the db? :axol:
+:PROPERTIES:
+:CREATED: [2021-02-09 Tue 20:34]
+:END:

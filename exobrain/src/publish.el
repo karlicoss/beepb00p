@@ -461,6 +461,8 @@
         ; I'm using my own styles
         :html-head-include-default-style nil
         ;; todo not sure if I need org-html-scripts? adds CodeHighlightOn thing
+        ;; TODO get rid of this, I don't need it
+        ;; :html-head-include-scripts t
 
         :html-head "
 <link href='https://beepb00p.xyz/assets/css/default.css'     rel='stylesheet'>

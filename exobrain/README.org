@@ -5,3 +5,21 @@
 - src/dependencies.sh
 - more-itertools beautifulsoup4 orgparse lxml click psutil
 - pytest
+
+
+* testing
+pytest -s src/test.py
+
+* issues
+- fp.org: Assertion failed: title?
+  seems like an issue with begin_example blocks
+
+* changes after update
+- added =</script>= closing tag (couldn't parse html without it?)
+- id=content now has class=content as well?
+- role=doc-toc on table of contents? not sure what's the point
+- "Org Mode" in meta content
+
+- TODO some weird changes in public org-mode??
+  : -  pinboard:tag:whatever
+  : +  pinboard:#whatever
