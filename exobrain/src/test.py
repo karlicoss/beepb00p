@@ -14,7 +14,10 @@ def build(*args):
     return ['src/build.py', *args]
 
 
-INPUT = Path('data/input')
+TESTDATA = Path(__file__).absolute().parent.parent / 'testdata'
+assert TESTDATA.exists(), TESTDATA
+
+INPUT = TESTDATA
 
 
 @pytest.fixture
@@ -58,7 +61,7 @@ def test_build_some(tmp_data: Path, tmp_path: Path) -> None:
     check_call(build('--data-dir', d))
 
     _check_org(public / 'projects/cachew.org')
-    _check_org(public / 'memex.org')
+    # _check_org(public / 'memex.org')
 
 
     sitemap = public / 'sitemap.org'

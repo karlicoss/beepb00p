@@ -1,0 +1,477 @@
+#+TITLE: ⭐ Cachew
+#+FILETAGS: cachew
+
+Cachew lets you cache function calls into an sqlite database on your disk in a matter of single decorator (similar to functools.lru_cache).
+The difference from functools.lru_cache is that cached data is persisted between program runs, so next time you call your function, it will only be a matter of reading from the cache.
+Cache is invalidated automatically if your function's arguments change, so you don't have to think about maintaining it.
+
+https://github.com/karlicoss/cachew#what-is-cachew
+
+* [#A] * motivation
+** TODO [#C] why database
+:PROPERTIES:
+:CREATED: [2020-10-11 Sun 22:22]
+:END:
+- compact
+- fast
+- easy iteration
+- possible to use as data interface by querying the db directly
+
+why using separate columns at all
+- actually appart from potentially nicer queries I'm not sure. I wonder if more time is spent serializing as opposed to simply using json?
+** TODO [#C] nice feature is that it's easy to compare changes... I can simply run sqldiff
+:PROPERTIES:
+:CREATED: [2020-10-09 Fri 23:00]
+:END:
+** DONE [#B] Sqlalchemy orm requires using their adapters (check that). Also check if they support nested stuff
+CLOSED: [2019-08-14 Wed 18:52]
+:PROPERTIES:
+:CREATED:  [2019-07-16 Tue 09:59]
+:END:
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2019-08-14 Wed 18:52]
+:END:
+*** [2019-07-25 Thu 07:02] sqlalchemy core doesn't support binding? that dataset got their own ResultIter adapter
+*** [2019-07-25 Thu 07:03] https://docs.sqlalchemy.org/en/13/core/custom_types.html somewhat awkward and invasive for existing types
+*** [2019-07-30 Tue 18:51] performance: I haven't tested
+
+** TODO [#C] combines some of my favorite python features: type annotations, decorators, generators, context managers :python:toblog:
+:PROPERTIES:
+:CREATED: [2019-05-01 Wed 23:33]
+:END:
+** [#D] [2019-07-19 Fri 22:33] Is it possible to use a namedtuple with SQLalchemy? : Python
+https://www.reddit.com/r/Python/comments/kz7vj/is_it_possible_to_use_a_namedtuple_with_sqlalchemy/
+: sqlalchemy needs to attach attributes onto a mapped class, which include one for each column mapped, as well as an attribute _sa_instance_state for bookkeeping. It also, as someone mentioned, needs to create a weak reference to the object. So a SQLAlchemy-mapped class needs to be a "new style class", extending from object.
+: If you look at how namedtuple works, it has quite a bit of trickery going on, not the least of which is that it sets __slots__ to (). Then there's some super-nasty frame mutation stuff after that to somehow make it pickleable.
+: That said it's straightforward to make your own class that is SQLAlchemy compatible and acts more or less the same as a namedtuple. Just define __iter__, __len__, __repr__, other methods as appropriate. Plus it will be pickleable without injecting variables into stack frames.
+* [#A] * prior art/similar projects
+** STRT [#B] [[https://github.com/Tinche/cattrs][cattrs]]
+:PROPERTIES:
+:CREATED:  [2020-05-04 Mon 23:14]
+:END:
+:LOGBOOK:
+- State "STRT"       from "TODO"       [2020-05-16 Sat 09:20]
+:END:
+: When you're handed unstructured data (by your network, file system, database...), cattrs helps to convert this data into structured data.
+: When you have to convert your structured data into data types other libraries can handle, cattrs turns your classes and enumerations into dictionaries, integers and strings.
+*** [2020-05-16 Sat 09:20] ok, not sure if it supports NT/dataclasses? Hypothesis tests are nice though
+
+** [#C] [2020-05-16 Sat 09:09] [[https://github.com/UnitedIncome/json-syntax][UnitedIncome/json-syntax: Generates functions to convert Python classes to and from JSON friendly objects]] :python:json:
+** TODO [#C] [2020-05-26 Tue 17:50] [[https://github.com/freelancer/pavlova][freelancer/pavlova: A python deserialisation library built on top of dataclasses]] :cache:
+*** [2020-07-13 Mon 20:00] register types in the same way? https://github.com/freelancer/pavlova#adding-custom-types
+
+** [#C] [2020-03-11 Wed 18:30] unmade/apiwrappers: Build API clients that work both with regular and async code :axol:
+https://github.com/unmade/apiwrappers
+: Modern - decode JSON with no effort using dataclasses and type annotations
+hmm kind of similar to what I'm doing/want for axol?
+
+* [#B] * potential features
+** STRT [#A] thinking about incremenal caching
+:PROPERTIES:
+:CREATED: [2020-07-25 Sat 16:30]
+:END:
+:LOGBOOK:
+- State "STRT"       from "TODO"       [2020-07-26 Sun 10:36]
+:END:
+ * caching diffs
+   + reasonable perf boost
+   + relatively easy? just ignore 'emitted'?
+   + automatically works for changed prefix (bleanser)
+   ? requires changes to cachew key handling
+   - might be still slowish
+
+ * explicitly querying for cached prefix
+   + best performance
+   + fairly easy
+   + almost no changes to cachew
+   - requires restructuting code in a specific way, mcachew thing might be harder
+   - gonna be tricky if the prefix can cahnge (bleanser) (although if we can probe for a cached key, it can work?)
+
+ * single cachew decorator (not sure if possible?)
+   + best performance
+   + pretty simple
+   - still requires 'hack' in the caller for detecting if something was cached or not
+   - if prefix changes won't work
+   - requires cachew changes? some sort of global function context? pretty unclear how to implement
+     * with cached(f) as cf:
+           return cf(some_args)
+           # semantics -- some_args is the one that gets cached
+           # but f itself doesn't know of cache.. so won't be able to access it
+     * ok, maybe by default cachew is 'recursive'?
+       when we enter the function, we memorize the argument that needs to be cached, but we don't lock the database yet?
+       so, let's consider
+        @cachew
+        def factorials(n: int) -> int:
+            last = 1
+            for prev in factorials(n - 1):
+                yield prev
+            yield prev * n
+       say, we've run factorials(3) before, the cache has [1, 2, 6]
+       factorials(5), cachew memorizes {factorials: 5}, it's the one being computed, goes inside the function
+            factorials(4) -- not in the cache. so it goes inside and tries evaluating factorials(3)
+               factorials(3) -- in the cache, cachew opens the db ans starts emitting?
+               factorials(4) shouldn't be writing becase it's not the one being computed
+               factorials(5) on the other hand should start writing
+                 kind of a problem however is that it reads and writes at the same time.. I guess that could work with transactions?
+** TODO [#C] preserve traceback?
+:PROPERTIES:
+:CREATED: [2020-10-18 Sun 11:43]
+:END:
+** TODO [#B] cache is gonna be expired several times a day anyway judging by bleansed backups... so I kind of need to do incremental anyway :bleanser:hpi:reddit:
+:PROPERTIES:
+:CREATED: [2020-06-21 Sun 23:41]
+:END:
+** TODO [#B] maybe instead of key equality, use key comparison? assume that if the key is bigger, in includes all the data for smaller keys
+:PROPERTIES:
+:CREATED: [2020-07-14 Tue 10:08]
+:END:
+** TODO [#B] could cache as a Protocol.. and then reconstruct back a dataclass? odd but could work?
+:PROPERTIES:
+:CREATED: [2020-10-13 Tue 21:13]
+:END:
+** TODO [#C] not sure how to compute dependencies automatically?
+:PROPERTIES:
+:CREATED: [2019-07-25 Thu 08:59]
+:END:
+** TODO [#C] should be like Logger. global default + instances for more customization
+:PROPERTIES:
+:CREATED: [2020-05-16 Sat 09:09]
+:END:
+** TODO [#C] keep data along with hash in the same table?
+:PROPERTIES:
+:CREATED: [2020-01-05 Sun 22:01]
+:END:
+ feels a bit more atomic...
+** TODO [#C] create database, continuously updated by an iterable? could be useful for logs
+:PROPERTIES:
+:CREATED: [2020-01-14 Tue 08:02]
+:END:
+** STRT [#C] for upgradeable storage -- I guess it should be a special function, first argument is an iterable that will be populated from the cache regardless. then it's up to the caller to determine what to process? :promnesia:
+:PROPERTIES:
+:CREATED: [2020-07-24 Fri 21:27]
+:END:
+:LOGBOOK:
+- State "STRT"       from "TODO"       [2020-07-26 Sun 09:59]
+:END:
+** TODO [#C] try using with classmethods? https://hynek.me/articles/decorators/#tldr
+:PROPERTIES:
+:CREATED: [2020-01-06 Mon 22:58]
+:END:
+** TODO [#C] for persisting, I guess it makes sense to use namedtuples, not just json, e.g. custom sql queries might actually use structure
+:PROPERTIES:
+:CREATED:  [2020-01-02 Thu 10:30]
+:END:
+
+** TODO [#C] Support anon tuples? As long as they are typed...
+:PROPERTIES:
+:CREATED:  [2019-08-05 Mon 00:17]
+:END:
+
+*** [2019-08-14 Wed 20:24] tried to implement tuples support... but it's just too freaking hacky...
+:  def test_typing_tuple(tmp_path):
+:      tdir = Path(tmp_path)
+:
+:      @cachew(tdir / 'cache')
+:      def get_data() -> Iterator[Tuple[str, int]]:
+:          yield ('first' , 1)
+:          yield ('second', 2)
+:
+:      assert list(get_data())[-1][0] == 'second'
+:      assert list(get_data())[-1][1] == 2
+** TODO [#C] [2020-01-13 Mon 00:29] Shit! If merging is implemented recursivelyz like Fibonacci, cachew could support properly incremental exports?
+
+** STRT [#B] use appdirs :cachew:
+:PROPERTIES:
+:CREATED: [2021-02-14 Sun 22:49]
+:END:
+:LOGBOOK:
+- State "STRT"       from "TODO"       [2021-03-20 Sat 16:34]
+:END:
++ maybe allow using app specific subcaches?
+  e.g. make_cachew(prefix='my')
+- [2021-03-20 Sat 17:19] ok done https://github.com/karlicoss/cachew/commit/161ce25304bfda77b484f886ff9c0b4b23924563
+** TODO [#C] Hide tail call optimization in cachew?? Hmmm :cachew:
+:PROPERTIES:
+:CREATED:  [2020-12-19 Sat 15:38]
+:END:
+
+** TODO [#B] env variable to turn it off?? :cachew:
+:PROPERTIES:
+:CREATED: [2021-03-07 Sun 20:31]
+:END:
+** TODO [#C] make it depend on the git hash? I guess global override would be nice :cachew:
+:PROPERTIES:
+:CREATED: [2020-10-19 Mon 21:15]
+:END:
+* [#B] * publicity :publish:
+** [#C] [2020-04-09 Thu 09:21] Pyfiddle :demo:
+https://pyfiddle.io/fiddle/4de2f70f-e421-4326-bbb8-b06d5efa547d/?i=true
+yeah really need to give a demo
+** DONE [#D] [2020-01-09 Thu 13:09] PyCoder’s Weekly on Twitter: "cachew: Persistent Cache/Serialization Powered by Type Hints https://t.co/x587YrhtLE" / Twitter
+:LOGBOOK:
+- State "DONE"       from              [2021-01-14 Thu 23:54]
+:END:
+https://twitter.com/pycoders/status/1214956434519154688
+
+** TODO [#B] Link to hpi draft and exports draft :hpi:exports:
+:PROPERTIES:
+:CREATED:  [2020-01-06 Mon 10:15]
+:END:
+
+** STRT [#C] could post on HN and lobsters as well :publish:
+:PROPERTIES:
+:CREATED: [2019-11-04 Mon 19:33]
+:END:
+:LOGBOOK:
+- State "STRT"       from "TODO"       [2020-01-08 Wed 22:13]
+:END:
+** TODO [#C] Perhaps merging bluemaesro databases could be a good example? :bluemaestro:
+:PROPERTIES:
+:CREATED:  [2019-08-05 Mon 00:17]
+:END:
+
+** TODO [#C] could demonstrate this?
+:PROPERTIES:
+:CREATED: [2020-01-06 Mon 23:08]
+:END:
+
+perhaps with more processing difference would be even more striking...
+
+: $ time with_my python3 -c 'from my.bluemaestro import get_dataframe; print(get_dataframe())'
+: USING CACHEW!!!
+:                      temp
+: dt
+: 2018-07-15 02:57:00  24.3
+: 2018-07-15 02:58:00  24.3
+: 2018-07-15 02:59:00  24.3
+: 2018-07-15 03:00:00  24.3
+: 2018-07-15 03:01:00  24.3
+: ...                   ...
+: 2019-07-27 10:42:00  23.8
+: 2019-07-27 10:43:00  23.8
+: 2019-07-27 10:44:00  23.8
+: 2019-07-27 10:45:00  23.8
+: 2019-07-27 10:46:00  23.8
+:
+: [549054 rows x 1 columns]
+: with_my python3 -c   3.32s user 0.36s system 111% cpu 3.296 total
+
+: $ time with_my python3 -c 'from my.bluemaestro import get_dataframe; print(get_dataframe())'
+:                      temp
+: dt
+: 2018-07-15 02:57:00  24.3
+: 2018-07-15 02:58:00  24.3
+: 2018-07-15 02:59:00  24.3
+: 2018-07-15 03:00:00  24.3
+: 2018-07-15 03:01:00  24.3
+: ...                   ...
+: 2019-07-27 10:42:00  23.8
+: 2019-07-27 10:43:00  23.8
+: 2019-07-27 10:44:00  23.8
+: 2019-07-27 10:45:00  23.8
+: 2019-07-27 10:46:00  23.8
+:
+: [549054 rows x 1 columns]
+: with_my python3 -c   16.03s user 0.37s system 102% cpu 16.019 total
+
+** STRT [#C] temperature during sleep analysis
+:PROPERTIES:
+:CREATED: [2019-08-04 Sun 21:03]
+:END:
+:LOGBOOK:
+- State "STRT"       from "TODO"       [2020-10-04 Sun 17:17]
+:END:
+** TODO [#C] Might be actually worth a separate post; using it in promnesia and axol as well :cachew:toblog:
+:PROPERTIES:
+:CREATED:  [2020-01-12 Sun 01:30]
+:END:
+
+* [#C] * readme/docs
+** [#B] [2020-10-09 Fri 21:48] [[https://github.com/karlicoss/cachew][karlicoss/cachew: Transparent and persistent cache/serialization powered by type hints]]
+: During reading cache all that happens is reading rows from sqlite and mapping them onto your target datatype, so the only overhead would be from reading sqlite, which is quite fast.
+ugh, grammar is a bit odd
+** [#B] [2020-10-09 Fri 21:46] [[https://github.com/karlicoss/cachew][karlicoss/cachew: Transparent and persistent cache/serialization powered by type hints]]
+: attemps to cause
+to call
+** [#B] [2020-10-09 Fri 21:46] [[https://github.com/karlicoss/cachew][karlicoss/cachew: Transparent and persistent cache/serialization powered by type hints]]
+: caching for
+globally?
+
+** TODO [#C] add autocomplete docs? :literate:
+:PROPERTIES:
+:CREATED:  [2019-08-05 Mon 00:01]
+:END:
+
+** STRT [#C] Come up with a decent example..
+:PROPERTIES:
+:CREATED:  [2020-01-05 Sun 02:26]
+:END:
+:LOGBOOK:
+- State "STRT"       from "TODO"       [2020-01-08 Wed 22:13]
+:END:
+
+Maybe even dal is fine if I illustrate it by integration test?
+*** [2020-01-08 Wed 23:13] pdf annotations could be a really good one. MASSIVE difference
+
+** DONE Use ipynb for docs? :ipython:literate:
+  CLOSED: [2019-08-18 Sun 15:55]
+:PROPERTIES:
+:CREATED:  [2019-08-15 Thu 00:06]
+:END:
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2019-08-18 Sun 15:55]
+:END:
+*** [2019-08-18 Sun 15:55] pretty nice actually!
+** DONE generate readme from unit tests? :literate:
+CLOSED: [2019-08-18 Sun 15:56]
+:PROPERTIES:
+:CREATED: [2019-08-11 Sun 21:08]
+:END:
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2019-08-18 Sun 15:56]
+:END:
+** TODO [#B] [2020-11-14 Sat 06:19] [[https://github.com/karlicoss/cachew#examples][karlicoss/cachew: Transparent and persistent cache/serialization powered by type hints]]
+add a super simple, trivial example. just with some dictionaries maybe?
+
+** STRT [#D] example could be merging of highlights from different sources, e.g. kobo and kindle :toblog:
+:PROPERTIES:
+:CREATED: [2019-04-21 Sun 22:02]
+:END:
+:LOGBOOK:
+- State "STRT"       from "TODO"       [2020-01-13 Mon 22:21]
+:END:
+** TODO [#C] post example log?
+:PROPERTIES:
+:CREATED: [2019-07-27 Sat 09:30]
+:END:
+*** [2019-07-30 Tue 20:47] err, log of what?
+** STRT [#C] fuck, if I want people to use it, I'm gonna need some documentation...
+:PROPERTIES:
+:CREATED: [2019-07-30 Tue 20:40]
+:END:
+:LOGBOOK:
+- State "STRT"      from "TODO"       [2019-08-14 Wed 18:37]
+:END:
+* [#C] * performance & profiling :performance:
+generally it's fast enough or at least 'much faster', not that it's super high priority...
+** TODO [#D] some old experiment on speeding up
+:PROPERTIES:
+:CREATED: [2019-08-11 Sun 18:04]
+:END:
+: from sqlalchemy.interfaces import PoolListener # type: ignore
+: # TODO ugh. not much faster...
+: class MyListener(PoolListener):
+:     def connect(self, dbapi_con, con_record):
+:         pass
+:         # eh. doesn't seem to help much..
+:         # dbapi_con.execute('PRAGMA journal_mode=MEMORY')
+:         # dbapi_con.execute('PRAGMA synchronous=OFF')
+: # self.db = sqlalchemy.create_engine(f'sqlite:///{db_path}', listeners=[MyListener()])
+** [#C] [2019-07-25 Thu 21:33] profiling
+test_dbcache_many
+
+de8b67cd0896e0b7512d276a5bb0fc9784ea9a49
+:  100K: about  3.0 seconds
+:  500K: about 15.5 seconds
+:    1M: about 29.4 seconds
+
+after updating to nice binders
+:  100K: about  3.2 seconds
+:  500K: about 15.6 seconds
+:    1M: about 31.5 seconds
+*** [2019-07-30 Tue 18:56] I haven't bothered much with profiling and optimizing since for now the benefits of using this are clear
+** TODO [#D] some old comments
+:PROPERTIES:
+:CREATED: [2019-07-27 Sat 11:12]
+:END:
+: logger.debug('inserting...')
+: from sqlalchemy.sql import text # type: ignore
+: from sqlalchemy.sql import text
+: nulls = ', '.join("(NULL)" for _ in bound)
+: st = text("""INSERT INTO 'table' VALUES """ + nulls)
+: engine.execute(st)
+: shit. so manual operation is quite a bit faster??
+: but we still want serialization :(
+: ok, inserting gives noticeable lag
+: thiere must be some obvious way to speed this up...
+: pylint: disable=no-value-for-parameter
+: logger.debug('inserted...')
+
+* [#D] * bugs/stability
+generally bugs not a big problem since the cache is temporary & optional, worst case can delete or disable
+although need to make sure there are not data consistency issues... maybe expire cache on calendar?
+
+** TODO [#A] rename 'table' to 'data'? to avoid quoting issues :cachew:
+:PROPERTIES:
+:CREATED: [2021-03-09 Tue 04:36]
+:END:
+** TODO [#B] warn when it's running under tests? not sure
+:PROPERTIES:
+:CREATED: [2020-08-22 Sat 17:33]
+:END:
+** STRT [#C] hmm, on first initialisation in case of error it shouldn't initialise cache.. :promnesia:
+:PROPERTIES:
+:CREATED: [2019-08-11 Sun 15:02]
+:END:
+:LOGBOOK:
+- State "STRT"       from "TODO"       [2021-03-20 Sat 15:48]
+:END:
+*** [2021-03-20 Sat 15:48] ok, it behaves correctly so not such bit issue...
+** TODO [#C] add a test for schema change
+:PROPERTIES:
+:CREATED: [2020-10-15 Thu 23:54]
+:END:
+** TODO [#C] hmm, with overlays, __module__ gets a weird prefix.. :hpi:
+:PROPERTIES:
+:CREATED: [2020-10-09 Fri 21:36]
+:END:
+** TODO [#C] seems that it may delete whole directories??
+:PROPERTIES:
+:CREATED: [2020-07-31 Fri 18:41]
+:END:
+** TODO [#C] hmm... can generate shitty names? :cachew:
+:PROPERTIES:
+:CREATED: [2021-02-21 Sun 16:47]
+:END:
+: ~/.cache/my/my.core.core_config:test_cachew.\<locals\>.cf
+* TODO [#B] I guess binder for namedtuples is kinda a separate thing as it could be used separately for 'pickling'
+:PROPERTIES:
+:CREATED: [2019-08-03 Sat 10:36]
+:END:
+* STRT [#B] ok, thinking about default paths
+:PROPERTIES:
+:CREATED: [2020-07-31 Fri 11:20]
+:END:
+:LOGBOOK:
+- State "STRT"       from "TODO"       [2020-10-04 Sun 23:30]
+:END:
+Ok, so in 99% of cases it's enough to use the default directory, this will make everything much easier.
+- [ ] sometimes you'd want to share a cache between computers? Make sure it works over a symlink?
+
+It's annoying to have cache settings in every data provider and in 99% the default is fine.
+So have a global HPI cache setting.
+
+- [ ] unclear how to propagate the cache directory down to providers (e.g. reddit. ugh)
+
+But would be nice to be able to customize the cache in advance.
+Maybe, set the attribute to the function? Seems good enough?
+
+- [X] possibly need to create the parent dir automatically?
+- [ ] /var/tmp/cachew is better as the default? surfives through
+- [ ] if the path is relative, to it relatively to base dir, not cwd
+
+
+
+* [#D] related :python:hpi:
+
+* TODO [#A] [2021-03-08 Mon 07:36] [[https://github.com/calpaterson/pyappcache][calpaterson/pyappcache: A library for application-level caching]] :cachew:
+: Pyappcache is a library to make it easier to use application-level caching in Python.
+:
+:     Allows putting arbitrary Python objects into the cache
+:     Uses PEP484 type hints to help you typecheck cache return values
+:     Supports Memcache, Redis and SQLite
+* TODO [2019-10-01 Tue 21:01] github commits integrate well with my. package. also could demonstrate cachew?
+* STRT [#B] [2019-10-01 Tue 21:02] demonstrate cachew on pdfs? :hpi:cachew:
+:LOGBOOK:
+- State "STRT"       from "TODO"       [2020-01-08 Wed 22:07]
+:END:

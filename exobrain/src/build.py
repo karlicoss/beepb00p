@@ -202,7 +202,7 @@ def postprocess_html() -> None:
     copy(src / 'settings.js'      , html_dir / 'settings.js' )
 
     from bs4 import BeautifulSoup as BS # type: ignore
-    bs = lambda x: BS(x, 'lxml')
+    bs = lambda x: BS(x, 'lxml')  # lxml is the fastest? see https://www.crummy.com/software/BeautifulSoup/bs4/doc/#installing-a-parser
 
     # for fucks sake, seems that it's not possible to insert raw html?
     def ashtml(x):

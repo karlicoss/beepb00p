@@ -1,0 +1,7 @@
+#+title: Readme
+
+
+* Setup
+- src/dependencies.sh
+- more-itertools beautifulsoup4 orgparse lxml click psutil
+- pytest
