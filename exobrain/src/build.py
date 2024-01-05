@@ -79,6 +79,7 @@ def clean() -> None:
         f.unlink()
 
 
+# TODO check noexport tag; remove "hide"
 def main() -> None:
     import argparse
     p = argparse.ArgumentParser()
@@ -89,7 +90,11 @@ def main() -> None:
     p.add_argument('--watch', action='store_true')
     p.add_argument('--under-entr', action='store_true') # ugh.
     p.add_argument('--data-dir', type=Path)
+    p.add_argument('--use-new-export', action='store_true')
     args = p.parse_args()
+
+    if args.use_new_export:
+        assert args.html is False
 
     ddir = args.data_dir
     global DATA
@@ -138,14 +143,32 @@ def preprocess(args) -> None:
         '--load'     , src / 'publish.el',
         # '-f', 'toggle-debug-on-error', # dumps stacktrace on error
     ]
-    with emacs(
-            *eargs,
-            '--eval',
-            f'''(let ((org-publish-project-alist `(,exobrain/project-preprocess-org)))
-                  (org-publish-all))''',
-    ) as ep:
-        pass
-    assert ep.returncode == 0
+    if args.use_new_export:
+        for f in input_dir.rglob('*.org'):
+            # TODO export into tmp dir and then rsync? not sure.. need to be careful about git
+            rpath = f.relative_to(input_dir)
+            target = public_dir / rpath
+            target = target.absolute()  # emacs seems unhappy if we don't do it
+            target.parent.mkdir(parents=True, exist_ok=True)
+            print('exporting', f, 'to', target)
+            check_call(['emacs', '--batch', '-l', Path('testdata') / 'export.el', f, target])
+            tres = target.read_text()
+            import orgparse
+            import re
+            ts_re = orgparse.date.TIMESTAMP_RE
+            tres = ts_re.sub(r'[\g<inactive_year>-\g<inactive_month>-\g<inactive_day>]', tres)
+            target.write_text(tres)
+            # TODO hiding tags from export (e.g. 'refile') -- will need to be implemented manually?
+            # TODO need to test it!
+    else:
+        with emacs(
+                *eargs,
+                '--eval',
+                f'''(let ((org-publish-project-alist `(,exobrain/project-preprocess-org)))
+                      (org-publish-all))''',
+           ) as ep:
+            pass
+        assert ep.returncode == 0
 
     from check import check_org
     check_org(public_dir)
