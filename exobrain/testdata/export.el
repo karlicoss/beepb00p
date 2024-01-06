@@ -25,6 +25,7 @@
 ;;     (:time-stamp-file    nil)
 ;; )))
 
+;; FIXME add noexport and hide tags
 
 (setq org-export-with-priority   t)
 (setq org-export-time-stamp-file nil)
@@ -32,6 +33,7 @@
 ;; (add-to-list 'org-export-options-alist '(:time-stamp-file    nil))
 ;; (add-to-list 'org-export-options-alist '(:with-priority      t))
 
+;; TODO elisp eval?
 
 (find-file source)
 (org-export-to-file 'org dest)

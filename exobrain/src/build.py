@@ -158,6 +158,9 @@ def preprocess(args) -> None:
             ts_re = orgparse.date.TIMESTAMP_RE
             tres = ts_re.sub(r'[\g<inactive_year>-\g<inactive_month>-\g<inactive_day>]', tres)
             target.write_text(tres)
+
+            from fixup_org import fixup
+            target.write_text(fixup(target.read_text()))
             # TODO hiding tags from export (e.g. 'refile') -- will need to be implemented manually?
             # TODO need to test it!
     else:
