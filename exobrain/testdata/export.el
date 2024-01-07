@@ -25,7 +25,7 @@
 ;;     (:time-stamp-file    nil)
 ;; )))
 
-;; FIXME add noexport and hide tags
+(setq org-export-exclude-tags '("noexport" "hide"))
 
 (setq org-export-with-priority   t)
 (setq org-export-time-stamp-file nil)
@@ -33,7 +33,9 @@
 ;; (add-to-list 'org-export-options-alist '(:time-stamp-file    nil))
 ;; (add-to-list 'org-export-options-alist '(:with-priority      t))
 
-;; TODO elisp eval?
+
+;; TODO not sure about that..
+(setq org-confirm-babel-evaluate nil)
 
 (find-file source)
 (org-export-to-file 'org dest)

@@ -3,7 +3,7 @@
 
 * Setup
 - src/dependencies.sh
-- more-itertools beautifulsoup4 orgparse lxml click psutil
+- more-itertools beautifulsoup4 orgparse lxml click psutil loguru
 - pytest
 
 
