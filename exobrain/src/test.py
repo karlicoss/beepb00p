@@ -80,6 +80,9 @@ def test_test(use_new_org_export: bool, use_new_html_export: bool, tmp_data: Pat
     # shouldn't have whitespace in the timestamp
     assert '<span class="timestamp">[2019-10-18]</span>' in test_html
 
+    # mainly check that there is no extra timstamp-wrapper class
+    assert '<span class="timestamp">[2019-10-18]</span> <a href="https://lobste.rs/s/lsxf4b/road_common_lisp">A Road to Common Lisp | Lobsters</a> <span class="tag"><span class="tag1 tag-inherited">tag1</span><span class="tag2 tag-inherited">tag2</span><span class="lisp tag-self">lisp</span></span>' in test_html
+
 
 def test_build_some(tmp_data: Path, tmp_path: Path) -> None:
     d = tmp_data

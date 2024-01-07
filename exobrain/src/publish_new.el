@@ -29,12 +29,6 @@
 (require 'advice-patch)
 ;; whoa advice-patch is really nice
 
-;; remove useless timestmap-wrapper class
-(advice-patch 'org-html-timestamp
-              ;; fuck. markdown falls back onto html for timestamps??
-              (if (boundp 'markdown) "`%s`" "<span class=\"timestamp\">%s</span>")
-              "<span class=\"timestamp-wrapper\"><span class=\"timestamp\">%s</span></span>")
-
 ;; no clue why default class is "example" :shrug: (using same format as in blog)
 (advice-patch 'org-html-property-drawer
               "<div class='properties'>\n%s</div>"
