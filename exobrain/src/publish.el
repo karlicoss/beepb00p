@@ -144,11 +144,13 @@
                  " \\(Mon\\|Tue\\|Wed\\|Thu\\|Fri\\|Sat\\|Sun\\) "
                  ""
                  title))
+         (res   (s-downcase res))
+         (res   (replace-regexp-in-string "[^[:ascii:]]" "" (s-downcase res))) ;; remove all non-ascii.. it's too problematic to handle
          (res   (replace-regexp-in-string
                  ;; drop all vowels, can read without it...
                  "[aeoiu]\\|[^[:alpha:]]\\|http\\|https"
                  ""
-                 (s-downcase res)))
+                 res))
                   ;; TODO and then sample characters? not sure
          (res (if (<= (length res) 50)
                   res
