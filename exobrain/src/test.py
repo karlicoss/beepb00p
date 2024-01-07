@@ -42,16 +42,18 @@ def _check_org(path: Path) -> None:
     assert len(ids) > 10
 
 
-@pytest.mark.parametrize('use_new_export', [True, False])
-def test_test(use_new_export: bool, tmp_data: Path, tmp_path: Path) -> None:
+@pytest.mark.parametrize('use_new_org_export' , [True, False], ids=['org_new' , 'org_old'])
+@pytest.mark.parametrize('use_new_html_export', [True, False], ids=['html_new', 'html_old'])
+def test_test(use_new_org_export: bool, use_new_html_export: bool, tmp_data: Path, tmp_path: Path) -> None:
     d = tmp_data
     i      = d / 'input'
     public = d / 'public'
     html   = d / 'html'
 
     copy(INPUT / 'test.org', i / 'test.org')
-    margs = ['--use-new-export'] if use_new_export else []
-    check_call(build('--data-dir', d, *margs))
+    oargs = ['--use-new-org-export'] if use_new_org_export else []
+    hargs = ['--use-new-html-export'] if use_new_html_export else []
+    check_call(build('--data-dir', d, *oargs, *hargs))
 
     test_org_public = (public / 'test.org').read_text()
 

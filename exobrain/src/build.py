@@ -96,8 +96,11 @@ def main() -> None:
     p.add_argument('--watch', action='store_true')
     p.add_argument('--under-entr', action='store_true') # ugh.
     p.add_argument('--data-dir', type=Path)
-    p.add_argument('--use-new-export', action='store_true')
+    p.add_argument('--use-new-org-export', action='store_true')
+    p.add_argument('--use-new-html-export', action='store_true')
     args = p.parse_args()
+
+    assert not args.md  # broken for now
 
     ddir = args.data_dir
     global DATA
@@ -169,11 +172,10 @@ def preprocess(args) -> None:
             (setq exobrain/filter     {efilter}     )
         )''',
         '--directory', src / 'advice-patch',
-        '--load'     , src / 'publish.el',
         # '-f', 'toggle-debug-on-error', # dumps stacktrace on error
     ]
     ctx = Context(input_dir=input_dir, public_dir=public_dir)
-    if args.use_new_export:
+    if args.use_new_org_export:
         inputs = sorted(input_dir.rglob('*.org'))
         with ProcessPoolExecutor() as pool:
             logger.debug(f'using {pool._max_workers} workers')
@@ -184,8 +186,10 @@ def preprocess(args) -> None:
                 except Exception as e:
                     raise RuntimeError(f'error while processing {i}') from e
     else:
+        # TODO get rid of this..
         with emacs(
                 *eargs,
+                '--load'     , src / 'publish.el',  # old file
                 '--eval',
                 f'''(let ((org-publish-project-alist `(,exobrain/project-preprocess-org)))
                       (org-publish-all))''',
@@ -211,10 +215,16 @@ def preprocess(args) -> None:
         # TODO might want both?
         mode = 'html' if args.html else 'md'
         prj = 'exobrain/project-org2html' if args.html else 'exobrain/project-org2md'
+        hargs = [
+            '--load', src / 'publish_new.el',
+        ] if args.use_new_html_export else [
+            '--load', src / 'publish.el',
+        ]
         with emacs(
                 # ugh. such crap
                 *([] if args.html else ['--eval', '(setq markdown t)']),
                 *eargs,
+                *hargs,
                 '--eval',
                 f'''(let ((org-publish-project-alist `(,{prj})))
                         (org-publish-all))''',
