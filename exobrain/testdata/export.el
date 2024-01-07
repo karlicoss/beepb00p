@@ -37,5 +37,18 @@
 ;; TODO not sure about that..
 (setq org-confirm-babel-evaluate nil)
 
+
+;; FIXME get rid of this... without it it's adding an extra space between the timestamp and the following text??
+;; TODO fuck. here as well, timestamps are only translated if they are not within the heading???
+(defun exobrain/override-org-timestamp-translate (timestamp &optional boundary)
+  "sets custom format to all my timestamps (strips off time, it's just too spammy)"
+  (let ((res (org-timestamp-format timestamp "[%Y-%m-%d]")))
+    (if boundary
+        (error "wtf if boundary?? %s %s" timestamp boundary)
+      res)))
+(advice-add #'org-timestamp-translate :override #'exobrain/override-org-timestamp-translate)
+;;
+
+
 (find-file source)
 (org-export-to-file 'org dest)

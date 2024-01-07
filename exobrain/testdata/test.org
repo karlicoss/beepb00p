@@ -38,3 +38,9 @@ in config, allow something nicer like
 
 or [twitter,github,reddit, pinboard]:['scott alexander', 'quantified self']
 pinboard:tag:scottalexander
+
+* STRT [#C] [2019-10-18 Fri 02:06] [[https://lobste.rs/s/lsxf4b/road_common_lisp][A Road to Common Lisp | Lobsters]] :lisp:
+:LOGBOOK:
+- State "STRT"       from "TODO"       [2020-01-01 Wed 00:22]
+:END:
+- [2019-11-02 Sat 00:03] http://stevelosh.com/blog/2018/08/a-road-to-common-lisp
