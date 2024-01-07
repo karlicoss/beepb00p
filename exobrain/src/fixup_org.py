@@ -7,7 +7,7 @@ from orgparse.node import OrgRootNode, OrgEnv
 
 
 env = OrgEnv(
-    todos=['TODO', 'STRT', 'WAIT', 'START'],
+    todos=['TODO', 'STRT', 'WAIT', 'START', 'NEXT'],
     dones=['DONE', 'CANCEL', 'CNCL'],
     filename='<string>',
 )
@@ -154,7 +154,7 @@ def test_add_id(tmp_path: Path) -> None:
 :ID: whatever
 :CREATED: [2020-11-29 Sun 23:51]
 :END:
-* [[https://reddit.com/][reddit]] heading with a link
+* [[https://reddit.com/][reddit]] heading with a link and 🧘‍♂️🗺 emoji
 * [[https://news.ycombinator.com/item?id=25161117][Show HN: I made an alternative to Google Alerts that listens to social media]]
 '''.rstrip()
 
@@ -179,9 +179,9 @@ def test_add_id(tmp_path: Path) -> None:
 :ID:       whatever
 :CREATED:  [2020-11-29 Sun 23:51]
 :END:
-* [[https://reddit.com/][reddit]] heading with a link
+* [[https://reddit.com/][reddit]] heading with a link and 🧘‍♂️🗺 emoji
 :PROPERTIES:
-:ID:       srddtcmrddthdngwthlnk
+:ID:       srddtcmrddthdngwthlnkndmj
 :END:
 * [[https://news.ycombinator.com/item?id=25161117][Show HN: I made an alternative to Google Alerts that listens to social media]]
 :PROPERTIES:

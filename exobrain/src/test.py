@@ -63,7 +63,7 @@ def test_test(use_new_export: bool, tmp_data: Path, tmp_path: Path) -> None:
         'pinboard:tag:whatever',
         '- [2019-11-02] http://stevelosh.com/blog/2018/08/a-road-to-common-lisp',
     ]:
-        assert x in test_org_public
+        assert x in test_org_public, x
 
     if not use_new_export:
         # NOTE: kinda annoying, but sitemap is dumped into the _source_ dir during html export

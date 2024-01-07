@@ -9,7 +9,7 @@ TODO crap this doesn't work at the moment? crashes while it's trying to do org-e
 : #+end_example
 
 
-* TODO [#C] some todos
+* TODO [#C] some 🧘‍♂️🗺 todos
 :PROPERTIES:
 :CREATED: [2020-11-29 Sun 23:51]
 :END:
