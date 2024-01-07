@@ -236,17 +236,6 @@
 (setq org-time-stamp-formats '("<%Y-%m-%d>"))
 
 
-;; TODO fuck. here as well, timestamps are only translated if they are not within the heading???
-(defun exobrain/override-org-timestamp-translate (timestamp &optional boundary)
-  "sets custom format to all my timestamps (strips off time, it's just too spammy)"
-  (let ((res (org-timestamp-format timestamp "[%Y-%m-%d]")))
-    (if boundary
-        (error "wtf if boundary?? %s %s" timestamp boundary)
-      res)))
-;; NOTE: seem that without it, it adds an extra space after timestamp???
-(advice-add #'org-timestamp-translate :override #'exobrain/override-org-timestamp-translate)
-
-
 ;; TODO share with compile-org?
 (setq org-export-exclude-tags '("noexport" "hide"))
 (setq org-export-with-broken-links t) ;; TODO mm not ideal

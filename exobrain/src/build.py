@@ -60,7 +60,7 @@ def clean_dir(path: Path) -> None:
             rmtree(x)
 
 
-def clean() -> None:
+def clean(*, skip_org_export: bool) -> None:
     # todo ugh, need symlink watching tool here again...
     # org-publish-timestamp-directory
     cachedir = Path('~/.org-timestamps').expanduser()
@@ -81,8 +81,9 @@ def clean() -> None:
 
     # TODO what about empty dirs?
     # right -- we don't want to use clean_dir because there is also gitignore/license here. ugh
-    for f in cfg.public_dir.rglob('*.org'):
-        f.unlink()
+    if not skip_org_export:
+        for f in cfg.public_dir.rglob('*.org'):
+            f.unlink()
 
 
 # TODO check noexport tag; remove "hide"
@@ -97,10 +98,13 @@ def main() -> None:
     p.add_argument('--under-entr', action='store_true') # ugh.
     p.add_argument('--data-dir', type=Path)
     p.add_argument('--use-new-org-export', action='store_true')
+    p.add_argument('--skip-org-export', action='store_true')
     p.add_argument('--use-new-html-export', action='store_true')
     args = p.parse_args()
 
     assert not args.md  # broken for now
+
+    skip_org_export: bool = args.skip_org_export
 
     ddir = args.data_dir
     global DATA
@@ -111,7 +115,7 @@ def main() -> None:
 
     # ugh. this all is pretty complicated...
     if args.watch:
-        clean()
+        clean(skip_org_export=skip_org_export)
         nargs = [*sys.argv, '--under-entr']
         nargs.remove('--watch')
         while True:
@@ -119,11 +123,11 @@ def main() -> None:
             run(['entr', '-d', *nargs], input=paths.encode('utf8'))
         sys.exit(0)
     if not args.under_entr:
-        clean()
+        clean(skip_org_export=skip_org_export)
 
-    preprocess(args)
+    preprocess(args, skip_org_export=skip_org_export)
     if args.html:
-        postprocess_html()
+        postprocess_html(use_new_html_export=args.use_new_html_export)
 
 
 @dataclass
@@ -152,7 +156,7 @@ def compile_org_to_org(f: Path, ctx: Context) -> None:
     # TODO need to test it!
 
 
-def preprocess(args) -> None:
+def preprocess(args, *, skip_org_export: bool) -> None:
     """
     Publishies intermediate ('public') org-mode?
     """
@@ -175,7 +179,7 @@ def preprocess(args) -> None:
         # '-f', 'toggle-debug-on-error', # dumps stacktrace on error
     ]
     ctx = Context(input_dir=input_dir, public_dir=public_dir)
-    if args.use_new_org_export:
+    if not skip_org_export and args.use_new_org_export:
         inputs = sorted(input_dir.rglob('*.org'))
         with ProcessPoolExecutor() as pool:
             logger.debug(f'using {pool._max_workers} workers')
@@ -185,7 +189,7 @@ def preprocess(args) -> None:
                     fut.result()
                 except Exception as e:
                     raise RuntimeError(f'error while processing {i}') from e
-    else:
+    elif not skip_org_export:
         # TODO get rid of this..
         with emacs(
                 *eargs,
@@ -249,7 +253,7 @@ def relativize(soup, *, path: Path, root: Path):
     return soup
 
 
-def postprocess_html() -> None:
+def postprocess_html(*, use_new_html_export: bool) -> None:
     html_dir = cfg.html_dir
 
     copy(src / 'search/search.css', html_dir / 'search.css'  )
@@ -277,6 +281,17 @@ def postprocess_html() -> None:
     tocs = str(node) # do not prettify to avoid too many newlines around tags
     # mm, org-mode emits relative links, but we actually want abolute here so it makes sense for any page
     tocs = tocs.replace('href="', 'href="/')
+
+    if use_new_html_export:
+        from fixup_html import fixup
+        for html in html_dir.rglob('*.html'):
+            text = html.read_text()
+            soup = bs(text)
+            try:
+                fixup(soup)
+            except Exception as e:
+                raise RuntimeError(f'while fixing {html}') from e
+            html.write_text(str(soup))
 
     # todo eh.. implement this as an external site agnostic script
     (html_dir / 'documents.js').write_text(check_output([
