@@ -72,6 +72,12 @@ def test_test(use_new_export: bool, tmp_data: Path, tmp_path: Path) -> None:
     assert 'h2 id="slbstrsslsxfbrdcmmnlsprdtcmmnlsplbstrs">' in test_html
     assert '<a href="#nil">. ' in test_html  # TODO later, implement proper ids here, asserting for now so we don't forget to test
 
+    # TODO they are hidden in css for some reason?
+    assert '<div class="filetags"><span class="tag"><span class="tag1 tag-self">tag1</span><span class="tag2 tag-self">tag2</span></span></div>' in test_html
+
+    # shouldn't have whitespace in the timestamp
+    assert '<span class="timestamp">[2019-10-18]</span>' in test_html
+
 
 def test_build_some(tmp_data: Path, tmp_path: Path) -> None:
     d = tmp_data
