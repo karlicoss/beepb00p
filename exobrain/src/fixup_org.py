@@ -106,8 +106,16 @@ def test_basic(tmp_path: Path) -> None:
 :PROPERTIES:
 :CREATED:  [2020-06-25 Thu 09:38]
 :END:
+* heading with a newline before body
+
+: body
 * STRT [#C] another heading
 '''.rstrip()
+# TODO this doen't work atm -- orgparse strips out empty body? should probably fix in orgparse..
+# * heading with a newline after
+#
+# * other heading
+
     res = fixup(org, add_ids=False)
     assert res == org + '\n'
 

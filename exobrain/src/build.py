@@ -99,9 +99,6 @@ def main() -> None:
     p.add_argument('--use-new-export', action='store_true')
     args = p.parse_args()
 
-    if args.use_new_export:
-        assert args.html is False
-
     ddir = args.data_dir
     global DATA
     if ddir is None:

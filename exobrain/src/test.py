@@ -50,7 +50,7 @@ def test_test(use_new_export: bool, tmp_data: Path, tmp_path: Path) -> None:
     html   = d / 'html'
 
     copy(INPUT / 'test.org', i / 'test.org')
-    margs = ['--use-new-export', '--no-html'] if use_new_export else []
+    margs = ['--use-new-export'] if use_new_export else []
     check_call(build('--data-dir', d, *margs))
 
     test_org_public = (public / 'test.org').read_text()
@@ -65,15 +65,12 @@ def test_test(use_new_export: bool, tmp_data: Path, tmp_path: Path) -> None:
     ]:
         assert x in test_org_public, x
 
-    if not use_new_export:
-        # NOTE: kinda annoying, but sitemap is dumped into the _source_ dir during html export
-        assert '[[file:test.org][Test]]' in (public / 'sitemap.org').read_text()
+    # NOTE: kinda annoying, but sitemap is dumped into the _source_ dir during html export
+    assert '[[file:test.org][Test]]' in (public / 'sitemap.org').read_text()
 
-        test_html = (html / 'test.html').read_text()
-        assert 'h2 id="slbstrsslsxfbrdcmmnlsprdtcmmnlsplbstrs">' in test_html
-        assert '<a href="#nil">. ' in test_html  # TODO later, implement proper ids here, asserting for now so we don't forget to test
-
-    # TODO test html as well
+    test_html = (html / 'test.html').read_text()
+    assert 'h2 id="slbstrsslsxfbrdcmmnlsprdtcmmnlsplbstrs">' in test_html
+    assert '<a href="#nil">. ' in test_html  # TODO later, implement proper ids here, asserting for now so we don't forget to test
 
 
 def test_build_some(tmp_data: Path, tmp_path: Path) -> None:
