@@ -1,13 +1,3 @@
-(defvar exobrain/excluded-tags
-  '(
-    "refile" ;; this one is def a bit spammy
-
-    ;; todo these should be gradually phased out...
-    "gr"
-    "TODO"
-    "graspw"
-    "protocol"))
-
 ; ugh. fucking hell, it doesn't seem capable of resolving symlinks
 (setq   exobrain/rootdir    default-directory)
 (defvar exobrain/input-dir     nil)
@@ -20,8 +10,6 @@
 
 (require 'org)
 (require 'ox)
-(require 'ox-org)
-(require 'ox-md)
 (require 'ox-html)
 
 (require 'subr-x)
@@ -162,80 +150,11 @@
                 ;; could use heading number maybe? dunno
                 nil)))
     res))
+;; NOTE: needed for html export as well?
 (advice-add #'org-export-get-reference :override #'exobrain/org-export-get-reference)
-
-(defun exobrain/org-org-property-drawer (drawer contents info)
-  (unless (-any?
-           (lambda (x) (-contains? '("CUSTOM_ID" "ID") (org-element-property :key x)))
-           (org-element-contents drawer))
-    (let* ((parent (org-export-get-parent-headline drawer))
-           (_      (cl-assert parent)) ;; fucking hell..
-           (ref    (org-export-get-reference parent info)))
-      (if ref (org-element-adopt-elements drawer
-           (org-element-create 'node-property
-                               `(:key "ID" :value ,ref))))))
-  (let* ((children (org-element-contents drawer))
-         (result   (mapconcat
-                    ;; TODO I wonder if this should happen by default in ox-org.el instead of identity 'plaintext' mapping
-                    ;; e.g. by deafult node-property never gets translated
-                    (lambda (e) (org-export-data e info))
-                    (org-element-contents drawer)
-                    "")))
-    (format ":PROPERTIES:\n%s:END:" result)))
 
 ;; todo what is org-element-map?
 ;; todo plist-get vs org-element-property??? I guess plist is for pure plists?
-
-(defun exobrain/ensure-properties-drawer (section)
-  (let* ((hasproperties (-any?
-                         (lambda (x) (eq 'property-drawer (org-element-type x)))
-                         (org-element-contents section))))
-    (unless hasproperties
-      (org-element-set-contents section
-                                (cons (org-element-create 'property-drawer
-                                                          `(:begin 0
-                                                            :end 0
-                                                            :contents-begin 0
-                                                            :contents-end 0
-                                                            :post-blank 0
-                                                            :post-affiliated 0
-                                                            :parent ,section))
-                                      (org-element-contents section))))))
-
-;; right. so, we can't use normal org-publish hooks for this..
-;; if you look at org-export-data code, it seems that traverses the tree at first
-;; and only then starts combining etc
-;; so by the time the hook fires, we don't get a chance to modify the org abstract tree
-(defun exobrain/before-org-export-data (data info)
-  (when (and (org-export-get-parent-headline data)
-             (eq 'section (org-element-type data)))
-        (exobrain/ensure-properties-drawer data))
-
-  ;; ugh. need to remove empty space, otherwise the emitted drawer appears after the whitespace..
-  ;; also can't move it into 'section handler, seems that it's too late by that time
-  (when (eq 'headline (org-element-type data))
-    (org-element-put-property data :pre-blank 0)))
-
-(advice-add #'org-export-data :before #'exobrain/before-org-export-data)
-
-(defun exobrain/org-org-node-property (prop contents _info)
-  (let* ((key   (org-element-property :key   prop))
-         (value (org-element-property :value prop)))
-    (when (-contains? '("CREATED" "PUBLISHED") key)
-      (cl-assert value)
-      (let* ((orgts  (org-timestamp-from-string value))
-             (hacked (exobrain/hack-timestamp orgts))
-             (news   (org-timestamp-format hacked "[%Y-%m-%d]")))
-        (org-element-put-property prop :value news))))
-  (org-org-identity prop contents _info))
-
-
-(defun exobrain/hack-tags (headline contents info)
-  (let* ((tags  (org-element-property :tags headline)) ;; todo use org-export-get-tags? it can filter too
-         (ftags (-difference tags exobrain/excluded-tags)))
-    (org-element-put-property headline :tags ftags)))
-(advice-add #'org-org-headline :before #'exobrain/hack-tags)
-
 
 ;;; for html, we want inherited tags to be displayed within the headlines (since otherwise it's too opaque)
 ;;; the easiest way seems to mark them in a special way and then handle during rendering...
@@ -291,24 +210,6 @@
 (advice-add #'org-html-inner-template :override #'exobrain/org-html-inner-template-reorder-toc)
 
 
-(org-export-define-derived-backend
- 'my-org
- 'org
- ;; default for these is identity, so can't hack via advice
- :translate-alist '((property-drawer . exobrain/org-org-property-drawer)
-                    (node-property   . exobrain/org-org-node-property)))
-(defun org-org-publish-to-my-org (plist filename pub-dir)
-  (org-publish-org-to 'my-org filename ".org" plist pub-dir))
-
-
-;; with-author? with-timestamps? with-date?
-
-(defun exobrain/extra-filter (output backend info)
-  (check-output
-   '("python3" "src/filter_org.py")
-   :input output
-   :cwd exobrain/rootdir))
-
 ;; fucking hell, it's defsubst https://www.gnu.org/software/emacs/manual/html_node/elisp/Inline-Functions.html
 ;; that's why advice doesn't work
 ;; I hate elisp.
@@ -335,37 +236,6 @@
 (setq org-time-stamp-formats '("<%Y-%m-%d>"))
 
 
-;; hide anchors (they get emitted as HTML)
-(advice-patch 'org-md-headline
-              ""
-              "<a id=\"%s\"></a>")
-
-;;
-(defun exobrain/org-md--headline-title (orig style level title &optional anchor tags)
-  ;; TODO todo keywords are at the very beginning? so should work?
-  (let* ((spl (s-split-up-to " " title 1))
-         (fst (car spl))
-         (snd (cadr spl))
-         (kwd (let ((cls (cdr (assoc fst exobrain/state-keywords))))
-                (if cls
-                    (format "<span class='state %s'>%s</span>" cls fst)
-                  fst)))
-         (title (concat kwd " " snd)))
-    (funcall orig style level title anchor tags)))
-(advice-add #'org-md--headline-title :around #'exobrain/org-md--headline-title)
-
-(defun exobrain/md-org-make-tag-string (tags)
-  (let ((stags (--map (format "[[%s]]" it) tags)))
-    (s-concat " " (s-join " " stags))))
-
-;; for fucks sake
-
-
-(defun exobrain/org-md-publish-to-md (orig &rest args)
-  (cl-letf (((symbol-function 'org-make-tag-string) 'exobrain/md-org-make-tag-string))
-    (apply orig args)))
-(advice-add #'org-md-publish-to-md :around #'exobrain/org-md-publish-to-md)
-
 ;; TODO fuck. here as well, timestamps are only translated if they are not within the heading???
 (defun exobrain/override-org-timestamp-translate (timestamp &optional boundary)
   "sets custom format to all my timestamps (strips off time, it's just too spammy)"
@@ -373,16 +243,9 @@
     (if boundary
         (error "wtf if boundary?? %s %s" timestamp boundary)
       res)))
+;; NOTE: seem that without it, it adds an extra space after timestamp???
 (advice-add #'org-timestamp-translate :override #'exobrain/override-org-timestamp-translate)
 
-;; removes time of day from the timestamp
-(defun exobrain/hack-timestamp (ts &rest args)
-  (org-element-put-property ts :minute-start nil)
-  (org-element-put-property ts :minute-end   nil)
-  (org-element-put-property ts :hour-start   nil)
-  (org-element-put-property ts :hour-end     nil)
-  ts)
-(advice-add #'org-element-timestamp-interpreter :before #'exobrain/hack-timestamp)
 
 ;; TODO share with compile-org?
 (setq org-export-exclude-tags '("noexport" "hide"))
@@ -404,37 +267,6 @@
         :with-todo-keywords t
 
         :time-stamp-file    nil))
-
-(setq exobrain/project-preprocess-org
-      `("exobrain-preprocess-org"
-        :base-directory ,exobrain/input-dir
-        :base-extension "org" ;; do I even need base-extension?
-        :publishing-directory ,exobrain/public-dir
-        :publishing-function org-org-publish-to-my-org
-
-        ,@exobrain/filter
-
-        ,@exobrain/export-settings))
-
-(setq exobrain/project-org2md
-      `("exobrain-org2md"
-        :base-directory ,exobrain/public-dir
-        :base-extension "org"
-        :publishing-directory ,exobrain/md-dir
-        :publishing-function org-md-publish-to-md
-
-        :auto-sitemap t
-        ;; note: sitemap has to be in source format, so that's why it's md here
-        :sitemap-filename "SUMMARY.org"
-        :sitemap-format-entry exobrain/org-publish-sitemap-entry
-
-
-        ;; todo exclude timestamps maybe?
-        ,@exobrain/export-settings
-        :with-priority nil
-        :with-properties nil
-        :with-timestamps nil ;; TODO later? verbatim maybe?
-        :with-todo-keywords nil))
 
 ;; eh. a bit hacky, but does the job
 ;; doesn't seem that org-mode exposes filetags properly
