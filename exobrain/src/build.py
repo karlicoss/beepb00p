@@ -291,7 +291,15 @@ def postprocess_html(*, use_new_html_export: bool) -> None:
                 fixup(soup)
             except Exception as e:
                 raise RuntimeError(f'while fixing {html}') from e
-            html.write_text(str(soup))
+
+            sstr = str(soup)
+            # ugh. backwards compat with older export, can remove later
+            sstr = sstr.replace(
+                '</div><div class="outline-2"',
+                '</div>\n<div class="outline-2"',
+            )
+
+            html.write_text(sstr)
 
     # todo eh.. implement this as an external site agnostic script
     (html_dir / 'documents.js').write_text(check_output([

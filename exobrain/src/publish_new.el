@@ -49,9 +49,6 @@
 ;; TODO could force timestamps to emit <time> element
 
 ;; these ids are relaly unnecessary, just littering the anchors
-(advice-patch 'org-html-section
-              "<div class=\"outline-text-%1$d\">\n%3$s</div>\n"
-              "<div class=\"outline-text-%d\" id=\"text-%s\">\n%s</div>\n")
 (advice-patch 'org-html-headline
               "<%1$s class=\"%3$s\">%4$s%5$s</%6$s>\n"
               "<%s id=\"%s\" class=\"%s\">%s%s</%s>\n")
@@ -60,10 +57,6 @@
 ;;               '(concat "outline-container-" (org-export-get-reference headline info)))
 ;; TODO shit. it can't override multiple definitions at once...
 ;; so have to choose one here.. or could replace larger form
-(advice-patch 'org-html-headline
-              "\n<h%1$d id=\"%2$s\"%3$s><a class='headerlink' href='#%2$s'>¶</a>%4$s</h%5$d>\n"
-              "\n<h%d id=\"%s\"%s>%s</h%d>\n")
-;; TODO ok, really awesome that I basically replaced a huge chunk of blog with tuny elisp snippets..
 
 
 ;; fucking hell. seriosly?????
@@ -185,24 +178,6 @@
 
 
 (advice-add #'org-html--tags  :override #'exobrain/org-html--tags)
-
-
-(defun exobrain/org-html-inner-template-reorder-toc (contents info)
-  "Pretty annoying when the TOC is very long and it shows up on the very top after the introduction in root block"
-  ;; also tried with flexbox and order:, but the problem it doesn't support collapsing margins
-  (let* ((footnote (org-html-footnote-section info))
-         (depth (plist-get info :with-toc))
-         (toc (when depth (org-html-toc depth info)))
-         (contents (if (not toc) contents
-                        ;; find first actual outline and reorder TOC before it
-                        ;; for fucks sake, s-slice-at is recursive and hits elisp recursion limit... https://github.com/magnars/s.el/pull/125
-                        (let* ((slices (s-split-up-to "<div .* class=.outline-2" contents 1)) ;; split no more than once
-                               (before (nth 0 slices)) ;; should always be present
-                               (after  (s-chop-prefix before contents)))
-                          (concat before toc after)))))
-    (concat contents footnote)))
-(advice-add #'org-html-inner-template :override #'exobrain/org-html-inner-template-reorder-toc)
-
 
 ;; fucking hell, it's defsubst https://www.gnu.org/software/emacs/manual/html_node/elisp/Inline-Functions.html
 ;; that's why advice doesn't work
