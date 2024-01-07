@@ -160,7 +160,7 @@
                   res
                 ;; not much we can do in this case
                 ;; could use heading number maybe? dunno
-                (format "%s_%s" begin end))))
+                nil)))
     res))
 (advice-add #'org-export-get-reference :override #'exobrain/org-export-get-reference)
 
@@ -171,9 +171,9 @@
     (let* ((parent (org-export-get-parent-headline drawer))
            (_      (cl-assert parent)) ;; fucking hell..
            (ref    (org-export-get-reference parent info)))
-      (org-element-adopt-elements drawer
-        (org-element-create 'node-property
-                            `(:key "ID" :value ,ref)))))
+      (if ref (org-element-adopt-elements drawer
+           (org-element-create 'node-property
+                               `(:key "ID" :value ,ref))))))
   (let* ((children (org-element-contents drawer))
          (result   (mapconcat
                     ;; TODO I wonder if this should happen by default in ox-org.el instead of identity 'plaintext' mapping

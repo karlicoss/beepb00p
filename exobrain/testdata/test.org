@@ -44,3 +44,6 @@ pinboard:tag:scottalexander
 - State "STRT"       from "TODO"       [2020-01-01 Wed 00:22]
 :END:
 - [2019-11-02 Sat 00:03] http://stevelosh.com/blog/2018/08/a-road-to-common-lisp
+
+* .
+just an empty heading

@@ -69,6 +69,10 @@ def test_test(use_new_export: bool, tmp_data: Path, tmp_path: Path) -> None:
         # NOTE: kinda annoying, but sitemap is dumped into the _source_ dir during html export
         assert '[[file:test.org][Test]]' in (public / 'sitemap.org').read_text()
 
+        test_html = (html / 'test.html').read_text()
+        assert 'h2 id="slbstrsslsxfbrdcmmnlsprdtcmmnlsplbstrs">' in test_html
+        assert '<a href="#nil">. ' in test_html  # TODO later, implement proper ids here, asserting for now so we don't forget to test
+
     # TODO test html as well
 
 
