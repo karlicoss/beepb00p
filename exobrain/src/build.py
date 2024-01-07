@@ -182,7 +182,10 @@ def preprocess(args) -> None:
             logger.debug(f'using {pool._max_workers} workers')
             futures = [pool.submit(compile_org_to_org, i, ctx) for i in inputs]
             for i, fut in zip(inputs, futures):
-                fut.result()
+                try:
+                    fut.result()
+                except Exception as e:
+                    raise RuntimeError(f'error while processing {i}') from e
     else:
         with emacs(
                 *eargs,

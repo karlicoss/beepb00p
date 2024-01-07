@@ -14,6 +14,10 @@ env = OrgEnv(
 
 
 def _fixup(org: str, *, add_ids: bool) -> Iterator[str]:
+    assert '' not in org  # orgparse has a bug where is splits it in the body?
+
+    # assert ' ' not in org  # weird character, exclude it later
+
     split = org.splitlines()
     for n in orgparse.loads(org, env=env):
         body = n.get_body(format='raw')
@@ -25,7 +29,10 @@ def _fixup(org: str, *, add_ids: bool) -> Iterator[str]:
         # could be kinda annoying, since it changes tags order..
         tags = list(n._tags)
         raw_tags = ':' + ':'.join(tags) + ':'
-        tags = [t for t in tags if t != 'refile']
+        tags = [t for t in tags if t not in {
+            'refile',
+            'gr', 'TODO', 'graspw', 'protocol',  # TODO phase these out from inputs gradually
+        }]
 
         rheading = n.get_heading(format='raw')
 
@@ -59,21 +66,19 @@ def _fixup(org: str, *, add_ids: bool) -> Iterator[str]:
                 rgx = '|'.join((
                     # TODO different languages??
                     ' (mon|tue|wed|thu|fri|sat|sun) ',  # remove days of week
-                    r'\W',  # remove all non-alnums
-                    '_',
-                    r'\d',  # remove all digits
-                    # TODO better to extract date and replace it properly
-                    '[aeoiu]',  # remove all vowels (for brevity)
                     'http',  # FIXME hmm looks like old export didn't handle https properly
+                    r'[^a-z]',  # remove all non-alnums
+                    '[aeoiu]',  # remove all vowels (for brevity)
                 ))
                 gen_id = re.sub(rgx, '', rheading.lower())
                 if len(gen_id) > 50:
                     # if it's too long, only keep part of head and tail
                     gen_id = gen_id[:25] + gen_id[-25:]
-                properties['ID'] = gen_id
+                if len(gen_id) > 0:
+                    properties['ID'] = gen_id
 
         parts = [heading]
-        if len(properties) > 0:
+        if len(properties) > 0 or add_ids:  # TODO later remove add_ids
             parts.append(':PROPERTIES:')
             for k, v in properties.items():
                 kk = f':{k}:'
@@ -156,6 +161,7 @@ def test_add_id(tmp_path: Path) -> None:
 :END:
 * [[https://reddit.com/][reddit]] heading with a link and 🧘‍♂️🗺 emoji
 * [[https://news.ycombinator.com/item?id=25161117][Show HN: I made an alternative to Google Alerts that listens to social media]]
+* TODO [#D] [2019-07-09] [[https://twitter.com/nplusodin/status/1148645120616607745][Tweet from @nplusodin: Ученые показали, что кусок стекла с правильно размещенными внутри неоднородностями может производить «вычисления» и распознавать рукописные цифры]] :computation:
 '''.rstrip()
 
     res = fixup(org)
@@ -186,6 +192,10 @@ def test_add_id(tmp_path: Path) -> None:
 * [[https://news.ycombinator.com/item?id=25161117][Show HN: I made an alternative to Google Alerts that listens to social media]]
 :PROPERTIES:
 :ID:       snwsycmbntrcmtmdshwhnmdnlntvtggllrtsthtlstnstsclmd
+:END:
+* TODO [#D] [2019-07-09] [[https://twitter.com/nplusodin/status/1148645120616607745][Tweet from @nplusodin: Ученые показали, что кусок стекла с правильно размещенными внутри неоднородностями может производить «вычисления» и распознавать рукописные цифры]] :computation:
+:PROPERTIES:
+:ID:       stwttrcmnplsdnsttstwtfrmnplsdn
 :END:
 '''
 
