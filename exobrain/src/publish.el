@@ -135,7 +135,9 @@
 ;; md5: nice that it has fixed length, but not very reversible
 ;; base64: might be arbirary long?
 (defun exobrain/org-export-get-reference (datum info)
-  (let* ((title (org-element-property :raw-value datum))
+  (let* ((elem_custom_id (org-element-property :CUSTOM_ID datum))
+         (elem_id        (org-element-property :ID        datum))
+         (title (org-element-property :raw-value datum))
          (begin (org-element-property :begin     datum))
          (end   (org-element-property :end       datum))
          (_     (cl-assert title))
@@ -161,7 +163,8 @@
                 ;; not much we can do in this case
                 ;; could use heading number maybe? dunno
                 nil)))
-    res))
+    (if elem_custom_id elem_custom_id
+      (if elem_id elem_id res))))
 (advice-add #'org-export-get-reference :override #'exobrain/org-export-get-reference)
 
 (defun exobrain/org-org-property-drawer (drawer contents info)

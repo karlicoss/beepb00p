@@ -48,3 +48,8 @@ pinboard:tag:scottalexander
 
 * .
 just an empty heading
+
+* testing existing ID property
+:PROPERTIES:
+:ID: alala
+:END:

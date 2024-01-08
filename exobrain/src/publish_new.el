@@ -102,41 +102,10 @@
       (format "[[file:%sREADME.org][%s]]" entry (directory-file-name entry))
       (org-publish-sitemap-default-entry entry style project)))
 
-;; fuck. default org-mode ids are non-deterministic (and even change inbetween emacs invocations)
-;; https://github.com/alphapapa/unpackaged.el#export-to-html-with-useful-anchors looks really good
-;; it worked, but then I moved some code around and it stopped for some reason...
-;; too exhausted to debug it, so will use it late
-;; sometimes I fucking hate emacs.
-;; md5: nice that it has fixed length, but not very reversible
-;; base64: might be arbirary long?
 (defun exobrain/org-export-get-reference (datum info)
-  (let* ((title (org-element-property :raw-value datum))
-         (begin (org-element-property :begin     datum))
-         (end   (org-element-property :end       datum))
-         (_     (cl-assert title))
-         (res   (replace-regexp-in-string
-                 ;; remove days of week, since the date is sometimes part of title...
-                 " \\(Mon\\|Tue\\|Wed\\|Thu\\|Fri\\|Sat\\|Sun\\) "
-                 ""
-                 title))
-         (res   (s-downcase res))
-         (res   (replace-regexp-in-string "[^[:ascii:]]" "" (s-downcase res))) ;; remove all non-ascii.. it's too problematic to handle
-         (res   (replace-regexp-in-string
-                 ;; drop all vowels, can read without it...
-                 "[aeoiu]\\|[^[:alpha:]]\\|http\\|https"
-                 ""
-                 res))
-                  ;; TODO and then sample characters? not sure
-         (res (if (<= (length res) 50)
-                  res
-                ;; if it's too long, only keep head & tail
-                (concat (s-left 25 res) (s-right 25 res))))
-         (res (if (> (length res) 0)
-                  res
-                ;; not much we can do in this case
-                ;; could use heading number maybe? dunno
-                nil)))
-    res))
+  (let* ((elem_custom_id (org-element-property :CUSTOM_ID datum))
+         (elem_id        (org-element-property :ID        datum)))
+    (or elem_custom_id elem_id)))
 ;; NOTE: needed for html export as well?
 (advice-add #'org-export-get-reference :override #'exobrain/org-export-get-reference)
 

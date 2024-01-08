@@ -90,6 +90,9 @@ def test_test(use_new_org_export: bool, use_new_html_export: bool, tmp_data: Pat
 
     assert test_html.find('This is a test file') < test_html.find('Table of Contents')
 
+    # exising ID should be preserved
+    assert 'href="#alala"' in test_html
+
 
 def test_build_some(tmp_data: Path, tmp_path: Path) -> None:
     d = tmp_data

@@ -61,6 +61,13 @@ def _fixup(org: str, *, add_ids: bool) -> Iterator[str]:
         heading = ' '.join(hparts)
 
         properties = dict(n.properties)
+        # fuck. default org-mode ids are non-deterministic (and even change inbetween emacs invocations)
+        # https://github.com/alphapapa/unpackaged.el#export-to-html-with-useful-anchors looks really good
+        # it worked, but then I moved some code around and it stopped for some reason...
+        # too exhausted to debug it, so will use it late
+        # sometimes I fucking hate emacs.
+        # md5: nice that it has fixed length, but not very reversible
+        # base64: might be arbirary long?
         if add_ids:
             if 'ID' not in properties and 'CUSTOM_ID' not in properties:
                 rgx = '|'.join((
