@@ -53,3 +53,6 @@ just an empty heading
 :PROPERTIES:
 :ID: alala
 :END:
+
+* testing tag inheritance :tag1:tag_a:
+** more tag inheritance :tag_a:tag_b:tag_c:

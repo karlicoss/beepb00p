@@ -20,11 +20,6 @@
 (setq make-backup-files nil)
 
 
-(defun pp-org (thing)
-  ;; FIXME shit. it modifies the thing...
-  (org-element-put-property thing :parent nil) ;; otherwise too spammy
-  (pp thing))
-
 ;; see https://github.com/emacsmirror/advice-patch
 (require 'advice-patch)
 ;; whoa advice-patch is really nice
@@ -125,44 +120,16 @@
 ;; (setq exobrain/inh-prefix "")
 ;; (advice-add #'org-org-headline :before #'exobrain/hack-html-tags)
 
-;; annoying, but seems the easiest is to simply override...
-(defun exobrain/org-html--tags (tags info)
-  (let* ((inhtags  (--filter (s-starts-with? exobrain/inh-prefix it) tags))
-         (selftags (-difference tags inhtags))
-         (inhtags  (--map    (s-chop-prefix exobrain/inh-prefix it) inhtags)))
-    ;; ugh. if you type ::tag: it parses it as empty tag?? must be a bug in org?
-    (cl-assert (--none? (s-blank? it) (-concat inhtags selftags)))
-    ;; not sure why everythin wrapped in 'tag' in ox-html (instead of, say 'tags')
-    (format "<span class=\"tag\">%s</span>"
-            (s-join "" (--map (format "<span class=\"%1$s%2$s\">%1$s</span>" (nth 0 it) (nth 1 it))
-                              ;; not so sure about the order.. but I guess it's nice when all visible tags are aligned
-                              (-concat (--map (list it " tag-inherited") inhtags)
-                                       (--map (list it " tag-self"     ) selftags)))))))
+;; FIXME just backwards compat with old export
+;; can be removed later
+(defun --set-empty-tags (fun &rest args)
+  (let ((res (apply fun args)))
+    (if res res "<span class=\"tag\"></span>")))
+(advice-add #'org-html--tags  :around #'--set-empty-tags)
 
-
-(advice-add #'org-html--tags  :override #'exobrain/org-html--tags)
-
-;; fucking hell, it's defsubst https://www.gnu.org/software/emacs/manual/html_node/elisp/Inline-Functions.html
-;; that's why advice doesn't work
-;; I hate elisp.
-;; (advice-add #' org-element-property :around #'exobrain/md-org-element-property)
-
-;; (defun exobrain/org-md-headline (orig headline contents info)
-;;   (cl-letf (((symbol-function 'org-element-property) 'exobrain/md-org-element-property))
-;;     (funcall orig headline contents info)))
 
 ;; TODO done keywords should be marked separately..
 (setq org-todo-keywords '((sequence "TODO" "NEXT" "STRT" "START" "WIP" "WAIT" "|" "CNCL" "CANCEL" "DONE")))
-;; TODO share with rest of the system..
-(setq exobrain/state-keywords
-      '(("TODO"   . "todo")
-        ("NEXT"   . "todo")
-        ("START"  . "todo") ;; TODO start?
-        ("STRT"   . "todo") ;; TODO start?
-        ("WAIT"   . "todo")
-        ("DONE"   . "done")
-        ("CNCL"   . "cancel")
-        ("CANCEL" . "cancel")))
 
 ;; used during exporting regular timestamps (default includes day of week)
 (setq org-time-stamp-formats '("<%Y-%m-%d>"))
@@ -193,9 +160,8 @@
 ;; doesn't seem that org-mode exposes filetags properly
 (defun org-html--build-pre/postamble (type info)
   (if (eq type 'preamble)
-      (let* ((filetags (plist-get info :filetags))
-             (tagss    (exobrain/org-html--tags filetags info)))
-        (format "<div class='filetags'>%s</div>" tagss))
+      (let* ((filetags (plist-get info :filetags)))
+        (format "<div class='filetags'>%s</div>" (s-join " " filetags)))
     nil))
 
 (setq exobrain/project-org2html

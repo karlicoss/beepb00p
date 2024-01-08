@@ -100,3 +100,39 @@ def fixup(soup: bs4.BeautifulSoup) -> None:
 
             prop_block.append(prop_tag)
     ##
+
+    ## sort out tags
+    for tag_block in soup.select('.tag'):
+        for t in tag_block.children:
+            if t == '\xa0':  # nbsp
+                t.extract()
+        inherited = []
+        for t in tag_block.find_all('span'):
+            # TODO reorder inherited and self tags?
+            if len(t.attrs['class']) != 1:
+                continue  # TODO?
+            [tag] = t.attrs['class']
+            inh = 'INHERITED_'
+            if inh in tag:
+                t.attrs['class'] = [tag.replace(inh, ''), 'tag-inherited']
+                t.string = t.string.replace(inh, '')  # todo removeprefix?
+                t.extract()
+                inherited.append(t)
+            else:
+                t.attrs['class'] = [tag, 'tag-self']
+        for t in reversed(inherited):
+            tag_block.insert(0, t)
+    if (filetags_block := soup.select_one('.filetags')) is not None:
+        filetags = (filetags_block.string or '').split()
+        filetags_block.string = ''
+        tag_wrapper = soup.new_tag('span', attrs={
+            'class': 'tag',
+        })
+        filetags_block.append(tag_wrapper)
+        for filetag in filetags:
+            tag = soup.new_tag('span', attrs={
+                'class': f'{filetag} tag-self',
+            })
+            tag.string = filetag
+            tag_wrapper.append(tag)
+    ##

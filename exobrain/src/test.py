@@ -97,6 +97,9 @@ def test_test(use_new_org_export: bool, use_new_html_export: bool, tmp_data: Pat
     assert '<div class="property" data-property-name="CREATED"><span class="property-name">CREATED</span>' in test_html
     assert '[2020-11-29]</span></div>' in test_html
 
+    # testing tags inheritance
+    assert 'more tag inheritance <span class="tag"><span class="tag1 tag-inherited">tag1</span><span class="tag2 tag-inherited">tag2</span><span class="tag_a tag-inherited">tag_a</span><span class="tag_b tag-self">tag_b</span><span class="tag_c tag-self">tag_c</span></span></h3>' in test_html
+
 
 def test_build_some(tmp_data: Path, tmp_path: Path) -> None:
     d = tmp_data
