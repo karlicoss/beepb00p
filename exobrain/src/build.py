@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 import sys
@@ -156,6 +156,40 @@ def compile_org_to_org(f: Path, ctx: Context) -> None:
     # TODO need to test it!
 
 
+def do_fixup_html(html: Path) -> None:
+    from bs4 import BeautifulSoup as BS # type: ignore
+    bs = lambda x: BS(x, 'lxml')  # lxml is the fastest? see https://www.crummy.com/software/BeautifulSoup/bs4/doc/#installing-a-parser
+
+    from fixup_html import fixup
+    text = html.read_text()
+    soup = bs(text)
+    try:
+        fixup(soup)
+    except Exception as e:
+        raise RuntimeError(f'while fixing {html}') from e
+
+    ## FIXME backwards compat with older export, can remove later
+    sstr = str(soup)
+    sstr = sstr.replace(
+        '</div><div class="outline-2"',
+        '</div>\n<div class="outline-2"',
+    )
+    sstr = sstr.replace(
+        '<div class="properties"><div class="property" ',
+        '<div class="properties">\n<div class="property" ',
+    )
+    sstr = sstr.replace(
+        '</span></div></div>',
+        '</span></div>\n</div>',
+    )
+    ##
+
+    # super annoying (is this nbsp?), should be via css
+    sstr = sstr.replace('\xa0\xa0\xa0', ' ')
+
+    html.write_text(sstr)
+
+
 def preprocess(args, *, skip_org_export: bool) -> None:
     """
     Publishies intermediate ('public') org-mode?
@@ -283,35 +317,14 @@ def postprocess_html(*, use_new_html_export: bool) -> None:
     tocs = tocs.replace('href="', 'href="/')
 
     if use_new_html_export:
-        from fixup_html import fixup
-        for html in html_dir.rglob('*.html'):
-            text = html.read_text()
-            soup = bs(text)
-            try:
-                fixup(soup)
-            except Exception as e:
-                raise RuntimeError(f'while fixing {html}') from e
+        # TODO not sure if that gives that much of a speedup?
+        with ProcessPoolExecutor() as pool:
+            futures = []
+            for html in html_dir.rglob('*.html'):
+                futures.append(pool.submit(do_fixup_html, html))
+            for f in futures:
+                f.result()
 
-            ## FIXME backwards compat with older export, can remove later
-            sstr = str(soup)
-            sstr = sstr.replace(
-                '</div><div class="outline-2"',
-                '</div>\n<div class="outline-2"',
-            )
-            sstr = sstr.replace(
-                '<div class="properties"><div class="property" ',
-                '<div class="properties">\n<div class="property" ',
-            )
-            sstr = sstr.replace(
-                '</span></div></div>',
-                '</span></div>\n</div>',
-            )
-            ##
-
-            # super annoying (is this nbsp?), should be via css
-            sstr = sstr.replace('\xa0\xa0\xa0', ' ')
-
-            html.write_text(sstr)
 
     # todo eh.. implement this as an external site agnostic script
     (html_dir / 'documents.js').write_text(check_output([
