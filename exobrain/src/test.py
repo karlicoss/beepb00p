@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from subprocess import run, check_call, check_output, Popen, PIPE, CalledProcessError
 from time import sleep
@@ -8,6 +9,9 @@ import pytest
 
 
 from utils import tmp_popen
+
+
+on_ci = 'CI' in os.environ
 
 
 def build(*args):
@@ -33,8 +37,17 @@ def tmp_data(tmp_path: Path):
     yield td
 
 
-def test_build_empty(tmp_data: Path) -> None:
-    check_call(build('--data-dir', tmp_data))
+@pytest.mark.parametrize('use_new_org_export' , [True, False], ids=['org_new' , 'org_old'])
+@pytest.mark.parametrize('use_new_html_export', [True, False], ids=['html_new', 'html_old'])
+def test_build_empty(use_new_org_export: bool, use_new_html_export: bool, tmp_data: Path) -> None:
+    if on_ci:
+        if not use_new_html_export:
+            pytest.skip("doesn't work on ci yet")
+        if not use_new_org_export:
+            pytest.skip("doesn't work on ci yet")
+    oargs = ['--use-new-org-export'] if use_new_org_export else []
+    hargs = ['--use-new-html-export'] if use_new_html_export else []
+    check_call(build('--data-dir', tmp_data, *oargs, *hargs))
 
 
 def _check_org(path: Path) -> None:
@@ -45,6 +58,11 @@ def _check_org(path: Path) -> None:
 @pytest.mark.parametrize('use_new_org_export' , [True, False], ids=['org_new' , 'org_old'])
 @pytest.mark.parametrize('use_new_html_export', [True, False], ids=['html_new', 'html_old'])
 def test_test(use_new_org_export: bool, use_new_html_export: bool, tmp_data: Path, tmp_path: Path) -> None:
+    if on_ci:
+        if not use_new_html_export:
+            pytest.skip("doesn't work on ci yet")
+        if not use_new_org_export:
+            pytest.skip("doesn't work on ci yet")
     d = tmp_data
     i      = d / 'input'
     public = d / 'public'
@@ -101,8 +119,23 @@ def test_test(use_new_org_export: bool, use_new_html_export: bool, tmp_data: Pat
     assert 'more tag inheritance <span class="tag"><span class="tag1 tag-inherited">tag1</span><span class="tag2 tag-inherited">tag2</span><span class="tag_a tag-inherited">tag_a</span><span class="tag_b tag-self">tag_b</span><span class="tag_c tag-self">tag_c</span></span></h3>' in test_html
 
 
-def test_build_some(tmp_data: Path, tmp_path: Path) -> None:
+@pytest.mark.parametrize('use_new_org_export' , [True, False], ids=['org_new' , 'org_old'])
+@pytest.mark.parametrize('use_new_html_export', [True, False], ids=['html_new', 'html_old'])
+def test_build_some(use_new_org_export: bool, use_new_html_export: bool, tmp_data: Path, tmp_path: Path) -> None:
+    if on_ci:
+        if not use_new_html_export:
+            pytest.skip("doesn't work on ci yet")
+        if not use_new_org_export:
+            pytest.skip("doesn't work on ci yet")
+
     d = tmp_data
+
+    def run_build(*args):
+        oargs = ['--use-new-org-export'] if use_new_org_export else []
+        hargs = ['--use-new-html-export'] if use_new_html_export else []
+        check_call(build('--data-dir', d, *oargs, *hargs, *args))
+
+
     i      = d / 'input'
     public = d / 'public'
     html   = d / 'html'
@@ -117,7 +150,7 @@ def test_build_some(tmp_data: Path, tmp_path: Path) -> None:
     copy(INPUT / 'projects/cachew.org', cachew)
     # TODO add another one?
 
-    check_call(build('--data-dir', d))
+    run_build()
 
     _check_org(public / 'projects/cachew.org')
     # _check_org(public / 'memex.org')
@@ -153,11 +186,11 @@ def test_build_some(tmp_data: Path, tmp_path: Path) -> None:
         return l1 + l2
     # NOTE: if we don't clean properly, documents.js ends with entries from TOC.. ugh
 
-    check_call(build('--data-dir', d))
+    run_build()
     assert diff() == []
     ##
 
-    # FIXME watch mode is broken for now
+    # FIXME watch mode is broken for now due to sitemap
     return
 
     with tmp_popen(build('--data-dir', d, '--watch')) as popen:

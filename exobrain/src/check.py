@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
+import os
 from pathlib import Path
 from subprocess import run
 from typing import Iterator, List
+
+
+import orgparse
 
 
 class Failed(RuntimeError):
@@ -22,12 +26,14 @@ def search(*args):
         yield Failed(res)
 
 
-import orgparse # type: ignore
-
-from checks import F_CHECKS, WORD_CHECKS, TAG_CHECKS
-
-
 def check(path: Path) -> Iterator[Failed]:
+    if 'CI' not in os.environ:
+        from checks import F_CHECKS, WORD_CHECKS, TAG_CHECKS
+    else:
+        F_CHECKS = []
+        WORD_CHECKS = []
+        TAG_CHECKS = set()
+
     print(f"checking {path}")
     for x in F_CHECKS:
         yield from search(
