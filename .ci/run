@@ -1,0 +1,42 @@
+#!/bin/bash
+set -eu
+
+cd "$(dirname "$0")"
+cd .. # git root
+
+if ! command -v sudo; then
+    # CI or Docker sometimes doesn't have it, so useful to have a dummy
+    function sudo {
+        "$@"
+    }
+fi
+
+if [ -n "${CI-}" ]; then
+    # install OS specific stuff here
+    case "$OSTYPE" in
+    darwin*) 
+        # macos
+        :
+        ;;
+    cygwin* | msys* | win*)
+        # windows
+        :
+        ;;
+    *)
+        # must be linux?
+        sudo src/dependencies.sh
+        ;;
+    esac
+fi
+
+
+PY_BIN="python3"
+# some systems might have python pointing to python3
+if ! command -v python3 &> /dev/null; then
+    PY_BIN="python"
+fi
+
+cd exobrain
+
+$PY_BIN -m pip install more-itertools beautifulsoup4 orgparse lxml click psutil loguru pytest
+$PY_BIN -m pytest src/test.py src/fixup_org.py
