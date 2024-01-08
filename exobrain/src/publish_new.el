@@ -31,9 +31,9 @@
 
 ;; TODO could force timestamps to emit <time> element
 
-;; TODO shit. filetags don't get inherited??
-;; ugh... maybe could write a script to hack them back somehow..
 ;; todo copied from blog
+;; FIXME why did I do this???
+;; would be nice to just keep original tags I think
 (add-to-list 'org-html-text-markup-alist '(verbatim . "<samp class='inline'>%s</samp>"))
 (add-to-list 'org-html-text-markup-alist '(code     . "<code class='inline'>%s</code>"))
 

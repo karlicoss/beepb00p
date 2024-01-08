@@ -56,3 +56,6 @@ just an empty heading
 
 * testing tag inheritance :tag1:tag_a:
 ** more tag inheritance :tag_a:tag_b:tag_c:
+
+* testing heading =with code= ...
+~verbatim in body too~
