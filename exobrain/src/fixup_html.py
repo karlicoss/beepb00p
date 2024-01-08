@@ -60,8 +60,6 @@ def fixup(soup: bs4.BeautifulSoup) -> None:
             # parent should be outline?
             par = n.parent
             assert par.attrs['class'] == [f'outline-{i}'], (n, par)
-            assert 'id' not in par.attrs, (n, par)  # just in case?
-            par.attrs['id'] = f'outline-container-{n_id}'
             #
 
             a = soup.new_tag('a')
