@@ -34,12 +34,6 @@
               "<div class='properties'>\n%s</div>"
               "<pre class=\"example\">\n%s</pre>")
 
-;; same, the default format for html property export is quite dull
-(advice-patch 'org-html-node-property
-              ;; borrowed from blog (a bit modified though)
-              "<div class='property' data-property-name='%1$s'><span class='property-name'>%1$s</span>: <span class='property-value'>%2$s</span></div>"
-              "%s:%s")
-
 ;; super annoying (is this nbsp?), should be via css
 (advice-patch 'org-html-format-headline-default-function
               ;;

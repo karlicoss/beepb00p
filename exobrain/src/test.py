@@ -93,6 +93,10 @@ def test_test(use_new_org_export: bool, use_new_html_export: bool, tmp_data: Pat
     # exising ID should be preserved
     assert 'href="#alala"' in test_html
 
+    # properties should be wrapped in some extra classes
+    assert '<div class="property" data-property-name="CREATED"><span class="property-name">CREATED</span>' in test_html
+    assert '[2020-11-29]</span></div>' in test_html
+
 
 def test_build_some(tmp_data: Path, tmp_path: Path) -> None:
     d = tmp_data

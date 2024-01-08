@@ -70,3 +70,33 @@ def fixup(soup: bs4.BeautifulSoup) -> None:
             a.string = '¶'
             n.insert(0, a)
     ##
+
+    ## wrap properties into some extra classes
+    ## default format for properties is pretty crap, just a text dump in .properties block
+    for prop_block in soup.select('.properties'):
+        plines = [l.strip() for l in prop_block.string.splitlines() if len(l.strip()) != 0]
+        prop_block.string = ''
+        for pline in plines:
+            pline = pline.strip()
+            if len(pline) == 0:
+                continue
+            (k, v) = pline.split(':')
+            v = v.strip()
+            prop_tag = soup.new_tag('div', attrs={
+                'class': 'property',
+                'data-property-name': k,
+            })
+            pname_tag = soup.new_tag('span', attrs={
+                'class': 'property-name',
+            })
+            pname_tag.string = k
+            pvalue_tag = soup.new_tag('span', attrs={
+                'class': 'property-value',
+            })
+            pvalue_tag.string = f' {v}'  # FIXME space is just for backwards compat
+            prop_tag.append(pname_tag)
+            prop_tag.append(': ')
+            prop_tag.append(pvalue_tag)
+
+            prop_block.append(prop_tag)
+    ##
