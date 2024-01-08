@@ -166,7 +166,7 @@
         :publishing-function org-html-publish-to-html
 
         ;; todo ugh. seems that it's dumping sitemap to the source dir, and it can't be changed?
-        :auto-sitemap t
+        :auto-sitemap nil
 
         :html-preamble t
 

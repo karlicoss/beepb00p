@@ -103,6 +103,7 @@ def main() -> None:
     args = p.parse_args()
 
     assert not args.md  # broken for now
+    assert not args.watch  # I think broken now due to sitemap
 
     skip_org_export: bool = args.skip_org_export
 
@@ -190,6 +191,55 @@ def do_fixup_html(html: Path) -> None:
     html.write_text(sstr)
 
 
+def publish_sitemap(public_dir: Path) -> None:
+    ## deafult org-mode sitemap export has really weird sorting
+    ## ahd hard to modify the order/style etc anyway
+    ## plus org-mode sitemap is only exported during html export
+    def get_title(p: Path) -> str:
+        import orgparse
+        o = orgparse.load(p)
+        title = o.get_file_property('TITLE')
+        if not title:
+            title = p.stem  # match org-mode behaviour
+        return title
+
+    inputs = sorted(public_dir.rglob('*.org'))
+    with_titles = [(p, get_title(p)) for p in inputs]
+
+    import re
+    emoji_pattern = re.compile(
+        "["
+        "\U0001F600-\U0001F64F"  # emoticons
+        "\U0001F300-\U0001F5FF"  # symbols & pictographs
+        "\U0001F680-\U0001F6FF"  # transport & map symbols
+        "\U0001F1E0-\U0001F1FF"  # flags (iOS)
+        "\U00002702-\U000027B0"
+        "\U000024C2-\U0001F251"
+        "]+", flags=re.UNICODE)
+
+    def contains_emoji(s):
+        return emoji_pattern.search(s) is not None
+
+    ## export sitemap
+    def sort_key(x):
+        (p, title) = x
+        rel = p.relative_to(public_dir)
+        return rel.parent, not contains_emoji(title), title.lower()
+
+    with (public_dir / 'sitemap.org').open('w') as fo:
+        fo.write('#+TITLE: Sitemap for project exobrain-html\n')
+        fo.write('\n')
+        emitted = set()
+        for (p, title) in sorted(with_titles, key=sort_key):
+            rp = p.relative_to(public_dir)
+            par = rp.parent
+            level = len(par.parts)
+            if par not in emitted and par != Path('.'):
+                fo.write('  ' * (level - 1) + f'- {par.name}\n')
+                emitted.add(par)
+            fo.write('  ' * level + f'- [[file:{rp}][{title}]]\n')
+
+
 def preprocess(args, *, skip_org_export: bool) -> None:
     """
     Publishies intermediate ('public') org-mode?
@@ -237,6 +287,8 @@ def preprocess(args, *, skip_org_export: bool) -> None:
 
     from check import check_org
     check_org(public_dir)
+
+    publish_sitemap(public_dir)
 
     # TODO think about commit/push/deploy logic?
     # TODO not sure why I had this? prob don't want it...
