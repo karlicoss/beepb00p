@@ -306,8 +306,12 @@ def postprocess_html(*, use_new_html_export: bool) -> None:
                 '</span></div></div>',
                 '</span></div>\n</div>',
             )
-            html.write_text(sstr)
             ##
+
+            # super annoying (is this nbsp?), should be via css
+            sstr = sstr.replace('\xa0\xa0\xa0', ' ')
+
+            html.write_text(sstr)
 
     # todo eh.. implement this as an external site agnostic script
     (html_dir / 'documents.js').write_text(check_output([

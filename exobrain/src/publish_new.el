@@ -29,12 +29,6 @@
               "<div class='properties'>\n%s</div>"
               "<pre class=\"example\">\n%s</pre>")
 
-;; super annoying (is this nbsp?), should be via css
-(advice-patch 'org-html-format-headline-default-function
-              ;;
-              " "
-              "&#xa0;&#xa0;&#xa0;")
-
 ;; TODO could force timestamps to emit <time> element
 
 ;; these ids are relaly unnecessary, just littering the anchors
