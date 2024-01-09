@@ -8,6 +8,7 @@ from subprocess import check_call, check_output, run
 from typing import List
 
 
+from more_itertools import divide
 from loguru import logger
 
 
@@ -137,22 +138,39 @@ class Context:
     public_dir: Path
 
 
-def compile_org_to_org(f: Path, ctx: Context) -> None:
-    rpath = f.relative_to(ctx.input_dir)
-    target = ctx.public_dir / rpath
-    target = target.absolute()  # emacs seems unhappy if we don't do it
-    target.parent.mkdir(parents=True, exist_ok=True)
-    print('exporting', f, 'to', target)
-    check_call(['emacs', '--batch', '-l', Path('testdata') / 'export.el', f, target])
-    tres = target.read_text()
-    import orgparse
-    import re
-    ts_re = orgparse.date.TIMESTAMP_RE
-    tres = ts_re.sub(r'[\g<inactive_year>-\g<inactive_month>-\g<inactive_day>]', tres)
-    target.write_text(tres)
+def compile_org_to_org(ctx: Context, paths: list[Path]) -> None:
+    if len(paths) == 0:
+        return  # nothing to do
 
-    from fixup_org import fixup
-    target.write_text(fixup(target.read_text()))
+    rpaths = [
+        f.relative_to(ctx.input_dir) for f in paths
+    ]
+    input_dir = ctx.input_dir
+    input_dir = input_dir.absolute()   # emacs seems unhappy if we don't do it
+    public_dir = ctx.public_dir
+    public_dir = public_dir.absolute()  # emacs seems unhappy if we don't do it
+
+    # for rpath in rpaths:
+    #     # create target dirs
+    #     (public_dir / rpath).parent.mkdir(parents=True, exist_ok=True)
+    print('exporting', list(map(str, rpaths)), 'to', public_dir)
+    check_call([
+        'emacs', '--batch', '-l', Path('testdata') / 'export.el',
+        input_dir, public_dir, *rpaths,
+    ])
+    for rpath in rpaths:
+        path = public_dir / rpath
+
+        # FIXME move this to fixup
+        tres = path.read_text()
+        import orgparse
+        import re
+        ts_re = orgparse.date.TIMESTAMP_RE
+        tres = ts_re.sub(r'[\g<inactive_year>-\g<inactive_month>-\g<inactive_day>]', tres)
+        path.write_text(tres)
+
+        from fixup_org import fixup
+        path.write_text(fixup(path.read_text()))
     # TODO hiding tags from export (e.g. 'refile') -- will need to be implemented manually?
     # TODO need to test it!
 
@@ -266,13 +284,15 @@ def preprocess(args, *, skip_org_export: bool) -> None:
     if not skip_org_export and args.use_new_org_export:
         inputs = sorted(input_dir.rglob('*.org'))
         with ProcessPoolExecutor() as pool:
-            logger.debug(f'using {pool._max_workers} workers')
-            futures = [pool.submit(compile_org_to_org, i, ctx) for i in inputs]
-            for i, fut in zip(inputs, futures):
+            workers = pool._max_workers
+            logger.debug(f'using {workers} workers')
+            groups = [list(group) for group in divide(workers, inputs)]
+            futures = [pool.submit(compile_org_to_org, ctx, group) for group in groups]
+            for group, fut in zip(groups, futures):
                 try:
                     fut.result()
                 except Exception as e:
-                    raise RuntimeError(f'error while processing {i}') from e
+                    raise RuntimeError(f'error while processing {group}') from e
     elif not skip_org_export:
         # TODO get rid of this..
         with emacs(

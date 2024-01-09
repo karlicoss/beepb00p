@@ -4,11 +4,9 @@
 (require 'org)
 (require 'ox-org)
 
-(setq source (nth 0 command-line-args-left))
-(setq dest   (nth 1 command-line-args-left))
-
-(cl-assert (file-exists-p source))
-(cl-assert (not (file-exists-p dest)))  ;; not sure about this?
+(setq source (nth    0 command-line-args-left))
+(setq target (nth    1 command-line-args-left))
+(setq rpaths (nthcdr 2 command-line-args-left))
 
 ;; meh
 ;; (setq org-export-options-alist
@@ -50,5 +48,12 @@
 ;;
 
 
-(find-file source)
-(org-export-to-file 'org dest)
+(cl-loop for rpath in rpaths
+         do (progn
+              (message (format "exporting %s" rpath))
+              (cl-assert      (file-exists-p (expand-file-name rpath source)))
+              (message (format "checking %s" (expand-file-name rpath target)))
+              (cl-assert (not (file-exists-p (expand-file-name rpath target))))
+              (find-file                     (expand-file-name rpath source))
+              (org-export-to-file 'org       (expand-file-name rpath target))
+))
