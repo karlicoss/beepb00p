@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import argparse
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
@@ -21,9 +22,6 @@ def ccall(*args, **kwargs):
 # TODO wonder if I can integrate it with blog's header?
 # TODO export txt files as md as well?
 
-from compile_org import emacs
-from utils import classproperty
-
 
 _root = Path(__file__).absolute().parent.parent
 src  = _root / 'src'
@@ -31,22 +29,24 @@ src  = _root / 'src'
 DATA: Path
 
 # note: need to resolve, otherwise relative links might end up weird during org-publish-cache-ctime-of-src
-class cfg:
-    @classproperty
-    def input_dir(cls) -> Path:
+class Cfg:
+    @property
+    def input_dir(self) -> Path:
         return (DATA / 'input' ).resolve()
 
-    @classproperty
-    def public_dir(cls) -> Path:
+    @property
+    def public_dir(self) -> Path:
         return (DATA / 'public').resolve()
 
-    @classproperty
-    def md_dir(cls) -> Path:
+    @property
+    def md_dir(self) -> Path:
         return (DATA / 'md'    ).resolve()
 
-    @classproperty
-    def html_dir(cls) -> Path:
+    @property
+    def html_dir(self) -> Path:
         return (DATA / 'html'  ).resolve()
+
+cfg = Cfg()
 
 
 def clean_dir(path: Path) -> None:
@@ -88,7 +88,6 @@ def clean(*, skip_org_export: bool) -> None:
 
 # TODO check noexport tag; remove "hide"
 def main() -> None:
-    import argparse
     p = argparse.ArgumentParser()
     p.add_argument('--add'   , action='store_true')
     p.add_argument('--filter', type=str, default=None)
@@ -97,7 +96,6 @@ def main() -> None:
     p.add_argument('--watch', action='store_true')
     p.add_argument('--under-entr', action='store_true') # ugh.
     p.add_argument('--data-dir', type=Path)
-    p.add_argument('--use-new-org-export', action='store_true')
     p.add_argument('--skip-org-export', action='store_true')
     p.add_argument('--use-new-html-export', action='store_true')
     args = p.parse_args()
@@ -128,7 +126,7 @@ def main() -> None:
 
     preprocess(args, skip_org_export=skip_org_export)
     if args.html:
-        postprocess_html(use_new_html_export=args.use_new_html_export)
+        postprocess_html()
 
 
 @dataclass
@@ -154,8 +152,9 @@ def compile_org_to_org(ctx: Context, paths: list[Path]) -> None:
         (output_dir / rpath).parent.mkdir(parents=True, exist_ok=True)
     print('exporting', list(map(str, rpaths)), 'to', output_dir)
     check_call([
-        'emacs', '--batch', '-l', Path('testdata') / 'export.el',
+        'emacs', '--batch', '-l', src / 'publish_org.el',
         input_dir, output_dir, *rpaths,
+        # '-f', 'toggle-debug-on-error', # dumps stacktrace on error
     ])
     for rpath in rpaths:
         path = output_dir / rpath
@@ -183,7 +182,7 @@ def compile_org_to_html(ctx: Context, paths: list[Path]) -> None:
         (output_dir / rpath).parent.mkdir(parents=True, exist_ok=True)
     print('exporting', list(map(str, rpaths)), 'to', output_dir)
     check_call([
-        'emacs', '--batch', '-l', src / 'publish_new.el',
+        'emacs', '--batch', '-l', src / 'publish_html.el',
         input_dir, output_dir, *rpaths,
     ])
 
@@ -279,22 +278,11 @@ def preprocess(args, *, skip_org_export: bool) -> None:
     input_dir  = cfg.input_dir
 
     filter = args.filter
-    efilter = 'nil' if filter is None else rf"""'(:exclude "\\.*" :include ("{filter}"))"""
+    assert filter is None  # FIXME support later
 
     assert input_dir.exists(), input_dir
-    eargs = [
-        '--eval', f'''(progn
-            (setq exobrain/input-dir  "{input_dir}" )
-            (setq exobrain/public-dir "{public_dir}")
-            (setq exobrain/md-dir     "{cfg.md_dir}"    )
-            (setq exobrain/html-dir   "{cfg.html_dir}"  )
-            (setq exobrain/filter     {efilter}     )
-        )''',
-        '--directory', src / 'advice-patch',
-        # '-f', 'toggle-debug-on-error', # dumps stacktrace on error
-    ]
     ctx = Context(input_dir=input_dir, output_dir=public_dir)
-    if not skip_org_export and args.use_new_org_export:
+    if not skip_org_export:
         inputs = sorted(input_dir.rglob('*.org'))
         with ProcessPoolExecutor() as pool:
             workers = pool._max_workers
@@ -306,17 +294,6 @@ def preprocess(args, *, skip_org_export: bool) -> None:
                     fut.result()
                 except Exception as e:
                     raise RuntimeError(f'error while processing {group}') from e
-    elif not skip_org_export:
-        # TODO get rid of this..
-        with emacs(
-                *eargs,
-                '--load'     , src / 'publish.el',  # old file
-                '--eval',
-                f'''(let ((org-publish-project-alist `(,exobrain/project-preprocess-org)))
-                      (org-publish-all))''',
-           ) as ep:
-            pass
-        assert ep.returncode == 0
 
     from check import check_org
     check_org(public_dir)
@@ -337,32 +314,19 @@ def preprocess(args, *, skip_org_export: bool) -> None:
     if args.html or args.md:
         # TODO might want both?
         mode = 'html' if args.html else 'md'
-        prj = 'exobrain/project-org2html' if args.html else 'exobrain/project-org2md'
-        if args.use_new_html_export:
-            org_inputs = sorted(public_dir.rglob('*.org'))
-            ctx = Context(input_dir=public_dir, output_dir=cfg.html_dir)
-            with ProcessPoolExecutor() as pool:
-                workers = pool._max_workers
-                logger.debug(f'using {workers} workers')
-                groups = [list(group) for group in divide(workers, org_inputs)]
-                futures = [pool.submit(compile_org_to_html, ctx, group) for group in groups]
-                for group, fut in zip(groups, futures):
-                    try:
-                        fut.result()
-                    except Exception as e:
-                        raise RuntimeError(f'error while processing {group}') from e
-        else:
-            with emacs(
-                    # ugh. such crap
-                    *([] if args.html else ['--eval', '(setq markdown t)']),
-                    *eargs,
-                    '--load', src / 'publish.el',
-                    '--eval',
-                    f'''(let ((org-publish-project-alist `(,{prj})))
-                            (org-publish-all))''',
-            ) as ep:
-                pass
-            assert ep.returncode == 0
+
+        org_inputs = sorted(public_dir.rglob('*.org'))
+        ctx = Context(input_dir=public_dir, output_dir=cfg.html_dir)
+        with ProcessPoolExecutor() as pool:
+            workers = pool._max_workers
+            logger.debug(f'using {workers} workers')
+            groups = [list(group) for group in divide(workers, org_inputs)]
+            futures = [pool.submit(compile_org_to_html, ctx, group) for group in groups]
+            for group, fut in zip(groups, futures):
+                try:
+                    fut.result()
+                except Exception as e:
+                    raise RuntimeError(f'error while processing {group}') from e
 
     # for f in public_dir.rglob('*.org'):
     #     assert not f.is_symlink(), f # just in case?
@@ -381,7 +345,7 @@ def relativize(soup, *, path: Path, root: Path):
     return soup
 
 
-def postprocess_html(*, use_new_html_export: bool) -> None:
+def postprocess_html() -> None:
     html_dir = cfg.html_dir
 
     copy(src / 'search/search.css', html_dir / 'search.css'  )
@@ -410,13 +374,12 @@ def postprocess_html(*, use_new_html_export: bool) -> None:
     # mm, org-mode emits relative links, but we actually want abolute here so it makes sense for any page
     tocs = tocs.replace('href="', 'href="/')
 
-    if use_new_html_export:
-        with ProcessPoolExecutor() as pool:
-            futures = []
-            for html in html_dir.rglob('*.html'):
-                futures.append(pool.submit(do_fixup_html, html))
-            for f in futures:
-                f.result()
+    with ProcessPoolExecutor() as pool:
+        futures = []
+        for html in html_dir.rglob('*.html'):
+            futures.append(pool.submit(do_fixup_html, html))
+        for f in futures:
+            f.result()
 
 
     # todo eh.. implement this as an external site agnostic script
