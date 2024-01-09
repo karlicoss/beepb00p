@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+from concurrent.futures import ProcessPoolExecutor
 import os
 from pathlib import Path
 from subprocess import run
@@ -8,25 +8,16 @@ from typing import Iterator, List
 import orgparse
 
 
-class Failed(RuntimeError):
-    pass
-
-
 # TODO !! implement a test for this (all of params)
-def search(*args):
-    res = run([
-        'rg',
-        '--follow',
-        '-i',
-        *args,
-    ])
+def search(*args) -> Iterator[Exception]:
+    res = run(['rg', '--follow', '-i', *args])
     if res.returncode == 1:
-        return # ok, nothin is found
+        return  # ok, nothin is found
     else:
-        yield Failed(res)
+        yield RuntimeError(res)
 
 
-def check(path: Path) -> Iterator[Failed]:
+def check_one(path: Path) -> Iterator[Exception]:
     if 'CI' not in os.environ:
         from checks import F_CHECKS, WORD_CHECKS, TAG_CHECKS
     else:
@@ -36,6 +27,7 @@ def check(path: Path) -> Iterator[Failed]:
 
     print(f"checking {path}")
     for x in F_CHECKS:
+        # TODO might be too many calls, maybe do it in a single regex?
         yield from search(
             '-F',
             x,
@@ -61,35 +53,26 @@ def check(path: Path) -> Iterator[Failed]:
         }
         d = {k: v for k, v in m.groupdict().items() if v is not None and k not in allowed}
         if len(d) != 0:
-            yield Failed((d, line))
+            yield RuntimeError(d, line)
 
     o = orgparse.loads(path.read_text())
     for n in o:
         found = n.tags.intersection(TAG_CHECKS)
         if len(found) > 0:
-            yield Failed((path, n.heading, found))
+            yield RuntimeError(path, n.heading, found)
 
 
-def check_aux(path: Path) -> List[str]:
+def _check_one(path: Path) -> List[str]:
     # helper for multiprocessing..
-    return list(map(str, check(path)))
+    return list(map(str, check_one(path)))
 
 
-def check_org(path: Path):
+def check_all(path: Path) -> None:
     # TODO not sure about org?
-    org_files = list(sorted(path.rglob('*.org')))
+    org_files = sorted(path.rglob('*.org'))
 
-    from concurrent.futures import ProcessPoolExecutor as Pool
-    with Pool() as pool:
-        for f, res in zip(org_files, pool.map(check_aux, org_files)):
+    with ProcessPoolExecutor() as pool:
+        for f, res in zip(org_files, pool.map(_check_one, org_files)):
             for x in res:
                 # TODO collect errors, report once?
-                raise Failed(f, x)
-
-
-def main():
-    raise RuntimeError
-
-
-if __name__ == '__main__':
-    main()
+                raise RuntimeError(x)

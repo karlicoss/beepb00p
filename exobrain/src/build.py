@@ -29,7 +29,7 @@ src  = _root / 'src'
 DATA: Path
 
 # note: need to resolve, otherwise relative links might end up weird during org-publish-cache-ctime-of-src
-class Cfg:
+class Config:
     @property
     def input_dir(self) -> Path:
         return (DATA / 'input' ).resolve()
@@ -46,7 +46,7 @@ class Cfg:
     def html_dir(self) -> Path:
         return (DATA / 'html'  ).resolve()
 
-cfg = Cfg()
+cfg = Config()
 
 
 def clean_dir(path: Path) -> None:
@@ -89,21 +89,20 @@ def clean(*, skip_org_export: bool) -> None:
 # TODO check noexport tag; remove "hide"
 def main() -> None:
     p = argparse.ArgumentParser()
-    p.add_argument('--add'   , action='store_true')
-    p.add_argument('--filter', type=str, default=None)
+    p.add_argument('--data-dir', type=Path)
     p.add_argument('--no-html', action='store_false', dest='html')
+    p.add_argument('--no-org', action='store_false', dest='org')
     p.add_argument('--md'     , action='store_true')
     p.add_argument('--watch', action='store_true')
-    p.add_argument('--under-entr', action='store_true') # ugh.
-    p.add_argument('--data-dir', type=Path)
-    p.add_argument('--skip-org-export', action='store_true')
-    p.add_argument('--use-new-html-export', action='store_true')
+    p.add_argument('--under-entr', action='store_true')  # ugh.
+    p.add_argument('--add'   , action='store_true')
+    p.add_argument('--filter', type=str, default=None)
     args = p.parse_args()
 
     assert not args.md  # broken for now
     assert not args.watch  # I think broken now due to sitemap
-
-    skip_org_export: bool = args.skip_org_export
+    assert args.filter is None  # FIXME support later
+    assert not args.add  # broken for now
 
     ddir = args.data_dir
     global DATA
@@ -114,7 +113,7 @@ def main() -> None:
 
     # ugh. this all is pretty complicated...
     if args.watch:
-        clean(skip_org_export=skip_org_export)
+        clean(skip_org_export=not args.org)
         nargs = [*sys.argv, '--under-entr']
         nargs.remove('--watch')
         while True:
@@ -122,10 +121,14 @@ def main() -> None:
             run(['entr', '-d', *nargs], input=paths.encode('utf8'))
         sys.exit(0)
     if not args.under_entr:
-        clean(skip_org_export=skip_org_export)
+        clean(skip_org_export=not args.org)
 
-    preprocess(args, skip_org_export=skip_org_export)
+
+    if args.org:
+        publish_org(cfg)
+
     if args.html:
+        publish_html(cfg)
         postprocess_html()
 
 
@@ -156,13 +159,19 @@ def compile_org_to_org(ctx: Context, paths: list[Path]) -> None:
         input_dir, output_dir, *rpaths,
         # '-f', 'toggle-debug-on-error', # dumps stacktrace on error
     ])
+
+    from fixup_org import fixup
     for rpath in rpaths:
         path = output_dir / rpath
-
-        from fixup_org import fixup
         path.write_text(fixup(path.read_text()))
     # TODO hiding tags from export (e.g. 'refile') -- will need to be implemented manually?
     # TODO need to test it!
+
+    from check_org import check_one
+    for rpath in rpaths:
+        path = output_dir / rpath
+        errors = list(check_one(path))
+        assert len(errors) == 0, (path, errors)
 
 
 def compile_org_to_html(ctx: Context, paths: list[Path]) -> None:
@@ -221,7 +230,7 @@ def do_fixup_html(html: Path) -> None:
     html.write_text(sstr)
 
 
-def publish_sitemap(public_dir: Path) -> None:
+def publish_org_sitemap(public_dir: Path) -> None:
     ## deafult org-mode sitemap export has really weird sorting
     ## ahd hard to modify the order/style etc anyway
     ## plus org-mode sitemap is only exported during html export
@@ -270,67 +279,71 @@ def publish_sitemap(public_dir: Path) -> None:
             fo.write('  ' * level + f'- [[file:{rp}][{title}]]\n')
 
 
-def preprocess(args, *, skip_org_export: bool) -> None:
+def publish_org(cfg: Config) -> None:
     """
-    Publishies intermediate ('public') org-mode?
+    Publishies intermediate ('public') org-mode
+    """
+    input_dir  = cfg.input_dir
+    public_dir = cfg.public_dir
+    assert input_dir.exists(), input_dir
+
+    ctx = Context(input_dir=input_dir, output_dir=public_dir)
+    inputs = sorted(input_dir.rglob('*.org'))
+
+    with ProcessPoolExecutor() as pool:
+        workers = pool._max_workers  # type: ignore[attr-defined]
+        logger.debug(f'using {workers} workers')
+        groups = [list(group) for group in divide(workers, inputs)]
+        futures = [pool.submit(compile_org_to_org, ctx, group) for group in groups]
+        for group, fut in zip(groups, futures):
+            try:
+                fut.result()
+            except Exception as e:
+                raise RuntimeError(f'error while processing {group}') from e
+
+    # TODO maybe collect titles from compile_org_to_org calls?
+    publish_org_sitemap(public_dir)
+
+
+def publish_html(cfg: Config) -> None:
+    """
+    Publishes html from 'public' org-mode
     """
     public_dir = cfg.public_dir
-    input_dir  = cfg.input_dir
+    html_dir = cfg.html_dir
+    assert public_dir.exists(), public_dir
 
-    filter = args.filter
-    assert filter is None  # FIXME support later
+    ctx = Context(input_dir=public_dir, output_dir=html_dir)
+    inputs = sorted(public_dir.rglob('*.org'))
 
-    assert input_dir.exists(), input_dir
-    ctx = Context(input_dir=input_dir, output_dir=public_dir)
-    if not skip_org_export:
-        inputs = sorted(input_dir.rglob('*.org'))
-        with ProcessPoolExecutor() as pool:
-            workers = pool._max_workers
-            logger.debug(f'using {workers} workers')
-            groups = [list(group) for group in divide(workers, inputs)]
-            futures = [pool.submit(compile_org_to_org, ctx, group) for group in groups]
-            for group, fut in zip(groups, futures):
-                try:
-                    fut.result()
-                except Exception as e:
-                    raise RuntimeError(f'error while processing {group}') from e
-
-    from check import check_org
-    check_org(public_dir)
-
-    publish_sitemap(public_dir)
-
-    # TODO think about commit/push/deploy logic?
-    # TODO not sure why I had this? prob don't want it...
-    # assert (public_dir / '.git').is_dir(), public_dir
-    # ccall(['git', 'status'], cwd=public_dir)
-
-    if args.add:
-        raise RuntimeError('Temporary unsupported')
-        ccall(['git', 'add', '-A', '--intent-to-add'], cwd=public_dir)
-        ccall(['git', 'add', '-p'], cwd=public_dir)
-        # TODO suggest to commit/push?
-
-    if args.html or args.md:
-        # TODO might want both?
-        mode = 'html' if args.html else 'md'
-
-        org_inputs = sorted(public_dir.rglob('*.org'))
-        ctx = Context(input_dir=public_dir, output_dir=cfg.html_dir)
-        with ProcessPoolExecutor() as pool:
-            workers = pool._max_workers
-            logger.debug(f'using {workers} workers')
-            groups = [list(group) for group in divide(workers, org_inputs)]
-            futures = [pool.submit(compile_org_to_html, ctx, group) for group in groups]
-            for group, fut in zip(groups, futures):
-                try:
-                    fut.result()
-                except Exception as e:
-                    raise RuntimeError(f'error while processing {group}') from e
+    with ProcessPoolExecutor() as pool:
+        workers = pool._max_workers  # type: ignore[attr-defined]
+        logger.debug(f'using {workers} workers')
+        groups = [list(group) for group in divide(workers, inputs)]
+        futures = [pool.submit(compile_org_to_html, ctx, group) for group in groups]
+        for group, fut in zip(groups, futures):
+            try:
+                fut.result()
+            except Exception as e:
+                raise RuntimeError(f'error while processing {group}') from e
 
     # for f in public_dir.rglob('*.org'):
     #     assert not f.is_symlink(), f # just in case?
     #     check_call(['chmod', '-w', f]) # prevent editing
+
+
+# def preprocess(args, *, skip_org_export: bool) -> None:
+#     # TODO think about commit/push/deploy logic?
+#     # TODO not sure why I had this? prob don't want it...
+#     # assert (public_dir / '.git').is_dir(), public_dir
+#     # ccall(['git', 'status'], cwd=public_dir)
+
+#     if args.add:
+#         raise RuntimeError('Temporary unsupported')
+#         ccall(['git', 'add', '-A', '--intent-to-add'], cwd=public_dir)
+#         ccall(['git', 'add', '-p'], cwd=public_dir)
+#         # TODO suggest to commit/push?
+
 
 def relativize(soup, *, path: Path, root: Path):
     depth = len(path.relative_to(root).parts) - 1
