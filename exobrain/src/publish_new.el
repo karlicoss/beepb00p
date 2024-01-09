@@ -111,15 +111,19 @@
 <script src='/settings.js'                                   rel='stylesheet'></script>
 ")
 
-(setq exobrain/project-org2html
-      `("exobrain-html"
-        :base-directory ,exobrain/public-dir
-        :base-extension "org"
-        :publishing-directory ,exobrain/html-dir
-        :publishing-function org-html-publish-to-html
+(setq source (nth    0 command-line-args-left))
+(setq target (nth    1 command-line-args-left))
+(setq rpaths (nthcdr 2 command-line-args-left))
 
-        ;; todo ugh. seems that it's dumping sitemap to the source dir, and it can't be changed?
-        :auto-sitemap nil
 
-        :recursive t
-        ))
+(cl-loop for rpath in rpaths do
+         (let ((input  (expand-file-name rpath source))
+               (output (expand-file-name (concat (file-name-sans-extension rpath) ".html") target)))
+           (progn
+             (message (format "exporting %s to %s" input output))
+             (cl-assert      (file-exists-p input))
+             (cl-assert (not (file-exists-p output)))
+             (find-file input)
+             (org-export-to-file 'html output)
+           ))
+)

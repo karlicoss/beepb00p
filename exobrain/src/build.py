@@ -134,7 +134,7 @@ def main() -> None:
 @dataclass
 class Context:
     input_dir: Path
-    public_dir: Path
+    output_dir: Path
 
 
 def compile_org_to_org(ctx: Context, paths: list[Path]) -> None:
@@ -146,24 +146,46 @@ def compile_org_to_org(ctx: Context, paths: list[Path]) -> None:
     ]
     input_dir = ctx.input_dir
     input_dir = input_dir.absolute()   # emacs seems unhappy if we don't do it
-    public_dir = ctx.public_dir
-    public_dir = public_dir.absolute()  # emacs seems unhappy if we don't do it
+    output_dir = ctx.output_dir
+    output_dir = output_dir.absolute()  # emacs seems unhappy if we don't do it
 
     for rpath in rpaths:
         # create target dirs (emacs struggles without them)
-        (public_dir / rpath).parent.mkdir(parents=True, exist_ok=True)
-    print('exporting', list(map(str, rpaths)), 'to', public_dir)
+        (output_dir / rpath).parent.mkdir(parents=True, exist_ok=True)
+    print('exporting', list(map(str, rpaths)), 'to', output_dir)
     check_call([
         'emacs', '--batch', '-l', Path('testdata') / 'export.el',
-        input_dir, public_dir, *rpaths,
+        input_dir, output_dir, *rpaths,
     ])
     for rpath in rpaths:
-        path = public_dir / rpath
+        path = output_dir / rpath
 
         from fixup_org import fixup
         path.write_text(fixup(path.read_text()))
     # TODO hiding tags from export (e.g. 'refile') -- will need to be implemented manually?
     # TODO need to test it!
+
+
+def compile_org_to_html(ctx: Context, paths: list[Path]) -> None:
+    if len(paths) == 0:
+        return  # nothing to do
+
+    rpaths = [
+        f.relative_to(ctx.input_dir) for f in paths
+    ]
+    input_dir = ctx.input_dir
+    input_dir = input_dir.absolute()   # emacs seems unhappy if we don't do it
+    output_dir = ctx.output_dir
+    output_dir = output_dir.absolute()  # emacs seems unhappy if we don't do it
+
+    for rpath in rpaths:
+        # create target dirs (emacs struggles without them)
+        (output_dir / rpath).parent.mkdir(parents=True, exist_ok=True)
+    print('exporting', list(map(str, rpaths)), 'to', output_dir)
+    check_call([
+        'emacs', '--batch', '-l', src / 'publish_new.el',
+        input_dir, output_dir, *rpaths,
+    ])
 
 
 def do_fixup_html(html: Path) -> None:
@@ -271,7 +293,7 @@ def preprocess(args, *, skip_org_export: bool) -> None:
         '--directory', src / 'advice-patch',
         # '-f', 'toggle-debug-on-error', # dumps stacktrace on error
     ]
-    ctx = Context(input_dir=input_dir, public_dir=public_dir)
+    ctx = Context(input_dir=input_dir, output_dir=public_dir)
     if not skip_org_export and args.use_new_org_export:
         inputs = sorted(input_dir.rglob('*.org'))
         with ProcessPoolExecutor() as pool:
@@ -316,22 +338,31 @@ def preprocess(args, *, skip_org_export: bool) -> None:
         # TODO might want both?
         mode = 'html' if args.html else 'md'
         prj = 'exobrain/project-org2html' if args.html else 'exobrain/project-org2md'
-        hargs = [
-            '--load', src / 'publish_new.el',
-        ] if args.use_new_html_export else [
-            '--load', src / 'publish.el',
-        ]
-        with emacs(
-                # ugh. such crap
-                *([] if args.html else ['--eval', '(setq markdown t)']),
-                *eargs,
-                *hargs,
-                '--eval',
-                f'''(let ((org-publish-project-alist `(,{prj})))
-                        (org-publish-all))''',
-        ) as ep:
-            pass
-        assert ep.returncode == 0
+        if args.use_new_html_export:
+            org_inputs = sorted(public_dir.rglob('*.org'))
+            ctx = Context(input_dir=public_dir, output_dir=cfg.html_dir)
+            with ProcessPoolExecutor() as pool:
+                workers = pool._max_workers
+                logger.debug(f'using {workers} workers')
+                groups = [list(group) for group in divide(workers, org_inputs)]
+                futures = [pool.submit(compile_org_to_html, ctx, group) for group in groups]
+                for group, fut in zip(groups, futures):
+                    try:
+                        fut.result()
+                    except Exception as e:
+                        raise RuntimeError(f'error while processing {group}') from e
+        else:
+            with emacs(
+                    # ugh. such crap
+                    *([] if args.html else ['--eval', '(setq markdown t)']),
+                    *eargs,
+                    '--load', src / 'publish.el',
+                    '--eval',
+                    f'''(let ((org-publish-project-alist `(,{prj})))
+                            (org-publish-all))''',
+            ) as ep:
+                pass
+            assert ep.returncode == 0
 
     # for f in public_dir.rglob('*.org'):
     #     assert not f.is_symlink(), f # just in case?
@@ -370,7 +401,7 @@ def postprocess_html(*, use_new_html_export: bool) -> None:
 
 
     sitemap = html_dir / 'sitemap.html'
-    assert sitemap.exists()
+    assert sitemap.exists(), sitemap
     node = bs(sitemap.read_text()).find(id='content')
     node.select_one('.title').decompose()
     node.name = 'nav' # div by deafult
@@ -380,7 +411,6 @@ def postprocess_html(*, use_new_html_export: bool) -> None:
     tocs = tocs.replace('href="', 'href="/')
 
     if use_new_html_export:
-        # TODO not sure if that gives that much of a speedup?
         with ProcessPoolExecutor() as pool:
             futures = []
             for html in html_dir.rglob('*.html'):
@@ -402,6 +432,7 @@ def postprocess_html(*, use_new_html_export: bool) -> None:
     # for idempotence
     MARKER = '<!-- PROCESSED BY postprocess_html -->'
 
+    # FIXME parallelize this
     for html in html_dir.rglob('*.html'):
         text = html.read_text()
         already_handled = MARKER in text
