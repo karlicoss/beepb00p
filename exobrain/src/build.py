@@ -149,7 +149,7 @@ def compile_org_to_org(ctx: Context, paths: list[Path]) -> None:
     output_dir = ctx.output_dir
     output_dir = output_dir.absolute()  # emacs seems unhappy if we don't do it
 
-    batch = list(map(str, rpaths))
+    batch = f'{str(rpaths[0])} ... {str(rpaths[-1])} ({len(rpaths)} files)'
     logger.info(f'exporting {batch}')
 
     for rpath in rpaths:
@@ -196,10 +196,12 @@ def compile_org_to_html(ctx: Context, paths: list[Path]) -> None:
     output_dir = ctx.output_dir
     output_dir = output_dir.absolute()  # emacs seems unhappy if we don't do it
 
+    batch = f'{str(rpaths[0])} ... {str(rpaths[-1])} ({len(rpaths)} files)'
+    logger.info(f'exporting {batch}')
+
     for rpath in rpaths:
         # create target dirs (emacs struggles without them)
         (output_dir / rpath).parent.mkdir(parents=True, exist_ok=True)
-    logger.debug(f'exporting {list(map(str, rpaths))} to {output_dir}')
     check_call(
         [
             'emacs',
@@ -210,10 +212,17 @@ def compile_org_to_html(ctx: Context, paths: list[Path]) -> None:
         stderr=DEVNULL,
     )
 
+    logger.debug(f'fixing up {batch}')
     for rpath in rpaths:
         path = output_dir / rpath.with_suffix('.html')
         do_fixup_html(path)
+
+    logger.debug(f'postprocesing {batch}')
+    for rpath in rpaths:
+        path = output_dir / rpath.with_suffix('.html')
         postprocess_html(path, html_dir=output_dir)
+
+    logger.info(f'finished {batch}')
 
 
 def do_fixup_html(html: Path) -> None:
@@ -434,15 +443,18 @@ def publish_html(cfg: Config, *, pool: Executor) -> None:
     # fmt: on
 
     # todo eh.. implement this as an external site agnostic script
+    logger.debug('generating index')  # note: takes about 5 secs atm
     (html_dir / 'documents.js').write_text(
         check_output(
             [
                 src / 'search/makeindex.py',
                 '--root',
                 html_dir,
-            ]
-        ).decode('utf8')
+            ],
+            text=True,
+        )
     )
+    logger.debug('generating index: done')
 
     if (html_dir / 'README.html').exists():  # meh, for incremental mode
         check_call(['ln', '-sf', 'README.html', html_dir / 'index.html'])

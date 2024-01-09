@@ -1,6 +1,5 @@
 import re
 
-
 import bs4  # type: ignore[import]
 import orgparse
 
@@ -9,7 +8,7 @@ TS_RE = orgparse.date.TIMESTAMP_RE
 
 
 def fixup(soup: bs4.BeautifulSoup) -> None:
-    for ts_span in soup.select('.timestamp'):
+    for ts_span in soup.find_all('span', class_='timestamp'):
         ## org mode sometimes exports timestamps with extra space at the end for some reason
         ts_str = ts_span.string
         m = TS_RE.match(ts_str)
@@ -26,10 +25,13 @@ def fixup(soup: bs4.BeautifulSoup) -> None:
         ##
 
     ## these ids are really unnecessary, just littering the anchors
-    for i in range(10):
-        cls = f'outline-text-{i}'
-        for outline_text in soup.select(f'.{cls}'):
-            del outline_text.attrs['id']
+    for n in soup.find_all('div'):
+        clss = n.attrs.get('class')
+        if clss is None or len(clss) != 1:
+            continue
+        [cls] = clss
+        if cls.startswith('outline-text-'):
+            del n.attrs['id']
     ##
 
 
@@ -49,27 +51,28 @@ def fixup(soup: bs4.BeautifulSoup) -> None:
 
 
     ## add headerlink anchor
-    for i in range(10):
-        for n in soup.select(f'h{i}'):
-            if 'id' not in n.attrs:
-                continue
-            n_id = n.attrs['id']
+    for n in soup.find_all(re.compile(r'^h\d$')):
+        if 'id' not in n.attrs:
+            continue
+        n_id = n.attrs['id']
 
-            # parent should be outline?
-            par = n.parent
-            assert par.attrs['class'] == [f'outline-{i}'], (n, par)
-            #
+        lvl = int(n.name[1:])
 
-            a = soup.new_tag('a')
-            a.attrs['class'] = 'headerlink'
-            a.attrs['href'] = f'#{n_id}'
-            a.string = '¶'
-            n.insert(0, a)
+        # parent should be outline?
+        par = n.parent
+        assert par.attrs['class'] == [f'outline-{lvl}'], (n, par)
+        #
+
+        a = soup.new_tag('a')
+        a.attrs['class'] = 'headerlink'
+        a.attrs['href'] = f'#{n_id}'
+        a.string = '¶'
+        n.insert(0, a)
     ##
 
     ## wrap properties into some extra classes
     ## default format for properties is pretty crap, just a text dump in .properties block
-    for prop_block in soup.select('.properties'):
+    for prop_block in soup.find_all('div', class_='properties'):
         plines = [l.strip() for l in prop_block.string.splitlines() if len(l.strip()) != 0]
         prop_block.string = ''
         for pline in plines:
@@ -98,7 +101,7 @@ def fixup(soup: bs4.BeautifulSoup) -> None:
     ##
 
     ## sort out tags
-    for tag_block in soup.select('.tag'):
+    for tag_block in soup.find_all('span', class_='tag'):
         for t in tag_block.children:
             if t == '\xa0':  # nbsp
                 t.extract()
