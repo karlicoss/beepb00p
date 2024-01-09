@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 import argparse
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import Executor, ProcessPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 import re
 import sys
 from shutil import rmtree, copy
 from subprocess import check_call, check_output, run, DEVNULL
+from typing import Optional
 
 
 from bs4 import BeautifulSoup  # type: ignore[import]
@@ -14,11 +15,13 @@ from more_itertools import divide
 from loguru import logger
 
 from utils import make_soup
+from dummy_executor import DummyExecutor
 
 
 def ccall(*args, **kwargs):
     print(args, file=sys.stderr)
     return check_call(*args, **kwargs)
+
 
 _root = Path(__file__).absolute().parent.parent
 src = _root / 'src'
@@ -95,6 +98,7 @@ def main() -> None:
     p.add_argument('--under-entr', action='store_true')  # ugh.
     p.add_argument('--add', action='store_true')
     p.add_argument('--filter', type=str, default=None)
+    p.add_argument('--workers', type=int, default=None, help='by default, uses all available cores')
     args = p.parse_args()
 
     assert not args.md  # broken for now
@@ -119,11 +123,14 @@ def main() -> None:
     if not args.under_entr:
         clean(cfg=cfg, skip_org_export=not args.org)
 
-    if args.org:
-        publish_org(cfg)
+    workers: Optional[int] = args.workers
+    pool = ProcessPoolExecutor(max_workers=workers) if workers != 0 else DummyExecutor()
+    with pool:
+        if args.org:
+            publish_org(cfg, pool=pool)
 
-    if args.html:
-        publish_html(cfg)
+        if args.html:
+            publish_html(cfg, pool=pool)
 
 
 @dataclass
@@ -357,7 +364,7 @@ def publish_org_sitemap(public_dir: Path) -> None:
             fo.write('  ' * level + f'- [[file:{rp}][{title}]]\n')
 
 
-def publish_org(cfg: Config) -> None:
+def publish_org(cfg: Config, *, pool: Executor) -> None:
     """
     Publishies intermediate ('public') org-mode
     """
@@ -368,22 +375,21 @@ def publish_org(cfg: Config) -> None:
     ctx = Context(input_dir=input_dir, output_dir=public_dir)
     inputs = sorted(input_dir.rglob('*.org'))
 
-    with ProcessPoolExecutor() as pool:
-        workers = pool._max_workers  # type: ignore[attr-defined]
-        logger.debug(f'using {workers} workers')
-        groups = [list(group) for group in divide(workers, inputs)]
-        futures = [pool.submit(compile_org_to_org, ctx, group) for group in groups]
-        for group, fut in zip(groups, futures):
-            try:
-                fut.result()
-            except Exception as e:
-                raise RuntimeError(f'error while processing {group}') from e
+    workers = pool._max_workers  # type: ignore[attr-defined]
+    logger.debug(f'using {workers} workers')
+    groups = [list(group) for group in divide(workers, inputs)]
+    futures = [pool.submit(compile_org_to_org, ctx, group) for group in groups]
+    for group, fut in zip(groups, futures):
+        try:
+            fut.result()
+        except Exception as e:
+            raise RuntimeError(f'error while processing {group}') from e
 
     # TODO maybe collect titles from compile_org_to_org calls?
     publish_org_sitemap(public_dir)
 
 
-def publish_html(cfg: Config) -> None:
+def publish_html(cfg: Config, *, pool: Executor) -> None:
     """
     Publishes html from 'public' org-mode
     """
@@ -400,16 +406,15 @@ def publish_html(cfg: Config) -> None:
     compile_org_to_html(ctx, [sitemap])
     ##
 
-    with ProcessPoolExecutor() as pool:
-        workers = pool._max_workers  # type: ignore[attr-defined]
-        logger.debug(f'using {workers} workers')
-        groups = [list(group) for group in divide(workers, inputs)]
-        futures = [pool.submit(compile_org_to_html, ctx, group) for group in groups]
-        for group, fut in zip(groups, futures):
-            try:
-                fut.result()
-            except Exception as e:
-                raise RuntimeError(f'error while processing {group}') from e
+    workers = pool._max_workers  # type: ignore[attr-defined]
+    logger.debug(f'using {workers} workers')
+    groups = [list(group) for group in divide(workers, inputs)]
+    futures = [pool.submit(compile_org_to_html, ctx, group) for group in groups]
+    for group, fut in zip(groups, futures):
+        try:
+            fut.result()
+        except Exception as e:
+            raise RuntimeError(f'error while processing {group}') from e
 
     # for f in public_dir.rglob('*.org'):
     #     assert not f.is_symlink(), f # just in case?
