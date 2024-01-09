@@ -149,10 +149,12 @@ def compile_org_to_org(ctx: Context, paths: list[Path]) -> None:
     output_dir = ctx.output_dir
     output_dir = output_dir.absolute()  # emacs seems unhappy if we don't do it
 
+    batch = list(map(str, rpaths))
+    logger.info(f'exporting {batch}')
+
     for rpath in rpaths:
         # create target dirs (emacs struggles without them)
         (output_dir / rpath).parent.mkdir(parents=True, exist_ok=True)
-    logger.debug(f'exporting {list(map(str, rpaths))} to {output_dir}')
     check_call(
         [
             'emacs', '--batch', '-l',
@@ -164,6 +166,7 @@ def compile_org_to_org(ctx: Context, paths: list[Path]) -> None:
         stderr=DEVNULL,
     )
 
+    logger.debug(f'fixing up {batch}')
     from fixup_org import fixup
 
     for rpath in rpaths:
@@ -172,12 +175,15 @@ def compile_org_to_org(ctx: Context, paths: list[Path]) -> None:
     # TODO hiding tags from export (e.g. 'refile') -- will need to be implemented manually?
     # TODO need to test it!
 
+    logger.debug(f'checking {batch}')
     from check_org import check_one
 
     for rpath in rpaths:
         path = output_dir / rpath
         errors = list(check_one(path))
         assert len(errors) == 0, (path, errors)
+
+    logger.info(f'finished {batch}')
 
 
 def compile_org_to_html(ctx: Context, paths: list[Path]) -> None:

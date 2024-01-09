@@ -39,4 +39,4 @@ fi
 cd exobrain
 
 $PY_BIN -m pip install more-itertools beautifulsoup4 orgparse lxml click psutil loguru pytest
-$PY_BIN -m pytest src/test.py src/fixup_org.py
+$PY_BIN -m pytest src/test.py src/fixup_org.py src/check_org.py
