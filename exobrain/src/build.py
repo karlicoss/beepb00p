@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
-from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
+from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 import sys
 from shutil import rmtree, copy
 from subprocess import check_call, check_output, run
-from typing import List
 
 
 from more_itertools import divide
@@ -160,14 +159,6 @@ def compile_org_to_org(ctx: Context, paths: list[Path]) -> None:
     ])
     for rpath in rpaths:
         path = public_dir / rpath
-
-        # FIXME move this to fixup
-        tres = path.read_text()
-        import orgparse
-        import re
-        ts_re = orgparse.date.TIMESTAMP_RE
-        tres = ts_re.sub(r'[\g<inactive_year>-\g<inactive_month>-\g<inactive_day>]', tres)
-        path.write_text(tres)
 
         from fixup_org import fixup
         path.write_text(fixup(path.read_text()))

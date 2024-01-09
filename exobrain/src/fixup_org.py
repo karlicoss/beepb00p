@@ -13,10 +13,19 @@ env = OrgEnv(
 )
 
 
-def _fixup(org: str, *, add_ids: bool) -> Iterator[str]:
+def _fixup(
+        org: str,
+        *,
+        add_ids: bool,
+        remove_time: bool,
+) -> Iterator[str]:
     assert '' not in org  # orgparse has a bug where is splits it in the body?
 
     # assert ' ' not in org  # weird character, exclude it later
+
+    if remove_time:
+        ts_re = orgparse.date.TIMESTAMP_RE
+        org = ts_re.sub(r'[\g<inactive_year>-\g<inactive_month>-\g<inactive_day>]', org)
 
     split = org.splitlines()
     for n in orgparse.loads(org, env=env):
@@ -98,9 +107,9 @@ def _fixup(org: str, *, add_ids: bool) -> Iterator[str]:
         yield '\n'.join(parts)
 
 
-def fixup(org: str, *, add_ids: bool = True) -> str:
+def fixup(org: str, *, add_ids: bool = True, remove_time: bool = True) -> str:
     # TODO adding extra \n for compat with older elisp code
-    return '\n'.join(_fixup(org, add_ids=add_ids)) + '\n'
+    return '\n'.join(_fixup(org, add_ids=add_ids, remove_time=remove_time)) + '\n'
 
 
 def test_basic(tmp_path: Path) -> None:
@@ -123,7 +132,7 @@ def test_basic(tmp_path: Path) -> None:
 #
 # * other heading
 
-    res = fixup(org, add_ids=False)
+    res = fixup(org, add_ids=False, remove_time=False)
     assert res == org + '\n'
 
 
@@ -141,7 +150,7 @@ def test_tags(tmp_path: Path) -> None:
 ** heading 12    :tag1:refile:
 * heading 2    :refile:
 '''.rstrip()
-    res = fixup(org, add_ids=False)
+    res = fixup(org, add_ids=False, remove_time=False)
     assert res == \
 '''
 #+title: whatever
@@ -179,7 +188,7 @@ def test_add_id(tmp_path: Path) -> None:
 * TODO [#D] [2019-07-09] [[https://twitter.com/nplusodin/status/1148645120616607745][Tweet from @nplusodin: Ученые показали, что кусок стекла с правильно размещенными внутри неоднородностями может производить «вычисления» и распознавать рукописные цифры]] :computation:
 '''.rstrip()
 
-    res = fixup(org)
+    res = fixup(org, remove_time=False)
     assert res == \
 '''
 * TODO a Heading with example
@@ -220,3 +229,30 @@ def test_add_id(tmp_path: Path) -> None:
 #  :PROPERTIES:
 # -:ID:       thntwrkrvltncnfssnsfcmptrscntstsththckrnws
 # +:ID:       thntwrkrvltncnfssnsfcmptrscntst¹sththckrnws
+
+
+def test_remove_time(tmp_path: Path) -> None:
+    """
+    should generate an ID if note doesn't have one
+    """
+    org = \
+'''
+* TODO testing CREATED property
+:PROPERTIES:
+:CREATED: [2020-11-29 Sun 23:51]
+:END:
+* [2024-01-06 Sat 05:12] testing timestamps inside [2024-01-07 Sun 10:11] heading
+* testing timestamp inside body
+- [2020-11-29 Sun 11:23] xxx
+'''.rstrip()
+    res = fixup(org, remove_time=True, add_ids=False)
+    assert res == \
+'''
+* TODO testing CREATED property
+:PROPERTIES:
+:CREATED:  [2020-11-29]
+:END:
+* [2024-01-06] testing timestamps inside [2024-01-07] heading
+* testing timestamp inside body
+- [2020-11-29] xxx
+'''
