@@ -8,21 +8,6 @@
 (setq target (nth    1 command-line-args-left))
 (setq rpaths (nthcdr 2 command-line-args-left))
 
-;; meh
-;; (setq org-export-options-alist
-;;   (append org-export-options-alist '(
-;;     (:with-priority      t)
-;;     ;; todo eh, not sure if I need anything else?
-;;     ;; (:with-properties    '("ID" "CUSTOM_ID" "CREATED" "PUBLISHED"))
-;;     ;; (:with-tags          t)
-;;     ;; shit. only impacts isolated timestamps... (i.e. not next to TODO keywords etc)
-;;     ;; https://github.com/bzg/org-mode/blob/817c0c81e8f6d1dc387956c8c5b026ced62c157c/lisp/ox.el#L1896
-;;     ;; or maybe doesn't impact anything at all?? has no effect if set to t, same in html export
-;;     ;; (:with-timestamps    t)
-;;     ;; (:with-todo-keywords t)
-;;     (:time-stamp-file    nil)
-;; )))
-
 (setq org-export-exclude-tags '("noexport" "hide"))
 
 (setq org-export-with-priority   t)

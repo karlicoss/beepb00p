@@ -80,19 +80,14 @@
 (setq org-confirm-babel-evaluate nil)
 (setq org-export-preserve-breaks t) ;; by default it collapses consecutive lines.. usually undesirable
 (setq org-export-with-section-numbers nil)
-(setq exobrain/export-settings
-      '(:recursive          t
-        :with-priority      t
-        ;; todo eh, not sure if I need anything else?
-        :with-properties    ("ID" "CUSTOM_ID" "CREATED" "PUBLISHED")
-        :with-tags          t
-        ;; shit. only impacts isolated timestamps... (i.e. not next to TODO keywords etc)
-        ;; https://github.com/bzg/org-mode/blob/817c0c81e8f6d1dc387956c8c5b026ced62c157c/lisp/ox.el#L1896
-        ;; or maybe doesn't impact anything at all?? has no effect if set to t, same in html export
-        :with-timestamps    t
-        :with-todo-keywords t
 
-        :time-stamp-file    nil))
+
+;; TODO share with org-mode export?
+(setq org-export-with-priority   t)
+(setq org-export-time-stamp-file nil)
+;; (setq org-export-with-properties '("ID" "CUSTOM_ID" "CREATED" "PUBLISHED"))
+(setq org-export-with-properties '("CREATED"))
+
 
 ;; eh. a bit hacky, but does the job
 ;; doesn't seem that org-mode exposes filetags properly
@@ -101,6 +96,20 @@
       (let* ((filetags (plist-get info :filetags)))
         (format "<div class='filetags'>%s</div>" (s-join " " filetags)))
     nil))
+
+
+; I'm using my own styles
+(setq org-html-head-include-default-style nil)
+
+(setq org-html-head "
+<link href='https://beepb00p.xyz/assets/css/default.css'     rel='stylesheet'>
+<link href='https://beepb00p.xyz/assets/css/links.css'       rel='stylesheet'>
+<link href='https://beepb00p.xyz/assets/css/htmlize.css'     rel='stylesheet'>
+<link href='https://beepb00p.xyz/assets/css/org-default.css' rel='stylesheet'>
+<link href='https://beepb00p.xyz/assets/css/org-extra.css'   rel='stylesheet'>
+<link  href='/exobrain.css'                                  rel='stylesheet'>
+<script src='/settings.js'                                   rel='stylesheet'></script>
+")
 
 (setq exobrain/project-org2html
       `("exobrain-html"
@@ -112,28 +121,5 @@
         ;; todo ugh. seems that it's dumping sitemap to the source dir, and it can't be changed?
         :auto-sitemap nil
 
-        :html-preamble t
-
-        ,@exobrain/export-settings
-        :with-properties    ("CREATED") ;; todo maybe published too? or stuff "created" into the heading??
-
-        ; I'm using my own styles
-        :html-head-include-default-style nil
-        ;; todo not sure if I need org-html-scripts? adds CodeHighlightOn thing
-        ;; TODO get rid of this, I don't need it
-        ;; :html-head-include-scripts t
-
-        :html-head "
-<link href='https://beepb00p.xyz/assets/css/default.css'     rel='stylesheet'>
-<link href='https://beepb00p.xyz/assets/css/links.css'       rel='stylesheet'>
-<link href='https://beepb00p.xyz/assets/css/htmlize.css'     rel='stylesheet'>
-<link href='https://beepb00p.xyz/assets/css/org-default.css' rel='stylesheet'>
-<link href='https://beepb00p.xyz/assets/css/org-extra.css'   rel='stylesheet'>
-<link  href='/exobrain.css'                                  rel='stylesheet'>
-<script src='/settings.js'                                   rel='stylesheet'></script>
-"
-
-        :html-postamble     nil))
-
-
-;; TODO after intermediate, run santity check
+        :recursive t
+        ))

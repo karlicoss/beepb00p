@@ -149,9 +149,9 @@ def compile_org_to_org(ctx: Context, paths: list[Path]) -> None:
     public_dir = ctx.public_dir
     public_dir = public_dir.absolute()  # emacs seems unhappy if we don't do it
 
-    # for rpath in rpaths:
-    #     # create target dirs
-    #     (public_dir / rpath).parent.mkdir(parents=True, exist_ok=True)
+    for rpath in rpaths:
+        # create target dirs (emacs struggles without them)
+        (public_dir / rpath).parent.mkdir(parents=True, exist_ok=True)
     print('exporting', list(map(str, rpaths)), 'to', public_dir)
     check_call([
         'emacs', '--batch', '-l', Path('testdata') / 'export.el',
