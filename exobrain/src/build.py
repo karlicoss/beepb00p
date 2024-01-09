@@ -3,50 +3,48 @@ import argparse
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
+import re
 import sys
 from shutil import rmtree, copy
-from subprocess import check_call, check_output, run
+from subprocess import check_call, check_output, run, DEVNULL
 
 
+from bs4 import BeautifulSoup  # type: ignore[import]
 from more_itertools import divide
 from loguru import logger
+
+from utils import make_soup
 
 
 def ccall(*args, **kwargs):
     print(args, file=sys.stderr)
     return check_call(*args, **kwargs)
 
-# TODO editable?
-# TODO huh, that actually would be nice. I could fix stuff in-place and then apply to org-mode
-# TODO search settings?
-# TODO wonder if I can integrate it with blog's header?
-# TODO export txt files as md as well?
-
-
 _root = Path(__file__).absolute().parent.parent
-src  = _root / 'src'
+src = _root / 'src'
 
-DATA: Path
 
-# note: need to resolve, otherwise relative links might end up weird during org-publish-cache-ctime-of-src
+@dataclass
 class Config:
+    root: Path
+    # note: need to resolve
+    # otherwise relative links might end up weird during org-publish-cache-ctime-of-src
+
     @property
     def input_dir(self) -> Path:
-        return (DATA / 'input' ).resolve()
+        return (self.root / 'input').resolve()
 
     @property
     def public_dir(self) -> Path:
-        return (DATA / 'public').resolve()
+        return (self.root / 'public').resolve()
 
     @property
     def md_dir(self) -> Path:
-        return (DATA / 'md'    ).resolve()
+        return (self.root / 'md').resolve()
 
     @property
     def html_dir(self) -> Path:
-        return (DATA / 'html'  ).resolve()
-
-cfg = Config()
+        return (self.root / 'html').resolve()
 
 
 def clean_dir(path: Path) -> None:
@@ -56,11 +54,11 @@ def clean_dir(path: Path) -> None:
             continue
         if x.is_file() or x.is_symlink():
             x.unlink()
-        else: # dir
+        else:  # dir
             rmtree(x)
 
 
-def clean(*, skip_org_export: bool) -> None:
+def clean(*, cfg: Config, skip_org_export: bool) -> None:
     # todo ugh, need symlink watching tool here again...
     # org-publish-timestamp-directory
     cachedir = Path('~/.org-timestamps').expanduser()
@@ -92,10 +90,10 @@ def main() -> None:
     p.add_argument('--data-dir', type=Path)
     p.add_argument('--no-html', action='store_false', dest='html')
     p.add_argument('--no-org', action='store_false', dest='org')
-    p.add_argument('--md'     , action='store_true')
+    p.add_argument('--md', action='store_true')
     p.add_argument('--watch', action='store_true')
     p.add_argument('--under-entr', action='store_true')  # ugh.
-    p.add_argument('--add'   , action='store_true')
+    p.add_argument('--add', action='store_true')
     p.add_argument('--filter', type=str, default=None)
     args = p.parse_args()
 
@@ -104,16 +102,14 @@ def main() -> None:
     assert args.filter is None  # FIXME support later
     assert not args.add  # broken for now
 
-    ddir = args.data_dir
-    global DATA
-    if ddir is None:
-        DATA = _root / 'data'
+    if (data_dir := args.data_dir) is None:
+        cfg = Config(_root / 'data')
     else:
-        DATA = ddir.absolute()
+        cfg = Config(data_dir)
 
     # ugh. this all is pretty complicated...
     if args.watch:
-        clean(skip_org_export=not args.org)
+        clean(cfg=cfg, skip_org_export=not args.org)
         nargs = [*sys.argv, '--under-entr']
         nargs.remove('--watch')
         while True:
@@ -121,15 +117,13 @@ def main() -> None:
             run(['entr', '-d', *nargs], input=paths.encode('utf8'))
         sys.exit(0)
     if not args.under_entr:
-        clean(skip_org_export=not args.org)
-
+        clean(cfg=cfg, skip_org_export=not args.org)
 
     if args.org:
         publish_org(cfg)
 
     if args.html:
         publish_html(cfg)
-        postprocess_html()
 
 
 @dataclass
@@ -142,25 +136,29 @@ def compile_org_to_org(ctx: Context, paths: list[Path]) -> None:
     if len(paths) == 0:
         return  # nothing to do
 
-    rpaths = [
-        f.relative_to(ctx.input_dir) for f in paths
-    ]
+    rpaths = [f.relative_to(ctx.input_dir) for f in paths]
     input_dir = ctx.input_dir
-    input_dir = input_dir.absolute()   # emacs seems unhappy if we don't do it
+    input_dir = input_dir.absolute()  # emacs seems unhappy if we don't do it
     output_dir = ctx.output_dir
     output_dir = output_dir.absolute()  # emacs seems unhappy if we don't do it
 
     for rpath in rpaths:
         # create target dirs (emacs struggles without them)
         (output_dir / rpath).parent.mkdir(parents=True, exist_ok=True)
-    print('exporting', list(map(str, rpaths)), 'to', output_dir)
-    check_call([
-        'emacs', '--batch', '-l', src / 'publish_org.el',
-        input_dir, output_dir, *rpaths,
-        # '-f', 'toggle-debug-on-error', # dumps stacktrace on error
-    ])
+    logger.debug(f'exporting {list(map(str, rpaths))} to {output_dir}')
+    check_call(
+        [
+            'emacs', '--batch', '-l',
+            src / 'publish_org.el',
+            input_dir, output_dir, *rpaths,
+            # '-f', 'toggle-debug-on-error', # dumps stacktrace on error
+        ],
+        stdout=DEVNULL,
+        stderr=DEVNULL,
+    )
 
     from fixup_org import fixup
+
     for rpath in rpaths:
         path = output_dir / rpath
         path.write_text(fixup(path.read_text()))
@@ -168,6 +166,7 @@ def compile_org_to_org(ctx: Context, paths: list[Path]) -> None:
     # TODO need to test it!
 
     from check_org import check_one
+
     for rpath in rpaths:
         path = output_dir / rpath
         errors = list(check_one(path))
@@ -178,31 +177,37 @@ def compile_org_to_html(ctx: Context, paths: list[Path]) -> None:
     if len(paths) == 0:
         return  # nothing to do
 
-    rpaths = [
-        f.relative_to(ctx.input_dir) for f in paths
-    ]
+    rpaths = [f.relative_to(ctx.input_dir) for f in paths]
     input_dir = ctx.input_dir
-    input_dir = input_dir.absolute()   # emacs seems unhappy if we don't do it
+    input_dir = input_dir.absolute()  # emacs seems unhappy if we don't do it
     output_dir = ctx.output_dir
     output_dir = output_dir.absolute()  # emacs seems unhappy if we don't do it
 
     for rpath in rpaths:
         # create target dirs (emacs struggles without them)
         (output_dir / rpath).parent.mkdir(parents=True, exist_ok=True)
-    print('exporting', list(map(str, rpaths)), 'to', output_dir)
-    check_call([
-        'emacs', '--batch', '-l', src / 'publish_html.el',
-        input_dir, output_dir, *rpaths,
-    ])
+    logger.debug(f'exporting {list(map(str, rpaths))} to {output_dir}')
+    check_call(
+        [
+            'emacs',
+            '--batch', '-l', src / 'publish_html.el',
+            input_dir, output_dir, *rpaths,
+        ],
+        stdout=DEVNULL,
+        stderr=DEVNULL,
+    )
+
+    for rpath in rpaths:
+        path = output_dir / rpath.with_suffix('.html')
+        do_fixup_html(path)
+        postprocess_html(path, html_dir=output_dir)
 
 
 def do_fixup_html(html: Path) -> None:
-    from bs4 import BeautifulSoup as BS # type: ignore
-    bs = lambda x: BS(x, 'lxml')  # lxml is the fastest? see https://www.crummy.com/software/BeautifulSoup/bs4/doc/#installing-a-parser
-
     from fixup_html import fixup
+
     text = html.read_text()
-    soup = bs(text)
+    soup = make_soup(text)
     try:
         fixup(soup)
     except Exception as e:
@@ -230,12 +235,84 @@ def do_fixup_html(html: Path) -> None:
     html.write_text(sstr)
 
 
+def postprocess_html(html: Path, *, html_dir: Path) -> None:
+    shtml = src / 'search/search.html'
+    node = make_soup(shtml.read_text()).find(id='search')
+    searchs = node.prettify()
+
+    sitemap = html_dir / 'sitemap.html'
+    assert sitemap.exists(), sitemap
+    node = make_soup(sitemap.read_text()).find(id='content')
+    node.select_one('.title').decompose()
+    node.name = 'nav'  # div by deafult
+    node['id'] = 'exobrain-toc'
+    tocs = str(node)  # do not prettify to avoid too many newlines around tags
+    # mm, org-mode emits relative links, but we actually want abolute here so it makes sense for any page
+    tocs = tocs.replace('href="', 'href="/')
+
+    # for idempotence
+    MARKER = '<!-- PROCESSED BY postprocess_html -->'
+
+    text = html.read_text()
+    already_handled = MARKER in text
+    if already_handled:
+        return  # TODO probs don't need it?
+
+    soup = make_soup(text + MARKER)
+
+    # todo would be cool to integrate it with org-mode properly..
+    settings = '''
+<span class='exobrain-settings'>
+<span class='exobrain-setting'>show timestamps<input id="settings-timestamps" type="checkbox"/></span>
+<span class='exobrain-setting'>show priorities<input id="settings-priorities" type="checkbox"/></span>
+<span class='exobrain-setting'>show todo state<input id="settings-todostates" type="checkbox"/></span>
+</span>
+    '''
+
+    # meh... this gets too complicated
+    sidebar = f"""
+<a id='jumptosidebar' href='#sidebar'>Jump to search, settings &amp; sitemap</a>
+<div id='sidebar'>
+{searchs}
+{settings}
+{tocs}
+</div>
+"""
+    soup.body.extend(ashtml(sidebar))
+
+    # ugh. very annoying... this is ought to be easier...
+    depth = len(html.relative_to(html_dir).parts) - 1
+    rel = '' if depth == 0 else '../' * depth
+    rel_head = f'''
+<script>
+const PATH_TO_ROOT = "{rel}"
+</script>
+'''
+    search_head = f'''
+<link  href='{rel}search.css' rel='stylesheet'>
+<script src='{rel}search.js'></script>
+'''
+    soup.head.extend(ashtml(rel_head))
+    soup.head.extend(ashtml(search_head))
+    soup = relativize(soup, path=html, root=html_dir)
+    html.write_text(str(soup))
+
+
+# for fucks sake, seems that it's not possible to insert raw html?
+def ashtml(x: str):
+    b = make_soup(x)
+    head = list(b.head or [])
+    body = list(b.body or [])
+    return head + body
+
+
 def publish_org_sitemap(public_dir: Path) -> None:
     ## deafult org-mode sitemap export has really weird sorting
     ## ahd hard to modify the order/style etc anyway
     ## plus org-mode sitemap is only exported during html export
     def get_title(p: Path) -> str:
         import orgparse
+
         o = orgparse.load(p)
         title = o.get_file_property('TITLE')
         if not title:
@@ -245,7 +322,6 @@ def publish_org_sitemap(public_dir: Path) -> None:
     inputs = sorted(public_dir.rglob('*.org'))
     with_titles = [(p, get_title(p)) for p in inputs]
 
-    import re
     emoji_pattern = re.compile(
         "["
         "\U0001F600-\U0001F64F"  # emoticons
@@ -254,7 +330,9 @@ def publish_org_sitemap(public_dir: Path) -> None:
         "\U0001F1E0-\U0001F1FF"  # flags (iOS)
         "\U00002702-\U000027B0"
         "\U000024C2-\U0001F251"
-        "]+", flags=re.UNICODE)
+        "]+",
+        flags=re.UNICODE,
+    )
 
     def contains_emoji(s):
         return emoji_pattern.search(s) is not None
@@ -269,7 +347,7 @@ def publish_org_sitemap(public_dir: Path) -> None:
         fo.write('#+TITLE: Sitemap for project exobrain-html\n')
         fo.write('\n')
         emitted = set()
-        for (p, title) in sorted(with_titles, key=sort_key):
+        for p, title in sorted(with_titles, key=sort_key):
             rp = p.relative_to(public_dir)
             par = rp.parent
             level = len(par.parts)
@@ -283,7 +361,7 @@ def publish_org(cfg: Config) -> None:
     """
     Publishies intermediate ('public') org-mode
     """
-    input_dir  = cfg.input_dir
+    input_dir = cfg.input_dir
     public_dir = cfg.public_dir
     assert input_dir.exists(), input_dir
 
@@ -316,6 +394,12 @@ def publish_html(cfg: Config) -> None:
     ctx = Context(input_dir=public_dir, output_dir=html_dir)
     inputs = sorted(public_dir.rglob('*.org'))
 
+    ## first, compile sitemap (since its output is used in other htmls)
+    sitemap = public_dir / 'sitemap.org'
+    inputs.remove(sitemap)
+    compile_org_to_html(ctx, [sitemap])
+    ##
+
     with ProcessPoolExecutor() as pool:
         workers = pool._max_workers  # type: ignore[attr-defined]
         logger.debug(f'using {workers} workers')
@@ -330,6 +414,27 @@ def publish_html(cfg: Config) -> None:
     # for f in public_dir.rglob('*.org'):
     #     assert not f.is_symlink(), f # just in case?
     #     check_call(['chmod', '-w', f]) # prevent editing
+
+    # fmt: off
+    copy(src / 'search/search.css', html_dir / 'search.css'  )
+    copy(src / 'search/search.js' , html_dir / 'search.js'   )
+    copy(src / 'exobrain.css'     , html_dir / 'exobrain.css')
+    copy(src / 'settings.js'      , html_dir / 'settings.js' )
+    # fmt: on
+
+    # todo eh.. implement this as an external site agnostic script
+    (html_dir / 'documents.js').write_text(
+        check_output(
+            [
+                src / 'search/makeindex.py',
+                '--root',
+                html_dir,
+            ]
+        ).decode('utf8')
+    )
+
+    if (html_dir / 'README.html').exists():  # meh, for incremental mode
+        check_call(['ln', '-sf', 'README.html', html_dir / 'index.html'])
 
 
 # def preprocess(args, *, skip_org_export: bool) -> None:
@@ -347,7 +452,7 @@ def publish_html(cfg: Config) -> None:
 
 def relativize(soup, *, path: Path, root: Path):
     depth = len(path.relative_to(root).parts) - 1
-    rel = ('' if depth == 0 else '../' * depth)
+    rel = '' if depth == 0 else '../' * depth
 
     for tag, attr in [('a', 'href'), ('link', 'href'), ('script', 'src')]:
         for t in soup.find_all(tag):
@@ -358,107 +463,11 @@ def relativize(soup, *, path: Path, root: Path):
     return soup
 
 
-def postprocess_html() -> None:
-    html_dir = cfg.html_dir
-
-    copy(src / 'search/search.css', html_dir / 'search.css'  )
-    copy(src / 'search/search.js' , html_dir / 'search.js'   )
-    copy(src / 'exobrain.css'     , html_dir / 'exobrain.css')
-    copy(src / 'settings.js'      , html_dir / 'settings.js' )
-
-    from bs4 import BeautifulSoup as BS # type: ignore
-    bs = lambda x: BS(x, 'lxml')  # lxml is the fastest? see https://www.crummy.com/software/BeautifulSoup/bs4/doc/#installing-a-parser
-
-    # for fucks sake, seems that it's not possible to insert raw html?
-    def ashtml(x):
-        b = bs(x)
-        head = list(b.head or [])
-        body = list(b.body or [])
-        return head + body
-
-
-    sitemap = html_dir / 'sitemap.html'
-    assert sitemap.exists(), sitemap
-    node = bs(sitemap.read_text()).find(id='content')
-    node.select_one('.title').decompose()
-    node.name = 'nav' # div by deafult
-    node['id'] = 'exobrain-toc'
-    tocs = str(node) # do not prettify to avoid too many newlines around tags
-    # mm, org-mode emits relative links, but we actually want abolute here so it makes sense for any page
-    tocs = tocs.replace('href="', 'href="/')
-
-    with ProcessPoolExecutor() as pool:
-        futures = []
-        for html in html_dir.rglob('*.html'):
-            futures.append(pool.submit(do_fixup_html, html))
-        for f in futures:
-            f.result()
-
-
-    # todo eh.. implement this as an external site agnostic script
-    (html_dir / 'documents.js').write_text(check_output([
-        src / 'search/makeindex.py',
-        '--root', html_dir,
-    ]).decode('utf8'))
-
-    shtml = src / 'search/search.html'
-    node = bs(shtml.read_text()).find(id='search')
-    searchs = node.prettify()
-
-    # for idempotence
-    MARKER = '<!-- PROCESSED BY postprocess_html -->'
-
-    # FIXME parallelize this
-    for html in html_dir.rglob('*.html'):
-        text = html.read_text()
-        already_handled = MARKER in text
-        if already_handled:
-            continue
-
-        soup = bs(text + MARKER)
-
-        # todo would be cool to integrate it with org-mode properly..
-        settings = f'''
-<span class='exobrain-settings'>
-<span class='exobrain-setting'>show timestamps<input id="settings-timestamps" type="checkbox"/></span>
-<span class='exobrain-setting'>show priorities<input id="settings-priorities" type="checkbox"/></span>
-<span class='exobrain-setting'>show todo state<input id="settings-todostates" type="checkbox"/></span>
-</span>
-        '''
-
-        # meh... this gets too complicated
-        sidebar = f"""
-<a id='jumptosidebar' href='#sidebar'>Jump to search, settings &amp; sitemap</a>
-<div id='sidebar'>
-{searchs}
-{settings}
-{tocs}
-</div>
-"""
-        soup.body.extend(ashtml(sidebar))
-
-        # ugh. very annoying... this is ought to be easier...
-        depth = len(html.relative_to(html_dir).parts) - 1
-        rel = ('' if depth == 0 else '../' * depth)
-        rel_head = f'''
-<script>
-const PATH_TO_ROOT = "{rel}"
-</script>
-'''
-        search_head = f'''
-<link  href='{rel}search.css' rel='stylesheet'>
-<script src='{rel}search.js'></script>
-'''
-        soup.head.extend(ashtml(rel_head))
-        soup.head.extend(ashtml(search_head))
-        soup = relativize(soup, path=html, root=html_dir)
-        html.write_text(str(soup))
-
-    if (html_dir / 'README.html').exists(): # meh, for incremental mode
-        check_call(['ln', '-sf', 'README.html', html_dir / 'index.html'])
-
 # TODO add this back
 # link = '<a style="font-size: 2rem; line-height: var(--menu-bar-height);" href="https://beepb00p.xyz">back to blog</a>'
 
 if __name__ == '__main__':
     main()
+
+
+# TODO wonder if I can integrate it with blog's header?

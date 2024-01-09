@@ -25,7 +25,6 @@ def check_one(path: Path) -> Iterator[Exception]:
         WORD_CHECKS = []
         TAG_CHECKS = set()
 
-    print(f"checking {path}")
     for x in F_CHECKS:
         # TODO might be too many calls, maybe do it in a single regex?
         yield from search(

@@ -1,9 +1,7 @@
-from pathlib import Path
 import re
-from typing import Iterator
 
 
-import bs4
+import bs4  # type: ignore[import]
 import orgparse
 
 

@@ -12,7 +12,12 @@ Text = str
 
 def walk(node) -> Iterable[Tuple[Id, Text]]:
     id_ = node.get('id')
-    if id_ == 'table-of-contents': # ignore it
+    if id_ in {
+        'table-of-contents',
+        'jumptosidebar',
+        'exobrain-toc',
+        'sidebar',
+    }:
         node.decompose()
         return
 
@@ -36,6 +41,8 @@ def walk_all(root: Path) -> Iterable[Tuple[File, Id, Text]]:
     for html in htmls:
         if html.name == 'sitemap.html':
             continue
+        import warnings
+        warnings.filterwarnings('ignore', category=bs4.XMLParsedAsHTMLWarning)
         soup = bs4.BeautifulSoup(html.read_text(), 'lxml').find('body')
         rpath = html.relative_to(root)
         for key, res in walk(soup):

@@ -11,3 +11,13 @@ def tmp_popen(*args, **kwargs):
                 c.kill()
             p.kill()
             p.wait()
+
+
+import bs4 # type: ignore[import]
+
+def make_soup(x: str) -> bs4.BeautifulSoup:
+    # lxml is the fastest?
+    # see https://www.crummy.com/software/BeautifulSoup/bs4/doc/#installing-a-parser
+    import warnings
+    warnings.filterwarnings('ignore', category=bs4.XMLParsedAsHTMLWarning)
+    return bs4.BeautifulSoup(x, 'lxml')

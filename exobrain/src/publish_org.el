@@ -37,7 +37,7 @@
          do (progn
               (message (format "exporting %s" rpath))
               (cl-assert      (file-exists-p (expand-file-name rpath source)))
-              (message (format "checking %s" (expand-file-name rpath target)))
+              ;; (message (format "checking %s" (expand-file-name rpath target)))
               (cl-assert (not (file-exists-p (expand-file-name rpath target))))
               (find-file                     (expand-file-name rpath source))
               (org-export-to-file 'org       (expand-file-name rpath target))
