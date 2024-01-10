@@ -427,17 +427,10 @@ def publish_html(cfg: Config, *, pool: Executor) -> None:
     # fmt: on
 
     # todo eh.. implement this as an external site agnostic script
-    logger.debug('generating index')  # note: takes about 5 secs atm
-    (html_dir / 'documents.js').write_text(
-        check_output(
-            [
-                src / 'search/makeindex.py',
-                '--root',
-                html_dir,
-            ],
-            text=True,
-        )
-    )
+    logger.debug('generating index')
+    from search.makeindex import make_index
+    index_js = make_index(root=html_dir, pool=pool)
+    (html_dir / 'documents.js').write_text(index_js)
     logger.debug('generating index: done')
 
     if (html_dir / 'README.html').exists():  # meh, for incremental mode
