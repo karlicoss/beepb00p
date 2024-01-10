@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 from concurrent.futures import Executor, ProcessPoolExecutor
+from copy import deepcopy
 from dataclasses import dataclass
 from pathlib import Path
 import re
@@ -212,57 +213,25 @@ def compile_org_to_html(ctx: Context, paths: list[Path]) -> None:
         stderr=DEVNULL,
     )
 
+    logger.debug(f'making soups {batch}')
+    soups = []
+    for rpath in rpaths:
+        path = output_dir / rpath.with_suffix('.html')
+        soups.append(make_soup(path.read_text()))
+
     logger.debug(f'fixing up {batch}')
-    for rpath in rpaths:
-        path = output_dir / rpath.with_suffix('.html')
-        do_fixup_html(path)
-
-    logger.debug(f'postprocesing {batch}')
-    for rpath in rpaths:
-        path = output_dir / rpath.with_suffix('.html')
-        postprocess_html(path, html_dir=output_dir)
-
-    logger.info(f'finished {batch}')
-
-
-def do_fixup_html(html: Path) -> None:
     from fixup_html import fixup
-
-    text = html.read_text()
-    soup = make_soup(text)
-    try:
+    for soup in soups:
         fixup(soup)
-    except Exception as e:
-        raise RuntimeError(f'while fixing {html}') from e
 
-    ## FIXME backwards compat with older export, can remove later
-    sstr = str(soup)
-    sstr = sstr.replace(
-        '</div><div class="outline-2"',
-        '</div>\n<div class="outline-2"',
-    )
-    sstr = sstr.replace(
-        '<div class="properties"><div class="property" ',
-        '<div class="properties">\n<div class="property" ',
-    )
-    sstr = sstr.replace(
-        '</span></div></div>',
-        '</span></div>\n</div>',
-    )
-    ##
+    ###
+    logger.debug(f'postprocesing {batch}')
 
-    # super annoying (is this nbsp?), should be via css
-    sstr = sstr.replace('\xa0\xa0\xa0', ' ')
-
-    html.write_text(sstr)
-
-
-def postprocess_html(html: Path, *, html_dir: Path) -> None:
     shtml = src / 'search/search.html'
     node = make_soup(shtml.read_text()).find(id='search')
     searchs = node.prettify()
 
-    sitemap = html_dir / 'sitemap.html'
+    sitemap = output_dir / 'sitemap.html'
     assert sitemap.exists(), sitemap
     node = make_soup(sitemap.read_text()).find(id='content')
     node.select_one('.title').decompose()
@@ -271,16 +240,6 @@ def postprocess_html(html: Path, *, html_dir: Path) -> None:
     tocs = str(node)  # do not prettify to avoid too many newlines around tags
     # mm, org-mode emits relative links, but we actually want abolute here so it makes sense for any page
     tocs = tocs.replace('href="', 'href="/')
-
-    # for idempotence
-    MARKER = '<!-- PROCESSED BY postprocess_html -->'
-
-    text = html.read_text()
-    already_handled = MARKER in text
-    if already_handled:
-        return  # TODO probs don't need it?
-
-    soup = make_soup(text + MARKER)
 
     # todo would be cool to integrate it with org-mode properly..
     settings = '''
@@ -300,24 +259,49 @@ def postprocess_html(html: Path, *, html_dir: Path) -> None:
 {tocs}
 </div>
 """
-    soup.body.extend(ashtml(sidebar))
+    sidebar_html = ashtml(sidebar)
 
+    for rpath, soup in zip(rpaths, soups):
+        path = output_dir / rpath.with_suffix('.html')
+        # NOTE: need deep copy because we modify nodes in postprocess_html
+        soup.body.extend(deepcopy(sidebar_html))
+        postprocess_html(soup=soup, html=path, html_dir=output_dir)
+    ###
+
+    logger.info(f'finished {batch}')
+
+
+def postprocess_html(
+    *,
+    soup: BeautifulSoup,
+    html: Path,
+    html_dir: Path,
+) -> None:
     # ugh. very annoying... this is ought to be easier...
     depth = len(html.relative_to(html_dir).parts) - 1
     rel = '' if depth == 0 else '../' * depth
-    rel_head = f'''
-<script>
-const PATH_TO_ROOT = "{rel}"
-</script>
-'''
-    search_head = f'''
-<link  href='{rel}search.css' rel='stylesheet'>
-<script src='{rel}search.js'></script>
-'''
-    soup.head.extend(ashtml(rel_head))
-    soup.head.extend(ashtml(search_head))
+
+    rel_head = soup.new_tag('script')
+    rel_head.string = f'\nconst PATH_TO_ROOT = "{rel}"\n'
+
+    search_css = soup.new_tag('link', attrs={
+        'href': f'{rel}search.css',
+        'rel': 'stylesheet',
+    })
+    search_js = soup.new_tag('script', attrs={
+        'src': f'{rel}search.js',
+    })
+    soup.head.extend([
+        rel_head, '\n',
+        search_css, '\n',
+        search_js, '\n',
+    ])
+
     soup = relativize(soup, path=html, root=html_dir)
-    html.write_text(str(soup))
+
+    # super annoying (is this nbsp?), should be via css
+    sstr = str(soup).replace('\xa0\xa0\xa0', ' ')
+    html.write_text(sstr)
 
 
 # for fucks sake, seems that it's not possible to insert raw html?
