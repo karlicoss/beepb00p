@@ -120,7 +120,7 @@ def run(*, access_log: Path, exclude: Optional[Path]=None, delta: Optional[timed
     dd = dd.pivot(index='dt', columns='page', values='referer')
     dd = dd.fillna(0).astype(int)
     # std is a proxy for 'trends'
-    order = [name for name, value in sorted(dd.std(axis=0).iteritems(), key=lambda p: -p[1])]
+    order = [name for name, value in sorted(dd.std(axis=0).items(), key=lambda p: -p[1])]
     dd = dd[order]
 
     # TODO dynamic sorting for pandas would be nice?
@@ -194,7 +194,7 @@ def main() -> None:
 
             rt['dt'] = rt['dt'].dt.strftime('%Y-%m-%d %H:%M')
 
-            rts = rt.style.apply(style).render()
+            rts = rt.style.apply(style).to_html()
             # rts = rt.to_html()
             # rts = rts.replace('class="dataframe"', 'class="dataframe sortable"')
             rts = rts.replace('<table ', '<table border=1 class="dataframe sortable"')
@@ -206,7 +206,7 @@ def main() -> None:
             fo.write(gc)
 
             rf = refs.to_frame()
-            rf = rf[rf.referer > q90]
+            rf = rf[rf['count'] > q90]
             print(rf)
             # total stats across all referrers
             fo.write(rf.to_html())
